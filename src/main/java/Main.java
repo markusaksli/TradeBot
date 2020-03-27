@@ -15,6 +15,7 @@ public class Main {
 /*
         try {
             BinanceApi api = new BinanceApi();
+
             System.out.println("ETH-BTC PRICE=" + api.pricesMap().get("ETHBTC"));
         } catch (
                 BinanceApiException e) {
