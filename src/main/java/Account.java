@@ -26,7 +26,6 @@ import org.knowm.xchange.bitmex.dto.account.BitmexAccount;
 
 public class Account {
     public static void main(String[] args) throws IOException, InterruptedException {
-
         //Trying to get info with xchange api
         /*Exchange bitmex = ExchangeFactory.INSTANCE.createExchange(BitmexExchange.class.getName());
 
@@ -65,6 +64,11 @@ public class Account {
         System.out.println(walletData);
 
     }
+
+    /**
+     * Is supposed to get info on account.
+     * @throws IOException
+     */
     public static void AccountInfo() throws IOException {
         InputStream is =
                 Account.class.getResourceAsStream(
