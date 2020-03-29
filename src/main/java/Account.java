@@ -5,8 +5,8 @@ public class Account {
     private final double dollars;
 
     //TODO uncomment the 2 lines below when Trades class is ready.
-    //private List<Trades> tradeHistory;
-    //private List<Trades> currentTrades;
+    //private List<Trade> tradeHistory;
+    //private List<Trade> currentTrades;
     private double wallet;
 
     /**
