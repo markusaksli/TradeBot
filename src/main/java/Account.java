@@ -1,46 +1,66 @@
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.knowm.xchange.ExchangeFactory;
-import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bitmex.BitmexExchange;
-import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.dto.account.AccountInfo;
-import org.knowm.xchange.service.account.AccountService;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Base64;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpResponse;
-import org.knowm.xchange.Exchange;
-import org.knowm.xchange.bitmex.dto.account.BitmexAccount;
-import si.mazi.rescu.ClientConfig;
-
-
 public class Account {
-    public static void main(String[] args) throws IOException, InterruptedException {
-        //Trying to get info with xchange api
-        Exchange bitmex = ExchangeFactory.INSTANCE.createExchange(BitmexExchange.class.getName());
+    private String username;
 
-        ExchangeSpecification bitmexSpec = bitmex.getExchangeSpecification();
-        bitmexSpec.setSslUri("https://testnet.bitmex.com");
-        bitmexSpec.setApiKey("ZoKlEc3zTsR0L_KLbFQCthKc");
-        bitmexSpec.setSecretKey("JCC_KV8_U4T8ZCyEZIceRwzTKTosMj02jcsQqYPGXUB9BkgU");
-        bitmex.applySpecification(bitmexSpec);
+    //To give the account a specific final amount of money.
+    private final double dollars;
 
-        AccountService accountService = bitmex.getAccountService();
-        System.out.println(accountService.getAccountInfo().toString());
+    //TODO uncomment the 2 lines below when Trades class is ready.
+    //private List<Trades> tradeHistory;
+    //private List<Trades> currentTrades;
+    private double wallet;
 
-        //Trying to get info with bitmex api and requests.
-        //https://testnet.bitmex.com/api/v1
-
+    /**
+     * Wallet value will most probably be 0 at first, but you could start
+     * with an existing wallet value as well.
+     */
+    public Account(String username, double dollars, double wallet) {
+        this.username = username;
+        this.dollars = dollars;
+        this.wallet = wallet;
     }
+
+    //All the get methods.
+    public String getUsername() {
+        return username;
+    }
+
+    public double getDollars() {
+        return dollars;
+    }
+
+    public double getWallet() {
+        return wallet;
+    }
+
+    /**
+     * Method will calculate current profit off of all the active trades
+     *
+     * @return returns the sum of all the profits
+     */
+    public double getProfit() {
+        double profit = 0;
+        //TODO replace "return profit" with following code when Trades is ready
+        /*
+        for (Trade trade : currentTrades) {
+            profit += trade.getProfit();
+        }
+        return profit
+         */
+        return profit;
+    }
+
+    //Allows you to add to the wallet easily.
+    public void addToWallet(double amount) {
+        wallet += amount;
+    }
+
+    /**
+     * Method calculates the sum of the entire portfolio.
+     * That includes free money to invest + everything currently in trades.
+     */
+    public double getEntirePortfolio() {
+        return wallet + getProfit();
+    }
+
+
 }
