@@ -1,22 +1,24 @@
+import java.util.List;
+
 public class Account {
     private String username;
 
     //To give the account a specific final amount of money.
     private final double dollars;
-
-    //TODO uncomment the 2 lines below when Trades class is ready.
-    //private List<Trade> tradeHistory;
-    //private List<Trade> currentTrades;
+    private List<Currency> currencies;
+    private List<Trade> tradeHistory;
+    private List<Trade> currentTrades;
     private double wallet;
 
     /**
      * Wallet value will most probably be 0 at first, but you could start
      * with an existing wallet value as well.
      */
-    public Account(String username, double dollars, double wallet) {
+    public Account(String username, double dollars, double wallet, List<Currency> currencies) {
         this.username = username;
         this.dollars = dollars;
         this.wallet = wallet;
+        this.currencies = currencies;
     }
 
     //All the get methods.
@@ -39,13 +41,19 @@ public class Account {
      */
     public double getProfit() {
         double profit = 0;
-        //TODO replace "return profit" with following code when Trades is ready
-        /*
         for (Trade trade : currentTrades) {
-            profit += trade.getProfit();
+            double startingPrice = trade.getFillPrice();
+            Currency tradeCurrency = trade.getCurrency();
+            double percentages = (tradeCurrency.getPrice() * startingPrice) / 100; //Calculate how many percentages has risen or fallen since start.
+
+            if (startingPrice * percentages < startingPrice) { //If has fallen, then subtract.
+                profit -= startingPrice - startingPrice * percentages;
+            } else if (startingPrice * percentages > startingPrice) { //If has risen then add.
+                profit += startingPrice + startingPrice * percentages;
+            } else { //If nothing has changed.
+                profit += 0;
+            }
         }
-        return profit
-         */
         return profit;
     }
 
