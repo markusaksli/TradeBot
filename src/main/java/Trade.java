@@ -2,22 +2,24 @@ import java.sql.Timestamp;
 
 public class Trade {
 
-    private final int entryPrice; //Strarting price of a trade (when logic decides to buy)
+    //private final int entryPrice; //Strarting price of a trade (when logic decides to buy)
     private int fillPrice; //The actual price after the completion of a fill
     private final Timestamp logicTime; // When the programs logic decides to make a trade
     private  Timestamp acceptTime; // When the server gets the signal of a trade
     private Timestamp fillTime; //When the fill is completed
+    private Currency currency;
 
 
     //Can get all of the data straight away
-    public Trade(double entryPrice, double fillPrice, Timestamp logicTime, Timestamp acceptTime, Timestamp fillTime) {
+    public Trade(Currency currency ,double entryPrice, double fillPrice, Timestamp logicTime, Timestamp acceptTime, Timestamp fillTime) {
         this(entryPrice, logicTime, acceptTime);
-        this.fillPrice = fillPrice;//The prices are wrong right now because we need to turn the prices to int-s
+        this.currency = currency;
+        //this.fillPrice = fillPrice;//The prices are wrong right now because we need to turn the prices to int-s
         this.fillTime = fillTime;
     }
 
     public Trade(double entryPrice, Timestamp logicTime) { //Can't get server accept time and fill price/time
-        this.entryPrice = entryPrice;
+        //this.entryPrice = entryPrice;
         this.logicTime = logicTime;
     }
 
@@ -28,8 +30,12 @@ public class Trade {
 
     //Getters and setters
 
-    public void setFillPrice(double fillPrice) {
+    /*public void setFillPrice(double fillPrice) {
         this.fillPrice = fillPrice;
+    }*/
+
+    public Currency getCurrency() { //for getting the currency to calculate what the price is now.
+        return currency;
     }
 
     public void setFillTime(Timestamp fillTime) {
@@ -40,9 +46,9 @@ public class Trade {
         this.acceptTime = acceptTime;
     }
 
-    public int getEntryPrice() {
-        return entryPrice;
-    }
+    //public int getEntryPrice() {
+        //return entryPrice;
+    //}
 
     public int getFillPrice() {
         return fillPrice;
