@@ -5,7 +5,7 @@ public class Account {
     private String username;
 
     //To give the account a specific final amount of money.
-    private final double dollars;
+    private double dollars;
     private HashMap<String, Double> wallet;
     private List<Trade> tradeHistory;
     private List<Trade> currentTrades;
@@ -44,6 +44,9 @@ public class Account {
     public double getDollars() {
         return dollars;
     }
+    public void subtractDollars(double amount) {
+        dollars = dollars - amount;
+    }
 
     /**
      * Method has Currency names as keys and the amount of certain currency as value.
@@ -59,7 +62,7 @@ public class Account {
      *
      * @return returns the sum of all the percentages wether the profit is below 0 or above.
      */
-    public double getProfit() {
+    public double getWholeProfit() {
         double profit = 0;
         for (Trade trade : currentTrades) {
             double startingPrice = trade.getFillPrice();

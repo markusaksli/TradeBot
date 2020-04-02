@@ -6,9 +6,9 @@ public class Trade {
     private double fillPrice; //The actual price after the completion of a fill
     private final Timestamp logicTime; // When the programs logic decides to make a trade
     private  Timestamp acceptTime; // When the server gets the signal of a trade
-    private Timestamp fillTime; //When the fill is completed
-    private Currency currency;
-    private double amountOfCurrency;
+    private Timestamp fillTime; //When the fill is completed.
+    private Currency currency; //What cryptocurrency is used.
+    private double amountOfCurrency; //How much are you buying or selling. I.E 06 bitcoins or smth.
 
 
     //Can get all of the data straight away
@@ -31,7 +31,6 @@ public class Trade {
         this.logicTime = logicTime;
         this.amountOfCurrency = amountOfCurrency;
     }
-
 
 
     //Getters and setters
@@ -74,5 +73,11 @@ public class Trade {
 
     public Timestamp getFillTime() {
         return fillTime;
+    }
+    public double getProfitUSD() {
+        double priceNow = currency.getPrice();
+        double percentages = Math.round((priceNow * 100 / fillPrice - 100) * 1000);
+        percentages = percentages / 1000;
+        return percentages;
     }
 }
