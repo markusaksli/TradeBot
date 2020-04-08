@@ -74,6 +74,8 @@ public class Trade {
     public Timestamp getFillTime() {
         return fillTime;
     }
+
+    //Allows user to get the profit percentages on one specific trade.
     public double getProfitUSD() {
         double priceNow = currency.getPrice();
         double percentages = Math.round((priceNow * 100 / fillPrice - 100) * 1000);

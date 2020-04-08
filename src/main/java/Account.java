@@ -64,12 +64,9 @@ public class Account {
      */
     public double getWholeProfit() {
         double profit = 0;
+        double percentages = 0;
         for (Trade trade : currentTrades) {
-            double startingPrice = trade.getFillPrice();
-            Currency tradeCurrency = trade.getCurrency();
-            double percentages = Math.round((tradeCurrency.getPrice() * 100 / startingPrice - 100) * 1000);
-            percentages = percentages / 1000; //Calculate how many percentages has risen or fallen since start.
-            //If negative then profit is negative, otherwise positive.
+            percentages = trade.getProfitUSD();
             if (percentages < 0) {
                 profit -= percentages;
             } else if (percentages >= 0) {
