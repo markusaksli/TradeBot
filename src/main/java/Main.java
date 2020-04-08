@@ -15,8 +15,8 @@ public class Main {
                 BinanceApiException e) {
             System.out.println("ERROR: " + e.getMessage());
         }
-        Account toomas = new Account("Investor Toomas", 1000, 0);
-        Bitcoin bitcoin = new Bitcoin();
+        //Account toomas = new Account("Investor Toomas", 1000);
+        Currency bitcoin = new Currency("BTCUSDT");
         System.out.println(bitcoin.getPrice());
     }
 }
