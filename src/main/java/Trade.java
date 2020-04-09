@@ -9,6 +9,7 @@ public class Trade {
     private Timestamp fillTime; //When the fill is completed.
     private Currency currency; //What cryptocurrency is used.
     private double amountOfCurrency; //How much are you buying or selling. I.E 06 bitcoins or smth.
+    private double closePrice;
 
 
     //Can get all of the data straight away
@@ -34,6 +35,13 @@ public class Trade {
 
 
     //Getters and setters
+    public void setClosePrice(double closePrice) {
+        this.closePrice = closePrice;
+    }
+
+    public double getClosePrice() {
+        return closePrice;
+    }
 
     public void setFillPrice(double fillPrice) {
         this.fillPrice = fillPrice;

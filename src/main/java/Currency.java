@@ -14,8 +14,7 @@ public class Currency {
 
     public double getPrice() { //Getting the current price using Binance API
         try {
-            BinanceApi currency = new BinanceApi();
-            return (currency.pricesMap().get(getName())).doubleValue();
+            return (CurrentAPI.getBinanceApi().pricesMap().get(getName())).doubleValue();
         } catch(BinanceApiException e) {
             System.out.println("ERROR: " + e.getMessage());
             return -1;

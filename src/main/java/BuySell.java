@@ -18,9 +18,11 @@ public class BuySell {
     public void sell(Currency currency, Account account, double amount) {
         List<Trade> accountTrades = account.getCurrentTrades();
         double profitMoney = 0;
+        double closePrice = currency.getPrice();
         for (Trade trade : accountTrades) {
             //If trade matches the specifications of a
             if (trade.getCurrency().getName().equals(currency.getName()) && trade.getAmountOfCurrency() == amount) {
+                trade.setClosePrice(closePrice);
                 account.addTradeHistory(trade);
                 account.removeTrade(trade);
                 double profitUSD = trade.getProfitUSD();
