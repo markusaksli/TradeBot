@@ -1,7 +1,4 @@
-import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
-
-
 
 public class Main {
     public static void main(String[] args) {
