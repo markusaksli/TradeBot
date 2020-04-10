@@ -1,5 +1,3 @@
-import org.knowm.xchange.currency.CurrencyPair;
-
 import java.util.List;
 
 public class Strategy {
