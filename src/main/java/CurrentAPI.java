@@ -5,11 +5,11 @@ public final class CurrentAPI {
 
     /**
      * Class is created because we would not have to call out a new BinanceApi() every time we need it.
-     * We call it out here and it can be adressed in other classes as follows: CurrentAPI.getBinanceApi();
+     * We call it out here and it can be adressed in other classes as follows: CurrentAPI.get();
      * No need to create an instance CurrentAPI currentapi = new CurrentAPI();
      */
 
-    public static BinanceApi getBinanceApi() {
+    public static BinanceApi get() {
         return binanceApi;
     }
 }
