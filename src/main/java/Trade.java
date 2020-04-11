@@ -1,8 +1,6 @@
 import java.sql.Timestamp;
 
 public class Trade {
-
-    //TODO: Might need to move to BigDecimal.
     private double entryPrice; //Starting price of a trade (when logic decides to buy)
     private double fillPrice; //The actual price after the completion of a fill
     private final Timestamp logicTime; // When the programs logic decides to make a trade
