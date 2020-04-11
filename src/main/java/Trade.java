@@ -3,8 +3,10 @@ import java.sql.Timestamp;
 public class Trade {
 
     //TODO: Might need to move to BigDecimal.
+    private double highestPrice; //Set the highest price
+    private double stopLoss; //It's in percentages, but using double for comfort.
     private double entryPrice; //Starting price of a trade (when logic decides to buy)
-    private double fillPrice; //The actual price after the completion of a fill
+    //private double fillPrice; //The actual price after the completion of a fill
     private final Timestamp logicTime; // When the programs logic decides to make a trade
     private  Timestamp acceptTime; // When the server gets the signal of a trade
     private Timestamp fillTime; //When the fill is completed.
@@ -15,11 +17,11 @@ public class Trade {
 
     //Can get all of the data straight away
     //Biggest constructor
-    public Trade(Currency currency,double entryPrice, double fillPrice,Timestamp logicTime,  double amountOfCurrency, Timestamp acceptTime,  Timestamp fillTime) {
+    public Trade(Currency currency,double entryPrice/*, double fillPrice */,Timestamp logicTime,  double amountOfCurrency, Timestamp acceptTime /*, Timestamp fillTime*/) {
         this(entryPrice, logicTime, amountOfCurrency, acceptTime); //References the cunstructor below
         this.currency = currency;
-        this.fillPrice = fillPrice;
-        this.fillTime = fillTime;
+        //this.fillPrice = fillPrice;
+        //this.fillTime = fillTime;
 
     }
     //Medium constructor
@@ -32,6 +34,7 @@ public class Trade {
         this.entryPrice = entryPrice;
         this.logicTime = logicTime;
         this.amountOfCurrency = amountOfCurrency;
+        this.highestPrice = entryPrice; //Might need to replace it with fillPrice in the future.
     }
 
 
@@ -44,9 +47,12 @@ public class Trade {
         return closePrice;
     }
 
+    /*
     public void setFillPrice(double fillPrice) {
         this.fillPrice = fillPrice;
     }
+
+     */
 
     public Currency getCurrency() { //for getting the currency to calculate what the price is now.
         return currency;
@@ -68,9 +74,12 @@ public class Trade {
         return entryPrice;
     }
 
+    /*
     public double getFillPrice() {
         return fillPrice;
     }
+
+     */
 
     public Timestamp getLogicTime() {
         return logicTime;
@@ -87,8 +96,17 @@ public class Trade {
     //Allows user to get the profit percentages on one specific trade.
     public double getProfitUSD() {
         double priceNow = currency.getPrice();
-        double percentages = Math.round((priceNow * 100 / fillPrice - 100) * 1000);
+        double percentages = Math.round((priceNow * 100 / entryPrice - 100) * 1000); //Replaced fillPrice with entryPrice since we're not focusing on fillPrice right now at all.
         percentages = percentages / 1000;
         return percentages;
+    }
+
+    //Checks if there is a new highest price for the trade or if the trade has dropped below the stoploss.
+    public void update (double newPrice){
+        if (highestPrice < newPrice)
+            highestPrice = newPrice;
+        else if (newPrice < highestPrice - highestPrice*stopLoss) {
+            //Close the trade
+        }
     }
 }
