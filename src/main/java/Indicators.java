@@ -1,8 +1,9 @@
 import com.webcerebrium.binance.api.BinanceApi;
+import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
-import org.ta4j.core.indicators.RSIIndicator;
+
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -46,4 +47,29 @@ public class Indicators {
         }
         return sum.divide(BigDecimal.valueOf(period), context);
     }
+
+    //Default setting in crypto are period of 9, short 12 and long 26.
+    //Three parameters, MACD = 12 EMA - 26 EMA and compare to 9 EMA
+    public static double getEMA(List<BinanceCandlestick> candles, int period) {
+        if (period > candles.size()) return -1;
+
+        double previousSMA = 0;
+
+        for (int i = 0; i < period; i++) {
+            previousSMA += (candles.get(i).close.doubleValue());
+        }
+        double multiplier = 2 / ((double) period + 1);
+        previousSMA = previousSMA / period;
+
+        double EMA = previousSMA;
+        for (int i = period + 1; i < candles.size(); i++) {
+            // EMA = (Close - EMApreviousDay) * multiplier + EMApreviousDay
+            EMA = (candles.get(i).close.doubleValue() - EMA) * multiplier + EMA;
+        }
+
+        return EMA;
+
+
+    }
+
 }
