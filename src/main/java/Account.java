@@ -6,6 +6,7 @@ public class Account {
 
     //To give the account a specific final amount of money.
     private double dollars;
+    //TODO: Change to currency, BigDecimal?
     private HashMap<String, Double> wallet;
     private List<Trade> tradeHistory;
     private List<Trade> currentTrades;

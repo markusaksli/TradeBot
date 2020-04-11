@@ -1,5 +1,3 @@
-
-
 public class CurrencyBot implements StrategyListener {
 
     @Override
