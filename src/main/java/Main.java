@@ -20,16 +20,16 @@ public class Main {
 
         Scanner sc = new Scanner(System.in);
         System.out.println("Enter your API Key: ");
-        String APIKey = sc.nextLine();
+        CurrentAPI.get().setApiKey(sc.nextLine());
         System.out.println("Enter your Secret Key:");
-        String secretKey = sc.nextLine();
-        JsonObject account = (new BinanceApi(APIKey, secretKey)).account();
+        CurrentAPI.get().setSecretKey(sc.nextLine());
+        JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
         System.out.println("Maker Commission: " + account.get("makerCommission").getAsBigDecimal());
         System.out.println("Taker Commission: " + account.get("takerCommission").getAsBigDecimal());
         System.out.println("Buyer Commission: " + account.get("buyerCommission").getAsBigDecimal());
         System.out.println("Seller Commission: " + account.get("sellerCommission").getAsBigDecimal());
-        System.out.println("Can Trade: " +  account.get("canTrade").getAsBoolean());
+        System.out.println("Can Trade: " + account.get("canTrade").getAsBoolean());
         System.out.println("Can Withdraw: " + account.get("canWithdraw").getAsBoolean());
         System.out.println("Can Deposit: " + account.get("canDeposit").getAsBoolean());
     }
