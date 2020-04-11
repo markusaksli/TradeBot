@@ -32,8 +32,8 @@ public class Currency {
         }
     }
 
-    public List<BinanceCandlestick> getCandles(int lenght) throws BinanceApiException {
-        return (CurrentAPI.get()).klines(symbol, BinanceInterval.FIVE_MIN, lenght, null);
+    public List<BinanceCandlestick> getCandles(int length) throws BinanceApiException {
+        return (CurrentAPI.get()).klines(symbol, BinanceInterval.FIVE_MIN, length, null);
     }
 
     //TODO: Unique hash for HashMap?
