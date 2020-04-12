@@ -1,44 +1,44 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
 public class Account {
     private final String username;
 
     //To give the account a specific final amount of money.
-    private double value;
+    private double fiatValue;
+    private final double startingValue;
     private final HashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
-    private final List<Trade> currentTrades;
+    private final List<Trade> activeTrades;
 
 
     /**
      * Wallet value will most probably be 0 at first, but you could start
      * with an existing wallet value as well.
      */
-    public Account(String username, double value) {
+    public Account(String username, double startingValue) {
         this.username = username;
-        this.value = value;
+        this.startingValue = startingValue;
+        fiatValue = startingValue;
         wallet = new HashMap<>();
         tradeHistory = new ArrayList<>();
-        currentTrades = new ArrayList<>();
+        activeTrades = new ArrayList<>();
     }
 
     //All Trade methods
-    public List<Trade> getCurrentTrades() {
-        return currentTrades;
+    public List<Trade> getActiveTrades() {
+        return activeTrades;
     }
 
-    public void addTrade(Trade trade) {
-        currentTrades.add(trade);
+    public void openTrade(Trade trade) {
+        activeTrades.add(trade);
     }
 
-    public void removeTrade(Trade trade) {
-        currentTrades.remove(trade);
-        tradeHistory.add(trade);
-    }
-
-    public void addTradeHistory(Trade trade) {
+    public void closeTrade(Trade trade) {
+        activeTrades.remove(trade);
         tradeHistory.add(trade);
     }
 
@@ -48,12 +48,18 @@ public class Account {
         return username;
     }
 
-    public double getValue() {
-        return value;
+    public double getFiatValue() {
+        double value = 0;
+        for (Map.Entry<Currency, Double> entry : wallet.entrySet()) {
+            Currency currency = entry.getKey();
+            Double amount = entry.getValue();
+            value += amount * currency.getPrice();
+        }
+        return value + fiatValue;
     }
 
-    public void subtractDollars(double amount) {
-        value = value - amount;
+    public void addToFiat(double amount) {
+        fiatValue += amount;
     }
 
     /**
@@ -71,18 +77,8 @@ public class Account {
      *
      * @return returns the sum of all the percentages wether the profit is below 0 or above.
      */
-    public double getWholeProfit() {
-        double profit = 0;
-        double percentages = 0;
-        for (Trade trade : currentTrades) {
-            percentages = trade.getProfitUSD();
-            if (percentages < 0) {
-                profit -= percentages;
-            } else if (percentages >= 0) {
-                profit += percentages;
-            }
-        }
-        return profit; //return total percentages
+    public double getProfit() {
+        return getFiatValue() - startingValue;
     }
 
 
@@ -92,27 +88,22 @@ public class Account {
      * Method allows to add currencies to wallet hashmap.
      *
      * @param key   Should be the name of the currency ie "BTCUSDT"
-     * @param value The amound how much was bought.
+     * @param value The amount how much was bought.
      */
     public void addToWallet(Currency key, double value) {
         if (wallet.containsKey(key)) {
-            double previousValue = wallet.get(key);
-            wallet.put(key, value + previousValue);
+            wallet.put(key, wallet.get(key) + value);
         } else {
             wallet.put(key, value);
         }
+
     }
 
     /**
      * Method allows to remove values from keys.
      **/
     public void removeFromWallet(Currency key, double value) {
-        if (wallet.containsKey(key)) {
-            double currentValue = wallet.get(key);
-            if (currentValue >= value) {
-                wallet.put(key, currentValue - value);
-            }
-        }
+        wallet.put(key, wallet.get(key) - value);
     }
 
 

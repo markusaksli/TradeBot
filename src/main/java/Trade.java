@@ -3,36 +3,39 @@ import java.sql.Timestamp;
 public class Trade {
 
     private double highestPrice; //Set the highest price
-    private double stopLoss; //It's in percentages, but using double for comfort.
+    private double trailingP; //It's in percentages, but using double for comfort.
+    private double stopP;
     private double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
     private final Timestamp logicTime; // When the programs logic decides to make a trade
-    private  Timestamp acceptTime; // When the server gets the signal of a trade
+    private Timestamp acceptTime; // When the server gets the signal of a trade
     private Timestamp fillTime; //When the fill is completed.
     private Currency currency; //What cryptocurrency is used.
-    private double amountOfCurrency; //How much are you buying or selling. I.E 06 bitcoins or smth.
+    private double amount; //How much are you buying or selling. I.E 06 bitcoins or smth.
     private double closePrice;
 
 
     //Can get all of the data straight away
     //Biggest constructor
-    public Trade(Currency currency,double entryPrice/*, double fillPrice */,Timestamp logicTime,  double amountOfCurrency, Timestamp acceptTime /*, Timestamp fillTime*/) {
-        this(entryPrice, logicTime, amountOfCurrency, acceptTime); //References the cunstructor below
+    public Trade(Currency currency, double entryPrice/*, double fillPrice */, Timestamp logicTime, double amount, Timestamp acceptTime /*, Timestamp fillTime*/) {
+        this(entryPrice, logicTime, amount, acceptTime); //References the cunstructor below
         this.currency = currency;
         //this.fillPrice = fillPrice;
         //this.fillTime = fillTime;
 
     }
+
     //Medium constructor
-    public Trade(double entryPrice, Timestamp logicTime, double amountOfCurrency, Timestamp acceptTime) { //Can't get data about fillPrice and time
-        this(entryPrice,logicTime, amountOfCurrency); //References the constructor below
+    public Trade(double entryPrice, Timestamp logicTime, double amount, Timestamp acceptTime) { //Can't get data about fillPrice and time
+        this(entryPrice, logicTime, amount); //References the constructor below
         this.acceptTime = acceptTime;
     }
+
     //Smallest constructor
-    public Trade(double entryPrice, Timestamp logicTime, double amountOfCurrency) { //Can't get server accept time and fill price/time
+    public Trade(double entryPrice, Timestamp logicTime, double amount) { //Can't get server accept time and fill price/time
         this.entryPrice = entryPrice;
         this.logicTime = logicTime;
-        this.amountOfCurrency = amountOfCurrency;
+        this.amount = amount;
         this.highestPrice = entryPrice; //Might need to replace it with fillPrice in the future.
     }
 
@@ -57,8 +60,8 @@ public class Trade {
         return currency;
     }
 
-    public double getAmountOfCurrency() {
-        return amountOfCurrency;
+    public double getAmount() {
+        return amount;
     }
 
     public void setFillTime(Timestamp fillTime) {
@@ -104,8 +107,9 @@ public class Trade {
     public void update (double newPrice){
         if (newPrice > highestPrice)
             highestPrice = newPrice;
-        else if (newPrice < highestPrice * (1 - stopLoss)) {
-            //Close the trade
+        else if (newPrice < highestPrice * (1 - trailingP) || newPrice < entryPrice * (1 - stopP)) {
+            closePrice = newPrice;
+            BuySell.close(this);
         }
     }
 }
