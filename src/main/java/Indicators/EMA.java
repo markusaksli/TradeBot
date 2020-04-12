@@ -10,12 +10,13 @@ import java.util.List;
 public class EMA implements Indicator {
 
     private double currentEMA;
-    private final double period;
+    private final int period;
     private final double multiplier;
 
-    public EMA(List<BinanceCandlestick> candles, double period) {
+    public EMA(List<BinanceCandlestick> candles, int period) {
+        currentEMA = 0;
         this.period = period;
-        this.multiplier = 2 / (period + 1);
+        this.multiplier = 2.0 / (double) (period + 1);
         setInitial(candles);
     }
 
@@ -25,7 +26,13 @@ public class EMA implements Indicator {
     }
 
     @Override
+    public double getTemp(double newPrice) {
+        return (newPrice - currentEMA) * multiplier + currentEMA;
+    }
+
+    @Override
     public void update(double newPrice) {
+        // EMA = (Close - EMA(previousBar)) * multiplier + EMA(previousBar)
         currentEMA = (newPrice - currentEMA) * multiplier + currentEMA;
     }
 
@@ -33,21 +40,17 @@ public class EMA implements Indicator {
     public void setInitial(List<BinanceCandlestick> candles) {
         if (period > candles.size()) return;
 
-        double initialSMA = 0;
-
+        //Initial SMA
         for (int i = 0; i < period; i++) {
-            initialSMA += (candles.get(i).close.doubleValue());
-        }
-        initialSMA = initialSMA / period;
-        double multiplier = 2 / ((double) (period + 1));
-
-        double EMA = initialSMA;
-        for (int i = (int) period + 1; i < candles.size(); i++) {
-            //EMA = (Close - EMA(previousBar)) * multiplier + EMA(previousBar)
-            EMA = (candles.get(i).close.doubleValue() - EMA) * multiplier + EMA;
+            currentEMA += (candles.get(i).close.doubleValue());
         }
 
-        currentEMA = EMA;
+        currentEMA = currentEMA / (double) period;
+
+        //Dont use latest unclosed candle;
+        for (int i = period + 1; i < candles.size() - 1; i++) {
+            update(candles.get(i).getClose().doubleValue());
+        }
     }
 
 }
