@@ -2,8 +2,8 @@
 /shelf/
 /.idea/workspace.xml
 # Datasource local storage ignored files
-/dataSources/
+/dataSources/*
 /dataSources.local.xml
 # Editor-based HTTP Client requests
-/httpRequests/
-/target/
+/httpRequests/*
+/target/*
