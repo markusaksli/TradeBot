@@ -48,7 +48,7 @@ public class EMA implements Indicator {
         currentEMA = currentEMA / (double) period;
 
         //Dont use latest unclosed candle;
-        for (int i = period + 1; i < candles.size() - 1; i++) {
+        for (int i = period; i < candles.size() - 1; i++) {
             update(candles.get(i).getClose().doubleValue());
         }
     }

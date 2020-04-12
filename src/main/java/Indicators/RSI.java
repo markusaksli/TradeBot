@@ -67,7 +67,7 @@ public class RSI implements Indicator {
         avgDwn = avgDwn / (double) period;
 
         //Dont use latest unclosed value
-        for (int i = period + 1; i < candles.size(); i++) {
+        for (int i = period + 1; i < candles.size() - 1; i++) {
             update(candles.get(i).getClose().doubleValue());
         }
     }

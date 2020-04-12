@@ -1,65 +1,51 @@
 package Indicators;
 
-import com.google.common.collect.EvictingQueue;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class SMA implements Indicator {
 
-    private double currentSMA;
+    private double currentSum;
     private final int period;
-    private Queue<Double> candleValues;
+    private final LinkedList<Double> prices;
 
     public SMA(List<BinanceCandlestick> candles, int period) {
         this.period = period;
-        candleValues = EvictingQueue.create(period);
+        prices = new LinkedList<>();
         setInitial(candles);
     }
 
     @Override
     public double get() {
-        return currentSMA;
+        return currentSum / (double) period;
     }
 
     @Override
     public double getTemp(double newPrice) {
-        double oldestPrice = candleValues.element();
-        return ((newPrice + currentSMA - oldestPrice) / (double) period);
+        prices.forEach(System.out::println);
+        return ((currentSum - prices.get(0) + newPrice) / (double) period);
     }
 
     @Override
     public void setInitial(List<BinanceCandlestick> candles) {
         if (period > candles.size()) return;
 
-        //Initial SMA
-        for (int i = 0; i < period; i++) {
-            candleValues.add(candles.get(i).close.doubleValue());
-            currentSMA += (candles.get(i).close.doubleValue());
+        //Initial sum
+        for (int i = candles.size() - period - 1; i < candles.size() - 1; i++) {
+            prices.add(candles.get(i).close.doubleValue());
+            currentSum += (candles.get(i).close.doubleValue());
         }
-
-        currentSMA = currentSMA / (double) period;
     }
 
     @Override
     public void update(double newPrice) {
 
-        currentSMA = 0;
-        candleValues.add(newPrice);
-        for (Double candleValue : candleValues) {
-            currentSMA += candleValue;
-        }
-
-        currentSMA = currentSMA / (double) period;
-
-        //Loop could be avoided by using the lines below
-        /*
-        double oldestPrice = candleValues.element();
-        currentSMA = ((newPrice + currentSMA - oldestPrice) / (double) period);
-        candleValues.add(newPrice);
-         */
-
+        currentSum -= prices.get(0);
+        prices.removeFirst();
+        prices.add(newPrice);
+        currentSum += newPrice;
 
     }
 }
