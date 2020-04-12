@@ -103,9 +103,9 @@ public class Trade {
 
     //Checks if there is a new highest price for the trade or if the trade has dropped below the stoploss.
     public void update (double newPrice){
-        if (highestPrice < newPrice)
+        if (newPrice > highestPrice)
             highestPrice = newPrice;
-        else if (newPrice < highestPrice - highestPrice*stopLoss) {
+        else if (newPrice < highestPrice * (1 - stopLoss)) {
             //Close the trade
         }
     }

@@ -1,24 +1,28 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class Account {
-    private String username;
+    private final String username;
 
     //To give the account a specific final amount of money.
-    private double dollars;
+    private double value;
     //TODO: Change to currency, BigDecimal?
-    private HashMap<String, Double> wallet;
-    private List<Trade> tradeHistory;
-    private List<Trade> currentTrades;
+    private final HashMap<String, Double> wallet;
+    private final List<Trade> tradeHistory;
+    private final List<Trade> currentTrades;
 
 
     /**
      * Wallet value will most probably be 0 at first, but you could start
      * with an existing wallet value as well.
      */
-    public Account(String username, double dollars) {
+    public Account(String username, double value) {
         this.username = username;
-        this.dollars = dollars;
+        this.value = value;
+        wallet = new HashMap<>();
+        tradeHistory = new ArrayList<>();
+        currentTrades = new ArrayList<>();
     }
 
     //All Trade methods
@@ -29,8 +33,10 @@ public class Account {
     public void addTrade(Trade trade) {
         currentTrades.add(trade);
     }
+
     public void removeTrade(Trade trade) {
         currentTrades.remove(trade);
+        tradeHistory.add(trade);
     }
 
     public void addTradeHistory(Trade trade) {
@@ -42,16 +48,19 @@ public class Account {
     public String getUsername() {
         return username;
     }
-    public double getDollars() {
-        return dollars;
+
+    public double getValue() {
+        return value;
     }
+
     public void subtractDollars(double amount) {
-        dollars = dollars - amount;
+        value = value - amount;
     }
 
     /**
      * Method has Currency names as keys and the amount of certain currency as value.
      * i.e {"BTCUSDT : 3.23}
+     *
      * @return
      */
     public HashMap<String, Double> getWallet() {
@@ -79,6 +88,7 @@ public class Account {
 
 
     //All wallet methods
+
     /**
      * Method allows to add currencies to wallet hashmap.
      *
