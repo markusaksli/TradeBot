@@ -3,7 +3,6 @@ import Indicators.MACD;
 import Indicators.RSI;
 import Indicators.SMA;
 import com.google.gson.JsonObject;
-import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 
 import java.util.Scanner;
@@ -20,6 +19,7 @@ public class Main {
             EMA ema = new EMA(currency.getCandles(1000), 7, false);
             System.out.println("EMA: " + ema.getTemp(currency.getPrice()));
             MACD macd = new MACD(currency.getCandles(1000), 12,26,9);
+
         } catch (
                 BinanceApiException e) {
             System.out.println("ERROR: " + e.getMessage());
