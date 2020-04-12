@@ -12,7 +12,7 @@ public interface Indicator {
     double getTemp(double newPrice);
 
     //Used in constructor to set initial value
-    void setInitial(List<BinanceCandlestick> candles);
+    void init(List<BinanceCandlestick> candles);
 
     //Used to update value with latest closed candle closing price
     void update(double newPrice);

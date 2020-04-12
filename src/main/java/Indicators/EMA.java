@@ -1,7 +1,9 @@
 package Indicators;
 
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
+import org.apache.commons.collections.list.AbstractListDecorator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,12 +14,16 @@ public class EMA implements Indicator {
     private double currentEMA;
     private final int period;
     private final double multiplier;
+    private List<Double> EMAhistory;
+    private boolean historyNeeded;
 
-    public EMA(List<BinanceCandlestick> candles, int period) {
+    public EMA(List<BinanceCandlestick> candles, int period, boolean historyNeeded) {
         currentEMA = 0;
         this.period = period;
+        this.historyNeeded = historyNeeded;
         this.multiplier = 2.0 / (double) (period + 1);
-        setInitial(candles);
+        this.EMAhistory = new ArrayList<>();
+        init(candles);
     }
 
     @Override
@@ -34,10 +40,11 @@ public class EMA implements Indicator {
     public void update(double newPrice) {
         // EMA = (Close - EMA(previousBar)) * multiplier + EMA(previousBar)
         currentEMA = (newPrice - currentEMA) * multiplier + currentEMA;
-    }
 
+        if (historyNeeded) EMAhistory.add(currentEMA);
+    }
     @Override
-    public void setInitial(List<BinanceCandlestick> candles) {
+    public void init(List<BinanceCandlestick> candles) {
         if (period > candles.size()) return;
 
         //Initial SMA
@@ -46,11 +53,17 @@ public class EMA implements Indicator {
         }
 
         currentEMA = currentEMA / (double) period;
-
+        if (historyNeeded) EMAhistory.add(currentEMA);
         //Dont use latest unclosed candle;
-        for (int i = period + 1; i < candles.size() - 1; i++) {
+        for (int i = period; i < candles.size() - 1; i++) {
             update(candles.get(i).getClose().doubleValue());
         }
     }
+    public List<Double> getEMAhistory() {
+        return EMAhistory;
+    }
 
+    public int getPeriod() {
+        return period;
+    }
 }
