@@ -15,12 +15,12 @@ public class Strategy {
 
     private static int checkRSI(double rsi) {
         if (rsi < 30) return 1;
-        return 1;
+        return 0;
     }
 
     private static int checkMACD(double lastTick, double temp) {
         if (temp > lastTick) return 1;
-        return 1;
+        return 0;
     }
 
     private static double nextAmount() {
