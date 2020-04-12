@@ -7,8 +7,7 @@ public class Account {
 
     //To give the account a specific final amount of money.
     private double value;
-    //TODO: Change to currency, BigDecimal?
-    private final HashMap<String, Double> wallet;
+    private final HashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
     private final List<Trade> currentTrades;
 
@@ -63,7 +62,7 @@ public class Account {
      *
      * @return
      */
-    public HashMap<String, Double> getWallet() {
+    public HashMap<Currency, Double> getWallet() {
         return wallet;
     }
 
@@ -92,22 +91,22 @@ public class Account {
     /**
      * Method allows to add currencies to wallet hashmap.
      *
-     * @param key Should be the name of the currency ie "BTCUSDT"
+     * @param key   Should be the name of the currency ie "BTCUSDT"
      * @param value The amound how much was bought.
      */
-    public void addToWallet(String key, double value) {
+    public void addToWallet(Currency key, double value) {
         if (wallet.containsKey(key)) {
             double previousValue = wallet.get(key);
             wallet.put(key, value + previousValue);
         } else {
-            wallet.put(key,value);
+            wallet.put(key, value);
         }
     }
 
     /**
      * Method allows to remove values from keys.
      **/
-    public void removeFromWallet(String key, double value) {
+    public void removeFromWallet(Currency key, double value) {
         if (wallet.containsKey(key)) {
             double currentValue = wallet.get(key);
             if (currentValue >= value) {

@@ -2,7 +2,6 @@ import java.sql.Timestamp;
 
 public class Trade {
 
-    //TODO: Might need to move to BigDecimal.
     private double highestPrice; //Set the highest price
     private double stopLoss; //It's in percentages, but using double for comfort.
     private double entryPrice; //Starting price of a trade (when logic decides to buy)
