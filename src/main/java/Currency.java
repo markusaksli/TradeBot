@@ -21,7 +21,6 @@ public class Currency {
         return symbol;
     }
 
-    //TODO: Might need to move to BigDecimal.
     public double getPrice() { //Getting the current price using Binance API
         try {
             return (CurrentAPI.get().pricesMap().get(symbol.getSymbol())).doubleValue();

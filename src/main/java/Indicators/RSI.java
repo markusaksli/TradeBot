@@ -14,7 +14,7 @@ public class RSI implements Indicator {
         avgUp = 0;
         avgDwn = 0;
         this.period = period;
-        setInitial(candles);
+        init(candles);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class RSI implements Indicator {
     }
 
     @Override
-    public void setInitial(List<BinanceCandlestick> candles) {
+    public void init(List<BinanceCandlestick> candles) {
         prevClose = candles.get(0).getClose().doubleValue();
         for (int i = 1; i < period + 1; i++) {
             double change = candles.get(i).getClose().doubleValue() - prevClose;

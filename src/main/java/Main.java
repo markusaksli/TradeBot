@@ -1,4 +1,5 @@
 import Indicators.EMA;
+import Indicators.MACD;
 import Indicators.RSI;
 import Indicators.SMA;
 import com.google.gson.JsonObject;
@@ -9,13 +10,16 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) throws BinanceApiException {
         try {
-            Currency currency = new Currency("BTC");
+            Currency currency = new Currency("ETH");
+            System.out.println(currency.getPrice());
             RSI rsi = new RSI(currency.getCandles(1000), 14);
             System.out.println("RSI: " + rsi.getTemp(currency.getPrice()));
-            EMA ema = new EMA(currency.getCandles(1000), 7);
-            System.out.println("EMA: " + ema.getTemp(currency.getPrice()));
-            SMA sma = new SMA(currency.getCandles(15), 7);
+            SMA sma = new SMA(currency.getCandles(7), 7);
             System.out.println("SMA: " + sma.getTemp(currency.getPrice()));
+            EMA ema = new EMA(currency.getCandles(1000), 7, false);
+            System.out.println("EMA: " + ema.getTemp(currency.getPrice()));
+            MACD macd = new MACD(currency.getCandles(1000), 12,26,9);
+
         } catch (
                 BinanceApiException e) {
             System.out.println("ERROR: " + e.getMessage());

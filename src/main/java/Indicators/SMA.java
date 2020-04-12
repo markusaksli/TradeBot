@@ -14,7 +14,7 @@ public class SMA implements Indicator {
     public SMA(List<BinanceCandlestick> candles, int period) {
         this.period = period;
         prices = new LinkedList<>();
-        setInitial(candles);
+        init(candles);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class SMA implements Indicator {
     }
 
     @Override
-    public void setInitial(List<BinanceCandlestick> candles) {
+    public void init(List<BinanceCandlestick> candles) {
         if (period > candles.size()) return;
 
         //Initial sum

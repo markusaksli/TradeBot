@@ -11,7 +11,7 @@ public class BuySell {
         //TODO: This trade should have more specifications in the future, right now lets settle with this.
         Trade trade = new Trade(currentPrice, timestamp, amount);
         //Adding all necessary to wallet
-        account.addToWallet(currency.getName(), amount);
+        account.addToWallet(currency, amount);
         account.addTrade(trade);
 
     }
@@ -33,6 +33,6 @@ public class BuySell {
             }
         }
         account.subtractDollars(profitMoney);
-        account.removeFromWallet(currency.getName(), amount);
+        account.removeFromWallet(currency, amount);
     }
 }
