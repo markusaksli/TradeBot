@@ -26,7 +26,7 @@ public class BuySell {
                 account.addTradeHistory(trade);
                 account.removeTrade(trade);
                 double profitUSD = trade.getProfitUSD();
-                double startingPrice = trade.getFillPrice();
+                double startingPrice = trade.getEntryPrice();
                 profitMoney = Math.abs(profitUSD * startingPrice); //Using abs, because method subtract dollars subtracts,
                 //so if we have a negative number as profitMoney because we lost money, it would add. Now it wont.
                 break;
