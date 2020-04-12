@@ -4,14 +4,19 @@ import Indicators.RSI;
 import Indicators.SMA;
 import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
+import com.webcerebrium.binance.api.BinanceRequest;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Main {
+    static List<Currency> currencies;
+
     public static void main(String[] args) throws BinanceApiException {
-        try {
+        /*try {
             Currency currency = new Currency("BTC");
             long startTime = System.nanoTime();
             List<BinanceCandlestick> history = currency.getCandles(250);
@@ -23,14 +28,14 @@ public class Main {
             double time = (endTime - startTime) / 1.e6;
             System.out.println("Setup took: " + time + " ms");
 
-            /*long startTime = System.nanoTime();
+            long startTime = System.nanoTime();
             RSI rsi = new RSI(currency.getCandles(250), 14);
             SMA sma = new SMA(currency.getCandles(15), 9);
             EMA ema = new EMA(currency.getCandles(250), 9, false);
             MACD macd = new MACD(currency.getCandles(250), 12, 26, 9);
             long endTime = System.nanoTime();
             double time = (endTime - startTime) / 1.e6;
-            System.out.println("Setup took: " + time + " ms");*/
+            System.out.println("Setup took: " + time + " ms");
 
             while (true) {
                 double newPrice = currency.getPrice();
@@ -42,10 +47,10 @@ public class Main {
         } catch (
                 BinanceApiException e) {
             System.out.println("ERROR: " + e.getMessage());
-        }
+        }*/
         //Account toomas = new Account("Investor Toomas", 1000);
 
-        Scanner sc = new Scanner(System.in);
+        /*Scanner sc = new Scanner(System.in);
         System.out.println("Enter your API Key: ");
         CurrentAPI.get().setApiKey(sc.nextLine());
         System.out.println("Enter your Secret Key: ");
@@ -58,6 +63,22 @@ public class Main {
         System.out.println("Seller Commission: " + account.get("sellerCommission").getAsBigDecimal());
         System.out.println("Can Trade: " + account.get("canTrade").getAsBoolean());
         System.out.println("Can Withdraw: " + account.get("canWithdraw").getAsBoolean());
-        System.out.println("Can Deposit: " + account.get("canDeposit").getAsBoolean());
+        System.out.println("Can Deposit: " + account.get("canDeposit").getAsBoolean());*/
+
+        Account account = new Account("Investor Toomas", 1000);
+        BuySell.setAccount(account);
+
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter your API Key: ");
+        CurrentAPI.get().setApiKey(sc.nextLine());
+        System.out.println("Enter your Secret Key: ");
+        CurrentAPI.get().setSecretKey(sc.nextLine());
+
+        currencies = new ArrayList<>(); //BTC ETH XTZ XRP BNB BCH LINK LTC EOS DASH XLM ADA
+        for (String arg : args) {
+            currencies.add(new Currency(arg));
+        }
+
+        System.out.println("Setup done");
     }
 }

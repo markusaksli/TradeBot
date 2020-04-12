@@ -1,39 +1,29 @@
-import java.util.List;
+import Indicators.MACD;
+import Indicators.RSI;
 
 public class Strategy {
 
-    private List<StrategyListener> listeners;
-    private boolean shouldRun;
-
-    public void listen(StrategyListener sl) {
-        listeners.add(sl);
-    }
-
-    private void buySignal() {
-        listeners.forEach(StrategyListener::onBuySignal);
-    }
-
-    private void sellSignal() {
-        listeners.forEach(StrategyListener::onSellSignal);
-    }
-
-    private void work() {
-        while (shouldRun) {
-            if (true) {
-                buySignal();
-            }
-
-            if (false) {
-                sellSignal();
-            }
+    public static void update(Currency currency) {
+        double rsi = currency.getRsi().getTemp(currency.getPrice());
+        double lastMACD = currency.getLastMACD();
+        double tempMACD = currency.getMacd().getTemp(currency.getPrice());
+        if (checkRSI(rsi) + checkMACD(lastMACD, tempMACD) == 2) {
+            System.out.println(currency.getSymbol() + " trade opened due to RSI of " + rsi + " and MACD growing from " + lastMACD + " to " + tempMACD);
+            BuySell.open(currency, nextAmount() / currency.getPrice());
         }
     }
 
-    public void init() {
-        shouldRun = true;
+    private static int checkRSI(double rsi) {
+        if (rsi < 30) return 1;
+        return 1;
     }
 
-    public void stop() {
-        shouldRun = false;
+    private static int checkMACD(double lastTick, double temp) {
+        if (temp > lastTick) return 1;
+        return 1;
+    }
+
+    private static double nextAmount() {
+        return BuySell.getAccount().getFiatValue() * 0.05;
     }
 }

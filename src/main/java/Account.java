@@ -1,8 +1,7 @@
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Account {
     private final String username;
@@ -10,7 +9,7 @@ public class Account {
     //To give the account a specific final amount of money.
     private double fiatValue;
     private final double startingValue;
-    private final HashMap<Currency, Double> wallet;
+    private final ConcurrentHashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
     private final List<Trade> activeTrades;
 
@@ -23,7 +22,7 @@ public class Account {
         this.username = username;
         this.startingValue = startingValue;
         fiatValue = startingValue;
-        wallet = new HashMap<>();
+        wallet = new ConcurrentHashMap<>();
         tradeHistory = new ArrayList<>();
         activeTrades = new ArrayList<>();
     }
@@ -68,7 +67,7 @@ public class Account {
      *
      * @return
      */
-    public HashMap<Currency, Double> getWallet() {
+    public ConcurrentHashMap<Currency, Double> getWallet() {
         return wallet;
     }
 
@@ -78,7 +77,15 @@ public class Account {
      * @return returns the sum of all the percentages wether the profit is below 0 or above.
      */
     public double getProfit() {
-        return getFiatValue() - startingValue;
+        System.out.println("Active trades:");
+        for (Trade activeTrade : activeTrades) {
+            System.out.println(activeTrade.getCurrency().getSymbol() + ", coint amount: " + activeTrade.getAmount() + ", profit: " + activeTrade.getProfit() + " %");
+        }
+        System.out.println("Closed trades:");
+        for (Trade trade : tradeHistory) {
+            System.out.println(trade.getCurrency().getSymbol() + ", coint amount: " + trade.getAmount() + ", profit: " + trade.getProfit() + " %");
+        }
+        return (getFiatValue() - startingValue) / startingValue;
     }
 
 
@@ -105,6 +112,4 @@ public class Account {
     public void removeFromWallet(Currency key, double value) {
         wallet.put(key, wallet.get(key) - value);
     }
-
-
 }

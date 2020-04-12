@@ -14,6 +14,8 @@ public class MACD implements Indicator {
     private final double multiplier;
     private final int periodDifference;
 
+    private double lastTick;
+
     public MACD(List<BinanceCandlestick> candles, int shortPeriod, int longPeriod, int signalPeriod) {
         this.shortEMA = new EMA(candles, shortPeriod, true); //true, because history is needed in MACD calculations.
         this.longEMA = new EMA(candles, longPeriod, true); //true for the same reasons.
@@ -64,6 +66,5 @@ public class MACD implements Indicator {
         longEMA.update(newPrice);
         currentMACD = shortEMA.get() - longEMA.get();
         currentSignal = currentMACD * multiplier + currentSignal * (1 - multiplier);
-
     }
 }
