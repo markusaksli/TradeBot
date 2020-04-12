@@ -9,9 +9,9 @@
         </encoder>
     </appender>
 
-    <logger name="com.webcerebrium.binance.api.BinanceRequest" level="ERROR" />
+    <logger name="com.webcerebrium.binance.api.BinanceRequest" level="ERROR"/>
 
     <root level="ERROR">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
