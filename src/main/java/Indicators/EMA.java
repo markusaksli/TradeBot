@@ -14,8 +14,8 @@ public class EMA implements Indicator {
     private double currentEMA;
     private final int period;
     private final double multiplier;
-    private List<Double> EMAhistory;
-    private boolean historyNeeded;
+    private final List<Double> EMAhistory;
+    private final boolean historyNeeded;
 
     public EMA(List<BinanceCandlestick> candles, int period, boolean historyNeeded) {
         currentEMA = 0;

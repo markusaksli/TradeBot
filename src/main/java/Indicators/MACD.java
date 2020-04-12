@@ -8,9 +8,9 @@ import java.util.List;
 public class MACD implements Indicator {
     private double currentMACD;
     private double currentSignal;
-    private EMA shortEMA; //Will be the EMA object for shortEMA-
-    private EMA longEMA; //Will be the EMA object for longEMA.
-    private int period; //Only value that has to be calculated in setInitial.
+    private final EMA shortEMA; //Will be the EMA object for shortEMA-
+    private final EMA longEMA; //Will be the EMA object for longEMA.
+    private final int period; //Only value that has to be calculated in setInitial.
     private final double multiplier;
     private final int periodDifference;
 

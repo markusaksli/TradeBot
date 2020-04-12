@@ -24,7 +24,6 @@ public class SMA implements Indicator {
 
     @Override
     public double getTemp(double newPrice) {
-        prices.forEach(System.out::println);
         return ((currentSum - prices.get(0) + newPrice) / (double) period);
     }
 
@@ -41,11 +40,9 @@ public class SMA implements Indicator {
 
     @Override
     public void update(double newPrice) {
-
         currentSum -= prices.get(0);
         prices.removeFirst();
         prices.add(newPrice);
         currentSum += newPrice;
-
     }
 }
