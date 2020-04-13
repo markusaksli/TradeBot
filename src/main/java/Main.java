@@ -1,61 +1,23 @@
-import Indicators.EMA;
-import Indicators.MACD;
-import Indicators.RSI;
-import Indicators.SMA;
 import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.api.BinanceRequest;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.*;
 
 public class Main {
-    static List<Currency> currencies;
+    static Set<Currency> currencies; //There should never be two of the same Currency
 
     public static void main(String[] args) throws BinanceApiException {
-        /*try {
-            Currency currency = new Currency("BTC");
-            long startTime = System.nanoTime();
-            List<BinanceCandlestick> history = currency.getCandles(250);
-            RSI rsi = new RSI(history, 14);
-            SMA sma = new SMA(history, 9);
-            EMA ema = new EMA(history, 9, false);
-            MACD macd = new MACD(history, 12, 26, 9);
-            long endTime = System.nanoTime();
-            double time = (endTime - startTime) / 1.e6;
-            System.out.println("Setup took: " + time + " ms");
+        Account toomas = new Account("Investor Toomas", 1000);
+        BuySell.setAccount(toomas);
 
-            long startTime = System.nanoTime();
-            RSI rsi = new RSI(currency.getCandles(250), 14);
-            SMA sma = new SMA(currency.getCandles(15), 9);
-            EMA ema = new EMA(currency.getCandles(250), 9, false);
-            MACD macd = new MACD(currency.getCandles(250), 12, 26, 9);
-            long endTime = System.nanoTime();
-            double time = (endTime - startTime) / 1.e6;
-            System.out.println("Setup took: " + time + " ms");
-
-            while (true) {
-                double newPrice = currency.getPrice();
-                System.out.println("RSI: " + rsi.getTemp(newPrice));
-                System.out.println("SMA: " + sma.getTemp(newPrice));
-                System.out.println("EMA: " + ema.getTemp(newPrice));
-                System.out.println("MACD: " + macd.getTemp(newPrice));
-            }
-        } catch (
-                BinanceApiException e) {
-            System.out.println("ERROR: " + e.getMessage());
-        }*/
-        //Account toomas = new Account("Investor Toomas", 1000);
-
-        /*Scanner sc = new Scanner(System.in);
+        //Optional for simulation, increases API request limits
+        Scanner sc = new Scanner(System.in);
         System.out.println("Enter your API Key: ");
         CurrentAPI.get().setApiKey(sc.nextLine());
         System.out.println("Enter your Secret Key: ");
         CurrentAPI.get().setSecretKey(sc.nextLine());
-        JsonObject account = CurrentAPI.get().account();
+
+        /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
         System.out.println("Maker Commission: " + account.get("makerCommission").getAsBigDecimal());
         System.out.println("Taker Commission: " + account.get("takerCommission").getAsBigDecimal());
@@ -65,20 +27,53 @@ public class Main {
         System.out.println("Can Withdraw: " + account.get("canWithdraw").getAsBoolean());
         System.out.println("Can Deposit: " + account.get("canDeposit").getAsBoolean());*/
 
-        Account account = new Account("Investor Toomas", 1000);
-        BuySell.setAccount(account);
-
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Enter your API Key: ");
-        CurrentAPI.get().setApiKey(sc.nextLine());
-        System.out.println("Enter your Secret Key: ");
-        CurrentAPI.get().setSecretKey(sc.nextLine());
-
-        currencies = new ArrayList<>(); //BTC ETH XTZ XRP BNB BCH LINK LTC EOS DASH XLM ADA
+        currencies = new HashSet<>(); //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
+        long startTime = System.nanoTime();
         for (String arg : args) {
-            currencies.add(new Currency(arg));
+            //The currency class contains all of the method calls that drive the activity of our bot
+            currencies.add(new Currency(arg, 250, true));
         }
+        long endTime = System.nanoTime();
+        double time = (endTime - startTime) / 1.e9;
 
-        System.out.println("Setup done");
+        System.out.println("---SETUP DONE (" + Formatter.formatDecimal(time) + " s)");
+
+        System.out.println("Commands: profit, active, history, wallet, currencies");
+
+        //From this point we only use the main thread to check how the bot is doing
+        while (true) {
+            String in = sc.nextLine();
+            switch (in) {
+                case "profit":
+                    System.out.println("Account profit: " + Formatter.formatPercent(toomas.getProfit()));
+                    break;
+                case "active":
+                    System.out.println("Active trades:");
+                    for (Trade trade : toomas.getActiveTrades()) {
+                        System.out.println(trade);
+                    }
+                    break;
+                case "history":
+                    System.out.println("Closed trades:");
+                    for (Trade trade : toomas.getTradeHistory()) {
+                        System.out.println(trade);
+                    }
+                    break;
+                case "wallet":
+                    System.out.println("Total wallet value: " + Formatter.formatDecimal(toomas.getTotalValue()) + " USDT");
+                    System.out.println(toomas.getFiat() + " USDT");
+                    for (Map.Entry<Currency, Double> entry : toomas.getWallet().entrySet()) {
+                        System.out.println(entry.getValue() + " " + entry.getKey() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
+                    }
+                    break;
+                case "currencies":
+                    for (Currency currency : currencies) {
+                        System.out.println(currency);
+                    }
+                    break;
+                default:
+                    System.out.println("Commands: profit, active, history, wallet, currencies");
+            }
+        }
     }
 }

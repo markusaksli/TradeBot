@@ -32,6 +32,10 @@ public class Account {
         return activeTrades;
     }
 
+    public List<Trade> getTradeHistory() {
+        return tradeHistory;
+    }
+
     public void openTrade(Trade trade) {
         activeTrades.add(trade);
     }
@@ -47,7 +51,11 @@ public class Account {
         return username;
     }
 
-    public double getFiatValue() {
+    public double getFiat() {
+        return fiatValue;
+    }
+
+    public double getTotalValue() {
         double value = 0;
         for (Map.Entry<Currency, Double> entry : wallet.entrySet()) {
             Currency currency = entry.getKey();
@@ -77,15 +85,7 @@ public class Account {
      * @return returns the sum of all the percentages wether the profit is below 0 or above.
      */
     public double getProfit() {
-        System.out.println("Active trades:");
-        for (Trade activeTrade : activeTrades) {
-            System.out.println(activeTrade.getCurrency().getSymbol() + ", coint amount: " + activeTrade.getAmount() + ", profit: " + activeTrade.getProfit() + " %");
-        }
-        System.out.println("Closed trades:");
-        for (Trade trade : tradeHistory) {
-            System.out.println(trade.getCurrency().getSymbol() + ", coint amount: " + trade.getAmount() + ", profit: " + trade.getProfit() + " %");
-        }
-        return (getFiatValue() - startingValue) / startingValue;
+        return (getTotalValue() - startingValue) / startingValue;
     }
 
 
