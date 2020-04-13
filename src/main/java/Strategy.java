@@ -9,7 +9,7 @@ public class Strategy {
         double lastMACD = currency.getLastMACD();
         double tempMACD = currency.getMacd().getTemp(currency.getPrice());
         if (checkRSI(rsi) + checkMACD(lastMACD, tempMACD) >= 2) { //As we add more indicators we can use this to open a trade if we get a confluence of 2 or more
-            String explanation = "Trade opened due to RSI of " + rsi + " and unclosed MACD histogram growing by " + Formatter.formatPercent((tempMACD - lastMACD) / lastMACD) + " in current candle";
+            String explanation = "Trade opened due to RSI of " + Formatter.formatDecimal(rsi) + " and unclosed MACD histogram growing by " + Formatter.formatPercent((tempMACD - lastMACD) / lastMACD) + " in current candle";
             System.out.println("---" + currency.getCoin() + " " + explanation);
             BuySell.open(currency, amount / currency.getPrice(), explanation);
         }
