@@ -11,10 +11,10 @@ public class BuySell {
     }
 
     //Used by strategy
-    public static void open(Currency currency, double amount) {
+    public static void open(Currency currency, double amount, String explanation) {
         double currentPrice = currency.getPrice(); //Current price of the currency
         double fiatCost = currentPrice * amount;
-        Trade trade = new Trade(currency, currentPrice, amount, 0.0075);
+        Trade trade = new Trade(currency, currentPrice, amount, 0.0075, explanation);
         currency.setActiveTrade(trade);
 
         //Converting fiat value to coin value

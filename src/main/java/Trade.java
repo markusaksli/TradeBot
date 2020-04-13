@@ -11,13 +11,15 @@ public class Trade {
     private final double amount; //How much are you buying or selling. I.E 6 bitcoins or smth.
     private double closePrice;
     private LocalDateTime closeTime;
+    private final String explanation;
 
-    public Trade(Currency currency, double entryPrice, double amount, double trailingP) {
+    public Trade(Currency currency, double entryPrice, double amount, double trailingP, String explanation) {
         this.currency = currency;
         this.trailingP = trailingP;
         this.entryPrice = entryPrice;
         this.high = entryPrice;
         this.amount = amount;
+        this.explanation = explanation;
         closePrice = -1;
     }
 
@@ -65,6 +67,14 @@ public class Trade {
         return entryPrice;
     }
 
+    public String getExplanation() {
+        return explanation;
+    }
+
+    public boolean isClosed() {
+        return closePrice != -1;
+    }
+
     /*
     public double getFillPrice() {
         return fillPrice;
@@ -76,9 +86,9 @@ public class Trade {
     //Allows user to get the profit percentages on one specific trade.
     public double getProfit() {
         if (closePrice == -1) {
-            return (entryPrice - currency.getPrice()) / entryPrice;
+            return (currency.getPrice() - entryPrice) / entryPrice;
         } else {
-            return (entryPrice - closePrice) / entryPrice;
+            return (closePrice - entryPrice) / entryPrice;
         }
     }
 
@@ -98,8 +108,8 @@ public class Trade {
         return
                 currency.getCoin() + " " + amount
                         + " opened " + Formatter.formatDate(entryTime) + " at " + entryPrice
-                        + (closePrice != -1 ? ", closed " + Formatter.formatDate(closeTime) + " at " + closePrice : "")
-                        + ", high of " + high + ", profit " + Formatter.formatPercent(getProfit());
-
+                        + (isClosed() ? ", closed " + Formatter.formatDate(closeTime) + " at " + closePrice : ", current price " + currency.getPrice())
+                        + ", high of " + high + ", profit " + Formatter.formatPercent(getProfit())
+                        + (isClosed() ? "\n\t" + explanation : "");
     }
 }
