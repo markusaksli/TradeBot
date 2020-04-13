@@ -12,10 +12,10 @@ public class Main {
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
-        System.out.println("Enter your API Key: ");
+        /*System.out.println("Enter your API Key: ");
         CurrentAPI.get().setApiKey(sc.nextLine());
         System.out.println("Enter your Secret Key: ");
-        CurrentAPI.get().setSecretKey(sc.nextLine());
+        CurrentAPI.get().setSecretKey(sc.nextLine());*/
 
         /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
@@ -63,7 +63,9 @@ public class Main {
                     System.out.println("Total wallet value: " + Formatter.formatDecimal(toomas.getTotalValue()) + " USDT");
                     System.out.println(toomas.getFiat() + " USDT");
                     for (Map.Entry<Currency, Double> entry : toomas.getWallet().entrySet()) {
-                        System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
+                        if (entry.getValue() != 0) {
+                            System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
+                        }
                     }
                     break;
                 case "currencies":

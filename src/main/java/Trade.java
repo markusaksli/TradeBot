@@ -3,7 +3,7 @@ import java.time.LocalDateTime;
 public class Trade {
 
     private double high; //Set the highest price
-    private final double trailingP; //It's in percentages, but using double for comfort.
+    private final double trailingSL; //It's in percentages, but using double for comfort.
     private final LocalDateTime entryTime = LocalDateTime.now();
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
@@ -13,9 +13,9 @@ public class Trade {
     private LocalDateTime closeTime;
     private final String explanation;
 
-    public Trade(Currency currency, double entryPrice, double amount, double trailingP, String explanation) {
+    public Trade(Currency currency, double entryPrice, double amount, double trailingSL, String explanation) {
         this.currency = currency;
-        this.trailingP = trailingP;
+        this.trailingSL = trailingSL;
         this.entryPrice = entryPrice;
         this.high = entryPrice;
         this.amount = amount;
@@ -96,7 +96,7 @@ public class Trade {
     public void update(double newPrice) {
         if (newPrice > high)
             high = newPrice;
-        else if (newPrice < high * (1 - trailingP)) {
+        else if (newPrice < high * (1 - trailingSL)) {
             closePrice = newPrice;
             closeTime = LocalDateTime.now();
             BuySell.close(this);
