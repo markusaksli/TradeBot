@@ -63,7 +63,7 @@ public class Main {
                     System.out.println("Total wallet value: " + Formatter.formatDecimal(toomas.getTotalValue()) + " USDT");
                     System.out.println(toomas.getFiat() + " USDT");
                     for (Map.Entry<Currency, Double> entry : toomas.getWallet().entrySet()) {
-                        System.out.println(entry.getValue() + " " + entry.getKey() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
+                        System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
                     }
                     break;
                 case "currencies":
