@@ -6,10 +6,10 @@ public class Strategy {
             return; //If no fiat is available, we cant trade
         }
         double rsi = currency.getRsi().getTemp(currency.getPrice());
-        double lastMACD = currency.getLastMACD();
+        double lastMACD = currency.getMacd().get();
         double tempMACD = currency.getMacd().getTemp(currency.getPrice());
         if (checkRSI(rsi) + checkMACD(lastMACD, tempMACD) >= 2) { //As we add more indicators we can use this to open a trade if we get a confluence of 2 or more
-            String explanation = "Trade opened due to RSI of " + Formatter.formatDecimal(rsi) + " and unclosed MACD histogram growing by " + Formatter.formatPercent((tempMACD - lastMACD) / lastMACD) + " in current candle";
+            String explanation = "Trade opened due to RSI of " + Formatter.formatDecimal(rsi) + " and unclosed MACD histogram growing by " + Formatter.formatDecimal(tempMACD - lastMACD) + " in current candle";
             System.out.println("---" + currency.getCoin() + " " + explanation);
             BuySell.open(currency, amount / currency.getPrice(), explanation);
         }
@@ -23,7 +23,7 @@ public class Strategy {
 
     //Check if MACD histogram is growing by at least 10%
     private static int checkMACD(double lastTick, double temp) {
-        if ((temp - lastTick) / lastTick > 0.1) return 1;
+        if (temp - lastTick > 0) return 1;
         return 0;
     }
 

@@ -17,7 +17,6 @@ public class Currency {
 
     private final RSI rsi;
     private final MACD macd;
-    private double lastMACD;
 
     private double latestClosedPrice;
     private double currentPrice;
@@ -32,7 +31,6 @@ public class Currency {
         List<BinanceCandlestick> history = getCandles(historyLength);//250 gives us functionally the same accuracy as 1000
         rsi = new RSI(history, 14);
         macd = new MACD(history, 12, 26, 9);
-        lastMACD = macd.get();
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         latestClosedPrice = history.get(history.size() - 2).getClose().doubleValue();
@@ -63,7 +61,6 @@ public class Currency {
                         e.printStackTrace();
                     }
                     currentTime = message.getStartTime();
-                    lastMACD = macd.get();
                     rsi.update(latestClosedPrice);
                     macd.update(latestClosedPrice);
                 }
@@ -102,10 +99,6 @@ public class Currency {
 
     public MACD getMacd() {
         return macd;
-    }
-
-    public double getLastMACD() {
-        return lastMACD;
     }
 
     public double getLatestClosedPrice() {

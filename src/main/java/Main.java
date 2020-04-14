@@ -12,10 +12,10 @@ public class Main {
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
-        /*System.out.println("Enter your API Key: ");
+        System.out.println("Enter your API Key: ");
         CurrentAPI.get().setApiKey(sc.nextLine());
         System.out.println("Enter your Secret Key: ");
-        CurrentAPI.get().setSecretKey(sc.nextLine());*/
+        CurrentAPI.get().setSecretKey(sc.nextLine());
 
         /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
