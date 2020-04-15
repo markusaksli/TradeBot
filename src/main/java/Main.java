@@ -16,7 +16,7 @@ public class Main {
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
-        while (true) {
+        /*while (true) {
             System.out.println("Enter your API Key: ");
             String apiKey = sc.nextLine();
             if (apiKey.length() == 64) {
@@ -29,7 +29,7 @@ public class Main {
                 } else System.out.println("Secret API is incorrect, enter again.");
             } else System.out.println("Incorrect API, enter again.");
 
-        }
+        }*/
 
         /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
@@ -52,26 +52,29 @@ public class Main {
 
         System.out.println("---SETUP DONE (" + Formatter.formatDecimal(time) + " s)");
 
-        System.out.println("Commands: profit, active, history, wallet, currencies");
+
 
         //From this point we only use the main thread to check how the bot is doing
         while (true) {
+            System.out.println("Commands: profit, active, history, wallet, currencies");
             String in = sc.nextLine();
             switch (in) {
                 case "profit":
-                    System.out.println("Account profit: " + Formatter.formatPercent(toomas.getProfit()));
+                    System.out.println("Account profit: " + Formatter.formatPercent(toomas.getProfit()) + "\n");
                     break;
                 case "active":
                     System.out.println("Active trades:");
                     for (Trade trade : toomas.getActiveTrades()) {
                         System.out.println(trade);
                     }
+                    System.out.println(" ");
                     break;
                 case "history":
                     System.out.println("Closed trades:");
                     for (Trade trade : toomas.getTradeHistory()) {
                         System.out.println(trade);
                     }
+                    System.out.println(" ");
                     break;
                 case "wallet":
                     System.out.println("Total wallet value: " + Formatter.formatDecimal(toomas.getTotalValue()) + " USDT");
@@ -81,14 +84,17 @@ public class Main {
                             System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
                         }
                     }
+                    System.out.println(" ");
                     break;
                 case "currencies":
                     for (Currency currency : currencies) {
                         System.out.println(currency);
                     }
+                    System.out.println(" ");
                     break;
                 default:
-                    System.out.println("Commands: profit, active, history, wallet, currencies");
+                    System.out.println("Wrong input. Try again \n");
+                    break;
             }
         }
     }
