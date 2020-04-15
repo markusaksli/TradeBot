@@ -46,16 +46,16 @@ public class Currency {
         CurrentAPI.get().websocketKlines(symbol, BinanceInterval.FIVE_MIN, new BinanceWebSocketAdapterKline() {
             @Override
             public void onMessage(BinanceEventKline message) {
+                if (currentPrice == message.getClose().doubleValue() && currentTime == message.getStartTime()) {
+                    //System.out.println("Message ignored");
+                    return;
+                }
                 if (!currentlyCalculating) {
                     currentlyCalculating = true;
                     //Every message and the resulting indicator and strategy calculations is handled concurrently
                     //System.out.println(Thread.currentThread().getId());
 
                     //We want to toss messages that provide no new information
-                    if (currentPrice == message.getClose().doubleValue() && currentTime == message.getStartTime()) {
-                        //System.out.println("Message ignored");
-                        return;
-                    }
 
                     currentPrice = message.getClose().doubleValue();
 
