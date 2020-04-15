@@ -46,44 +46,44 @@ public class Currency {
         CurrentAPI.get().websocketKlines(symbol, BinanceInterval.FIVE_MIN, new BinanceWebSocketAdapterKline() {
             @Override
             public void onMessage(BinanceEventKline message) {
+                //Every message and the resulting indicator and strategy calculations is handled concurrently
+                //System.out.println(Thread.currentThread().getId());
+
+                //We want to toss messages that provide no new information
                 if (currentPrice == message.getClose().doubleValue() && currentTime == message.getStartTime()) {
                     //System.out.println("Message ignored");
                     return;
                 }
-                if (!currentlyCalculating) {
-                    currentlyCalculating = true;
-                    //Every message and the resulting indicator and strategy calculations is handled concurrently
-                    //System.out.println(Thread.currentThread().getId());
-
-                    //We want to toss messages that provide no new information
-
-                    currentPrice = message.getClose().doubleValue();
-
-                    //Changed candle start time means the previous candle closed and we need to update our indicators
-                    if (currentTime != message.getStartTime()) {
-                        try {
-                            //We cant use the previous currentPrice or anything else to get the closing price of the last candle, we have to check
-                            latestClosedPrice = getCandles(2).get(0).getClose().doubleValue();
-                        } catch (BinanceApiException e) {
-                            e.printStackTrace();
-                        }
-                        currentTime = message.getStartTime();
-                        indicators.forEach(indicator -> indicator.update(currentPrice));
-                    }
-
-                    if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
-                        if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
-                            activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
-                        } else {
-                            if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
-                                BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
-                            }
-                        }
-                    }
-                    currentlyCalculating = false;
-                } else {
-                    System.out.println("Conflict on " + coin + " message");
+                //Make sure we dont get concurrency issues
+                if (currentlyCalculating) {
+                    System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
                 }
+
+                currentlyCalculating = true;
+                currentPrice = message.getClose().doubleValue();
+
+                //Changed candle start time means the previous candle closed and we need to update our indicators
+                if (currentTime != message.getStartTime()) {
+                    try {
+                        //We cant use the previous currentPrice or anything else to get the closing price of the last candle, we have to check
+                        latestClosedPrice = getCandles(2).get(0).getClose().doubleValue();
+                    } catch (BinanceApiException e) {
+                        e.printStackTrace();
+                    }
+                    currentTime = message.getStartTime();
+                    indicators.forEach(indicator -> indicator.update(latestClosedPrice));
+                }
+
+                if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
+                    if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
+                        activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
+                    } else {
+                        if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
+                            BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
+                        }
+                    }
+                }
+                currentlyCalculating = false;
             }
         });
         System.out.println("---SETUP DONE FOR " + this);
