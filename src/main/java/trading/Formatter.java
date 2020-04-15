@@ -1,3 +1,5 @@
+package trading;
+
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;

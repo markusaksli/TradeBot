@@ -1,5 +1,6 @@
-package Indicators;
+package indicators;
 
+import trading.Formatter;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
 import java.util.List;
@@ -9,12 +10,36 @@ public class RSI implements Indicator {
     private double avgDwn;
     private double prevClose;
     private final int period;
+    private String explanation;
 
     public RSI(List<BinanceCandlestick> candles, int period) {
         avgUp = 0;
         avgDwn = 0;
         this.period = period;
+        explanation = "";
         init(candles);
+    }
+
+    @Override
+    public void init(List<BinanceCandlestick> candles) {
+        prevClose = candles.get(0).getClose().doubleValue();
+        for (int i = 1; i < period + 1; i++) {
+            double change = candles.get(i).getClose().doubleValue() - prevClose;
+            if (change > 0) {
+                avgUp += change;
+            } else {
+                avgDwn += Math.abs(change);
+            }
+        }
+
+        //Initial SMA values
+        avgUp = avgUp / (double) period;
+        avgDwn = avgDwn / (double) period;
+
+        //Dont use latest unclosed value
+        for (int i = period + 1; i < candles.size() - 1; i++) {
+            update(candles.get(i).getClose().doubleValue());
+        }
     }
 
     @Override
@@ -51,24 +76,18 @@ public class RSI implements Indicator {
     }
 
     @Override
-    public void init(List<BinanceCandlestick> candles) {
-        prevClose = candles.get(0).getClose().doubleValue();
-        for (int i = 1; i < period + 1; i++) {
-            double change = candles.get(i).getClose().doubleValue() - prevClose;
-            if (change > 0) {
-                avgUp += change;
-            } else {
-                avgDwn += Math.abs(change);
-            }
+    public int check(double newPrice) {
+        double temp = getTemp(newPrice);
+        if (temp < 30) {
+            explanation = "RSI of " + Formatter.formatDecimal(temp);
+            return 1;
         }
+        explanation = "";
+        return 0;
+    }
 
-        //Initial SMA values
-        avgUp = avgUp / (double) period;
-        avgDwn = avgDwn / (double) period;
-
-        //Dont use latest unclosed value
-        for (int i = period + 1; i < candles.size() - 1; i++) {
-            update(candles.get(i).getClose().doubleValue());
-        }
+    @Override
+    public String getExplanation() {
+        return explanation;
     }
 }

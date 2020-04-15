@@ -1,5 +1,8 @@
-import Indicators.MACD;
-import Indicators.RSI;
+package trading;
+
+import indicators.Indicator;
+import indicators.MACD;
+import indicators.RSI;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import com.webcerebrium.binance.datatype.BinanceEventKline;
@@ -7,7 +10,9 @@ import com.webcerebrium.binance.datatype.BinanceInterval;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import com.webcerebrium.binance.websocket.BinanceWebSocketAdapterKline;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Currency {
     private static final String FIAT = "USDT";
@@ -15,8 +20,7 @@ public class Currency {
     private final BinanceSymbol symbol;
     private Trade activeTrade;
 
-    private final RSI rsi;
-    private final MACD macd;
+    private final List<Indicator> indicators = new ArrayList<>();
 
     private double latestClosedPrice;
     private double currentPrice;
@@ -29,8 +33,8 @@ public class Currency {
 
         //Every needs to contain and update our indicators
         List<BinanceCandlestick> history = getCandles(historyLength);//250 gives us functionally the same accuracy as 1000
-        rsi = new RSI(history, 14);
-        macd = new MACD(history, 12, 26, 9);
+        indicators.add(new RSI(history, 14));
+        indicators.add(new MACD(history, 12, 26, 9));
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         latestClosedPrice = history.get(history.size() - 2).getClose().doubleValue();
@@ -61,15 +65,16 @@ public class Currency {
                         e.printStackTrace();
                     }
                     currentTime = message.getStartTime();
-                    rsi.update(latestClosedPrice);
-                    macd.update(latestClosedPrice);
+                    indicators.forEach(indicator -> indicator.update(currentPrice));
                 }
 
                 if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
-                    if (activeTrade != null) { //We only allow one active trade per currency, this means we only need to do one of the following:
+                    if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
                         activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
                     } else {
-                        Strategy.update(Currency.this);//Check for a buy signal to open a new trade
+                        if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
+                            BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
+                        }
                     }
                 }
             }
@@ -93,16 +98,12 @@ public class Currency {
         return symbol;
     }
 
-    public RSI getRsi() {
-        return rsi;
-    }
-
-    public MACD getMacd() {
-        return macd;
-    }
-
     public double getLatestClosedPrice() {
         return latestClosedPrice;
+    }
+
+    public boolean hasActiveTrade() {
+        return activeTrade != null;
     }
 
     public Trade getActiveTrade() {
@@ -115,7 +116,12 @@ public class Currency {
 
     @Override
     public String toString() {
-        return coin + " (price: " + currentPrice + ", RSI: " + Formatter.formatDecimal(rsi.getTemp(currentPrice)) + ", MACD: " + Formatter.formatDecimal(macd.getTemp(currentPrice)) + ", hasActive: " + (activeTrade != null) + ")";
+        StringBuilder s = new StringBuilder(coin + " (price: " + currentPrice);
+        for (Indicator indicator : indicators) {
+            s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.getTemp(currentPrice)));
+        }
+        s.append(", hasActive: ").append(hasActiveTrade()).append(")");
+        return s.toString();
     }
 
     @Override

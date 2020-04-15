@@ -1,7 +1,11 @@
 import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
+import trading.*;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 
 public class Main {
     static Set<Currency> currencies; //There should never be two of the same Currency
@@ -12,10 +16,20 @@ public class Main {
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
-        System.out.println("Enter your API Key: ");
-        CurrentAPI.get().setApiKey(sc.nextLine());
-        System.out.println("Enter your Secret Key: ");
-        CurrentAPI.get().setSecretKey(sc.nextLine());
+        while (true) {
+            System.out.println("Enter your API Key: ");
+            String apiKey = sc.nextLine();
+            if (apiKey.length() == 64) {
+                CurrentAPI.get().setApiKey(apiKey);
+                System.out.println("Enter your Secret Key: ");
+                String apiSecret = sc.nextLine();
+                if (apiSecret.length() == 64) {
+                    CurrentAPI.get().setSecretKey(apiSecret);
+                    break;
+                } else System.out.println("Secret API is incorrect, enter again.");
+            } else System.out.println("Incorrect API, enter again.");
+
+        }
 
         /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.

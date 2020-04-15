@@ -1,4 +1,4 @@
-package Indicators;
+package indicators;
 
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
@@ -44,5 +44,15 @@ public class SMA implements Indicator {
         prices.removeFirst();
         prices.add(newPrice);
         currentSum += newPrice;
+    }
+
+    @Override
+    public int check(double newPrice) {
+        return 0;
+    }
+
+    @Override
+    public String getExplanation() {
+        return null;
     }
 }

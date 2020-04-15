@@ -1,4 +1,4 @@
-package Indicators;
+package indicators;
 
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import org.apache.commons.collections.list.AbstractListDecorator;
@@ -37,13 +37,6 @@ public class EMA implements Indicator {
     }
 
     @Override
-    public void update(double newPrice) {
-        // EMA = (Close - EMA(previousBar)) * multiplier + EMA(previousBar)
-        currentEMA = (newPrice - currentEMA) * multiplier + currentEMA;
-
-        if (historyNeeded) EMAhistory.add(currentEMA);
-    }
-    @Override
     public void init(List<BinanceCandlestick> candles) {
         if (period > candles.size()) return;
 
@@ -59,6 +52,25 @@ public class EMA implements Indicator {
             update(candles.get(i).getClose().doubleValue());
         }
     }
+
+    @Override
+    public void update(double newPrice) {
+        // EMA = (Close - EMA(previousBar)) * multiplier + EMA(previousBar)
+        currentEMA = (newPrice - currentEMA) * multiplier + currentEMA;
+
+        if (historyNeeded) EMAhistory.add(currentEMA);
+    }
+
+    @Override
+    public int check(double newPrice) {
+        return 0;
+    }
+
+    @Override
+    public String getExplanation() {
+        return null;
+    }
+
     public List<Double> getEMAhistory() {
         return EMAhistory;
     }

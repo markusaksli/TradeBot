@@ -1,6 +1,8 @@
-package Indicators;
+package indicators;
 
+import trading.Formatter;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
+
 import java.util.List;
 
 //Default setting in crypto are period of 9, short 12 and long 26.
@@ -13,6 +15,7 @@ public class MACD implements Indicator {
     private final int period; //Only value that has to be calculated in setInitial.
     private final double multiplier;
     private final int periodDifference;
+    private String explanation;
 
     private double lastTick;
 
@@ -22,6 +25,7 @@ public class MACD implements Indicator {
         this.period = signalPeriod;
         this.multiplier = 2.0 / (double) (signalPeriod + 1);
         this.periodDifference = longPeriod - shortPeriod;
+        explanation = "";
         init(candles); //initializing the calculations to get current MACD and signal line.
     }
 
@@ -57,14 +61,33 @@ public class MACD implements Indicator {
             currentMACD = shortEMA.getEMAhistory().get(i + periodDifference) - longEMA.getEMAhistory().get(i);
             currentSignal = currentMACD * multiplier + currentSignal * (1 - multiplier);
         }
+
+        lastTick = get();
     }
 
     @Override
     public void update(double newPrice) {
         //Updating the EMA values before updating MACD and Signal line.
+        lastTick = get();
         shortEMA.update(newPrice);
         longEMA.update(newPrice);
         currentMACD = shortEMA.get() - longEMA.get();
         currentSignal = currentMACD * multiplier + currentSignal * (1 - multiplier);
+    }
+
+    @Override
+    public int check(double newPrice) {
+        double temp = getTemp(newPrice);
+        if (lastTick < 0 && temp > 0) {
+            explanation = "MACD crossed over from " + Formatter.formatDecimal(lastTick) + " to " + Formatter.formatDecimal(temp);
+            return 1;
+        }
+        explanation = "";
+        return 0;
+    }
+
+    @Override
+    public String getExplanation() {
+        return explanation;
     }
 }

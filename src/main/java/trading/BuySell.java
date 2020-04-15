@@ -1,3 +1,5 @@
+package trading;
+
 public class BuySell {
 
     private static Account account;
@@ -11,8 +13,13 @@ public class BuySell {
     }
 
     //Used by strategy
-    public static void open(Currency currency, double amount, String explanation) {
+    public static void open(Currency currency, String explanation) {
         double currentPrice = currency.getPrice(); //Current price of the currency
+        double amount = nextAmount() / currency.getPrice();
+        if (amount == 0) {
+            System.out.println("---OUT OF FUNDS, CANT OPEN TRADE");
+            return; //If no fiat is available, we cant trade
+        }
         double fiatCost = currentPrice * amount;
         Trade trade = new Trade(currency, currentPrice, amount, 0.0075, explanation);
         currency.setActiveTrade(trade);
@@ -23,6 +30,7 @@ public class BuySell {
         account.openTrade(trade);
 
         System.out.println("---" + Formatter.formatDate(trade.getEntryTime()) + " opened trade (" + amount + " " + currency.getCoin() + "), at " + currency.getPrice());
+        System.out.println("------" + explanation);
     }
 
     //Used by trade
@@ -36,5 +44,9 @@ public class BuySell {
                 + trade.getAmount() + " " + trade.getCurrency().getCoin()
                 + "), at " + trade.getClosePrice()
                 + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit");
+    }
+
+    private static double nextAmount() {
+        return Math.min(account.getFiat(), account.getTotalValue() * 0.10);
     }
 }

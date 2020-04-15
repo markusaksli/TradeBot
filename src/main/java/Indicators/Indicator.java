@@ -1,4 +1,4 @@
-package Indicators;
+package indicators;
 
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import java.util.List;
@@ -16,4 +16,9 @@ public interface Indicator {
 
     //Used to update value with latest closed candle closing price
     void update(double newPrice);
+
+    //Used to check for buy signal
+    int check(double newPrice);
+
+    String getExplanation();
 }

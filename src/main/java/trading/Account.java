@@ -1,3 +1,5 @@
+package trading;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +29,7 @@ public class Account {
         activeTrades = new ArrayList<>();
     }
 
-    //All Trade methods
+    //All backend.Trade methods
     public List<Trade> getActiveTrades() {
         return activeTrades;
     }
@@ -70,7 +72,7 @@ public class Account {
     }
 
     /**
-     * Method has Currency names as keys and the amount of certain currency as value.
+     * Method has backend.Currency names as keys and the amount of certain currency as value.
      * i.e {"BTCUSDT : 3.23}
      *
      * @return
