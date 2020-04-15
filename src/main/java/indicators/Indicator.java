@@ -1,4 +1,4 @@
-package Indicators;
+package indicators;
 
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import java.util.List;

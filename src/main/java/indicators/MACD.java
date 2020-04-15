@@ -1,4 +1,4 @@
-package Indicators;
+package indicators;
 
 import trading.Formatter;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
