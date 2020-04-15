@@ -1,4 +1,4 @@
-package Indicators;
+package indicators;
 
 public class BB{
 }

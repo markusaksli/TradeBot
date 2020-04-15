@@ -1,8 +1,8 @@
 package trading;
 
-import Indicators.Indicator;
-import Indicators.MACD;
-import Indicators.RSI;
+import indicators.Indicator;
+import indicators.MACD;
+import indicators.RSI;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import com.webcerebrium.binance.datatype.BinanceEventKline;
@@ -25,7 +25,7 @@ public class Currency {
     private double latestClosedPrice;
     private double currentPrice;
     private long currentTime;
-    private boolean currentlyCalculating = false;
+    private boolean currentlyCalculating = false; //Needs to be private var here, because in listener we are overriding new method.
 
     public Currency(String coin, int historyLength, boolean trade) throws BinanceApiException {
         //Every currency is a USDT pair so we only care about the fiat opposite coin
@@ -74,14 +74,13 @@ public class Currency {
                     if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
                         if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
                             activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
-                            currentlyCalculating = false;
                         } else {
                             if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
                                 BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
-                                currentlyCalculating = false;
                             }
                         }
                     }
+                    currentlyCalculating = false;
                 }
             }
         });
