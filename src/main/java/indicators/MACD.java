@@ -77,9 +77,10 @@ public class MACD implements Indicator {
 
     @Override
     public int check(double newPrice) {
-        double temp = getTemp(newPrice);
-        if (lastTick < 0 && temp > 0) {
-            explanation = "MACD crossed over from " + Formatter.formatDecimal(lastTick) + " to " + Formatter.formatDecimal(temp);
+        double last = get();
+        double diff = (getTemp(newPrice) - last) / Math.abs(last);
+        if (diff > 0.25) {
+            explanation = "MACD histogram grew by " + Formatter.formatPercent(diff) + " in current unclosed candle";
             return 1;
         }
         explanation = "";
