@@ -25,7 +25,7 @@ public class Currency {
     private double latestClosedPrice;
     private double currentPrice;
     private long currentTime;
-    private boolean currentlyCalculating = false; //Needs to be private var here, because in listener we are overriding new method.
+    private boolean currentlyCalculating = false;
 
     public Currency(String coin, int historyLength, boolean trade) throws BinanceApiException {
         //Every currency is a USDT pair so we only care about the fiat opposite coin
@@ -81,6 +81,8 @@ public class Currency {
                         }
                     }
                     currentlyCalculating = false;
+                } else {
+                    System.out.println("Conflict on " + coin + " message");
                 }
             }
         });
