@@ -51,15 +51,9 @@ public class Currency {
 
                 //We want to toss messages that provide no new information
                 if (currentPrice == message.getClose().doubleValue() && currentTime == message.getStartTime()) {
-                    //System.out.println("Message ignored");
                     return;
                 }
-                //Make sure we dont get concurrency issues
-                if (currentlyCalculating) {
-                    System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
-                }
 
-                currentlyCalculating = true;
                 currentPrice = message.getClose().doubleValue();
 
                 //Changed candle start time means the previous candle closed and we need to update our indicators
@@ -73,17 +67,22 @@ public class Currency {
                     currentTime = message.getStartTime();
                     indicators.forEach(indicator -> indicator.update(latestClosedPrice));
                 }
-
-                if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
-                    if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
-                        activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
-                    } else {
-                        if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
-                            BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
+                //Make sure we dont get concurrency issues
+                if (currentlyCalculating) {
+                    System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
+                } else {
+                    currentlyCalculating = true;
+                    if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
+                        if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
+                            activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
+                        } else {
+                            if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
+                                BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
+                            }
                         }
                     }
+                    currentlyCalculating = false;
                 }
-                currentlyCalculating = false;
             }
         });
         System.out.println("---SETUP DONE FOR " + this);
