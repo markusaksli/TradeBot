@@ -55,4 +55,29 @@ public class SMA implements Indicator {
     public String getExplanation() {
         return null;
     }
+
+    public double standardDeviation(){
+        double mean = currentSum/ (double) period;
+        double stdev = 0.0;
+        for (double price : prices) {
+            stdev += Math.pow(price-mean, 2);
+        }
+        return stdev;
+    }
+
+    public double tempStandardDeviation(double newPrice){
+
+        double tempMean = currentSum-prices.get(0) + newPrice/ (double) period;
+        double tempStdev = 0.0;
+
+        for (double price : prices){
+            if (price == prices.get(0))
+                continue;
+            tempStdev += Math.pow(price- tempMean, 2);
+        }
+
+        tempStdev += Math.pow(newPrice - tempMean, 2);
+        return tempStdev;
+
+    }
 }
