@@ -15,6 +15,7 @@ public class EMA implements Indicator {
     private final double multiplier;
     private final List<Double> EMAhistory;
     private final boolean historyNeeded;
+    private String fileName;
 
     public EMA(List<BinanceCandlestick> candles, int period, boolean historyNeeded) {
         currentEMA = 0;
@@ -23,6 +24,19 @@ public class EMA implements Indicator {
         this.multiplier = 2.0 / (double) (period + 1);
         this.EMAhistory = new ArrayList<>();
         init(candles);
+    }
+
+    public EMA(String fileName, int period) {
+        this.fileName = fileName;
+        currentEMA = 0;
+        this.period = period;
+        this.multiplier = 2.0 / (double) (period + 1);
+        this.EMAhistory = new ArrayList<>();
+        this.historyNeeded = false;
+    }
+
+    public void backinit(String fileName) {
+
     }
 
     @Override

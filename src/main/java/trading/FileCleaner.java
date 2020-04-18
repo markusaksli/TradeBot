@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
  * Purpose of this class is to create files with the lines that
  * only have the "sell" keyword inside.
  * The less data useless data we have, the better.
+ * It has been used to create the .txt files in Backtesting and will remain with the same functionality
  */
 public class FileCleaner {
     public static void main(String[] args) {

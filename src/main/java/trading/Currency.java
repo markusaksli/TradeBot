@@ -46,63 +46,70 @@ public class Currency {
         }*/
 
         //Every currency is a USDT pair so we only care about the fiat opposite coin
-        this.coin = coin;
         symbol = BinanceSymbol.valueOf(coin + FIAT);
+        this.coin = coin;
+        if (backTesting) {
+            System.out.println("Backtesting");
+            List<BinanceCandlestick> history = getCandles(2000);
+            System.out.println(history.size());
 
-        //Every needs to contain and update our indicators
-        List<BinanceCandlestick> history = getCandles(historyLength);//250 gives us functionally the same accuracy as 1000
-        indicators.add(new RSI(history, 14));
-        indicators.add(new MACD(history, 12, 26, 9));
+        } else {
 
-        //We set the initial values to check against in onMessage based on the latest candle in history
-        latestClosedPrice = history.get(history.size() - 2).getClose().doubleValue();
-        currentTime = history.get(history.size() - 1).getOpenTime();
-        currentPrice = history.get(history.size() - 1).getClose().doubleValue();
+            //Every needs to contain and update our indicators
+            List<BinanceCandlestick> history = getCandles(historyLength);//250 gives us functionally the same accuracy as 1000
+            indicators.add(new RSI(history, 14));
+            indicators.add(new MACD(history, 12, 26, 9));
 
-        //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
-        CurrentAPI.get().websocketKlines(symbol, BinanceInterval.FIVE_MIN, new BinanceWebSocketAdapterKline() {
-            @Override
-            public void onMessage(BinanceEventKline message) {
-                //Every message and the resulting indicator and strategy calculations is handled concurrently
-                //System.out.println(Thread.currentThread().getId());
+            //We set the initial values to check against in onMessage based on the latest candle in history
+            latestClosedPrice = history.get(history.size() - 2).getClose().doubleValue();
+            currentTime = history.get(history.size() - 1).getOpenTime();
+            currentPrice = history.get(history.size() - 1).getClose().doubleValue();
 
-                //We want to toss messages that provide no new information
-                if (currentPrice == message.getClose().doubleValue() && currentTime == message.getStartTime()) {
-                    return;
-                }
+            //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
+            CurrentAPI.get().websocketKlines(symbol, BinanceInterval.FIVE_MIN, new BinanceWebSocketAdapterKline() {
+                @Override
+                public void onMessage(BinanceEventKline message) {
+                    //Every message and the resulting indicator and strategy calculations is handled concurrently
+                    //System.out.println(Thread.currentThread().getId());
 
-                currentPrice = message.getClose().doubleValue();
-
-                //Changed candle start time means the previous candle closed and we need to update our indicators
-                if (currentTime != message.getStartTime()) {
-                    try {
-                        //We cant use the previous currentPrice or anything else to get the closing price of the last candle, we have to check
-                        latestClosedPrice = getCandles(2).get(0).getClose().doubleValue();
-                    } catch (BinanceApiException e) {
-                        e.printStackTrace();
+                    //We want to toss messages that provide no new information
+                    if (currentPrice == message.getClose().doubleValue() && currentTime == message.getStartTime()) {
+                        return;
                     }
-                    currentTime = message.getStartTime();
-                    indicators.forEach(indicator -> indicator.update(latestClosedPrice));
-                }
-                //Make sure we dont get concurrency issues
-                if (currentlyCalculating) {
-                    System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
-                } else {
-                    currentlyCalculating = true;
-                    if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
-                        if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
-                            activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
-                        } else {
-                            if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
-                                BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
+
+                    currentPrice = message.getClose().doubleValue();
+
+                    //Changed candle start time means the previous candle closed and we need to update our indicators
+                    if (currentTime != message.getStartTime()) {
+                        try {
+                            //We cant use the previous currentPrice or anything else to get the closing price of the last candle, we have to check
+                            latestClosedPrice = getCandles(2).get(0).getClose().doubleValue();
+                        } catch (BinanceApiException e) {
+                            e.printStackTrace();
+                        }
+                        currentTime = message.getStartTime();
+                        indicators.forEach(indicator -> indicator.update(latestClosedPrice));
+                    }
+                    //Make sure we dont get concurrency issues
+                    if (currentlyCalculating) {
+                        System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
+                    } else {
+                        currentlyCalculating = true;
+                        if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
+                            if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
+                                activeTrade.update(currentPrice);//Update the active trade stop-loss and high values
+                            } else {
+                                if (indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum() >= 2) {
+                                    BuySell.open(Currency.this, indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", "")));
+                                }
                             }
                         }
+                        currentlyCalculating = false;
                     }
-                    currentlyCalculating = false;
                 }
-            }
-        });
-        System.out.println("---SETUP DONE FOR " + this);
+            });
+            System.out.println("---SETUP DONE FOR " + this);
+        }
     }
 
     public List<BinanceCandlestick> getCandles(int length) throws BinanceApiException {

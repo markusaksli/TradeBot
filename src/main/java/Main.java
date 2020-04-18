@@ -1,12 +1,16 @@
 import com.google.gson.JsonObject;
+import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
+import com.webcerebrium.binance.datatype.BinanceAggregatedTrades;
+import com.webcerebrium.binance.datatype.BinanceCandlestick;
+import com.webcerebrium.binance.datatype.BinanceInterval;
+import com.webcerebrium.binance.datatype.BinanceSymbol;
 import trading.*;
+import trading.Currency;
+import trading.Formatter;
 
 import java.sql.SQLOutput;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 public class Main {
     static Set<Currency> currencies; //There should never be two of the same Currency
@@ -14,6 +18,7 @@ public class Main {
     public static void main(String[] args) throws BinanceApiException {
         Account toomas = new Account("Investor Toomas", 1000);
         BuySell.setAccount(toomas);
+
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
