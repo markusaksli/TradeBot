@@ -4,6 +4,8 @@ import trading.*;
 import trading.Currency;
 import trading.Formatter;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,33 +49,52 @@ public class Main {
             BinanceSymbol symbol = new BinanceSymbol("BTCUSDT");
             List<TradeBean> dataHolder = new ArrayList<>();
             List<Long> timestamps = new ArrayList<>();
-            Long end = 1585699200000L; //1. aprill hour 0
+            Long end = 1583366400000L; //1. aprill hour 0 1585699200000L
             Long start = 1583020800000L; // 1. märts hour 0
             Long wholePeriod = end - start;
-            int numOfThreads = 20;
+            int numOfThreads = 50;
             Long toSubtract = wholePeriod / (long) numOfThreads;
 
-            final ExecutorService executorService = Executors.newFixedThreadPool(numOfThreads);
+            final ExecutorService executorService = Executors.newCachedThreadPool();
+            TradeCollector.remaining = numOfThreads;
             for (int i = 0; i < numOfThreads - 1; i++) {
-                executorService.submit(new TradeCollector(end, end - toSubtract, dataHolder, symbol));
+                executorService.submit(new TradeCollector(end - toSubtract, end, dataHolder, symbol));
                 end -= toSubtract;
             }
             executorService.submit(new TradeCollector(end, start, dataHolder, symbol));
             System.out.println("---Submitting complete.");
-            executorService.shutdown();
-            while (executorService.awaitTermination(10, TimeUnit.HOURS)) {
+            while (TradeCollector.remaining != 0) {
                 long initTime = System.currentTimeMillis();
-                boolean timeElapsed = false;
+                boolean timeElapsed = true;
                 while (timeElapsed) {
+                    System.out.println("Fastest chunk : " + Formatter.formatPercent(TradeCollector.getProgress()) + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + numOfThreads + ", number of requests hit in 1min: " + TradeCollector.getNumOfRequests());
                     if (System.currentTimeMillis() - initTime > 60000) {
-                        timeElapsed = true;
-                        System.out.println("--- 1 minute has passed");
+                        timeElapsed = false;
                         TradeCollector.setNumOfRequests(0);
                     }
                 }
             }
+            executorService.shutdown();
+            executorService.awaitTermination(1, TimeUnit.HOURS);
+
             System.out.println("-----Size of dataHolder List: " + dataHolder.size());
 
+            dataHolder.sort(Comparator.comparing(TradeBean::getTimestamp));
+            start += 300000;
+            for (int i = 0; i < dataHolder.size(); i++) {
+                if (dataHolder.get(i).getTimestamp() > start) {
+                    dataHolder.get(i - 1).close();
+                    start += 300000;
+                }
+            }
+
+            try (FileWriter writer = new FileWriter("src\\main\\resources\\Backtesting\\BTCUSDT.txt")) {
+                for (TradeBean tradeBean : dataHolder) {
+                    writer.write(tradeBean.toString() + "\n");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
