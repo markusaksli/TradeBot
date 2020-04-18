@@ -2,38 +2,26 @@ package trading;
 
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceAggregatedTrades;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceInterval;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class TradeCollector {
+public class TradeCollector implements Runnable {
+    private Long start;
+    private Long end;
+    private List<TradeBean> dataHolder;
+    private BinanceSymbol symbol;
 
-    public static void main(String[] args) {
-        BinanceSymbol symbol;
-        try {
-            symbol = new BinanceSymbol("BTCUSDT");
-            List<TradeBean> beanList = new ArrayList<>();
-            readHistory(symbol, 1587225600000L, 1587229200000L, beanList);
-            Collections.reverse(beanList);
-            Long chart = 1587225600000L;
-            double lastPrice = 0;
-            for (TradeBean tradeBean : beanList) {
-                if (tradeBean.getTimestamp() >= chart) {
-                    chart += 300000L;
-                    System.out.println(tradeBean.getDate() + "   " + lastPrice + "   CLOSEEEEEEEEEEEEEEEEEEEEEE");
-                }
-                lastPrice = tradeBean.getPrice();
-            }
-
-        } catch (BinanceApiException e) {
-            e.printStackTrace();
-        }
+    public TradeCollector(Long start, Long end, List<TradeBean> dataHolder, BinanceSymbol symbol) {
+        this.start = start;
+        this.end = end;
+        this.dataHolder = dataHolder;
+        this.symbol = symbol;
     }
 
-    public static void readHistory(BinanceSymbol symbol, Long start, Long end, List<TradeBean> dataHolder) {
+    @Override
+    public void run() {
         Long startTime = end - 3600000L;
         Long timeLeft = end - start;
         int limit = 1000;
@@ -62,7 +50,6 @@ public class TradeCollector {
                     dataHolder.add(new TradeBean(trade.getPrice().doubleValue(), trade.getTimestamp()));
                 }
                 if (isTime) break;
-
                 System.out.println(Formatter.formatPercent((end - start) / (double) timeLeft));
 
                 options.replace("startTime", end - 3600000L);
