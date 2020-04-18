@@ -11,10 +11,10 @@ public class SMA implements Indicator {
     private final int period;
     private final LinkedList<Double> prices;
 
-    public SMA(List<BinanceCandlestick> candles, int period) {
+    public SMA(List<Double> closingPrices, int period) {
         this.period = period;
         prices = new LinkedList<>();
-        init(candles);
+        init(closingPrices);
     }
 
     @Override
@@ -28,13 +28,13 @@ public class SMA implements Indicator {
     }
 
     @Override
-    public void init(List<BinanceCandlestick> candles) {
-        if (period > candles.size()) return;
+    public void init(List<Double> closingPrices) {
+        if (period > closingPrices.size()) return;
 
         //Initial sum
-        for (int i = candles.size() - period - 1; i < candles.size() - 1; i++) {
-            prices.add(candles.get(i).close.doubleValue());
-            currentSum += (candles.get(i).close.doubleValue());
+        for (int i = closingPrices.size() - period - 1; i < closingPrices.size() - 1; i++) {
+            prices.add(closingPrices.get(i));
+            currentSum += (closingPrices.get(i));
         }
     }
 

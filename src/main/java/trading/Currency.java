@@ -52,9 +52,10 @@ public class Currency {
 
         //Every currency needs to contain and update our indicators
         List<BinanceCandlestick> history = getCandles(historyLength);//250 gives us functionally the same accuracy as 1000
-        indicators.add(new RSI(history, 14));
-        indicators.add(new MACD(history, 12, 26, 9));
-        indicators.add(new BB(history, 20));
+        List<Double> closingPrices = history.stream().map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
+        indicators.add(new RSI(closingPrices, 14));
+        indicators.add(new MACD(closingPrices, 12, 26, 9));
+        indicators.add(new BB(closingPrices, 20));
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         latestClosedPrice = history.get(history.size() - 2).getClose().doubleValue();

@@ -8,6 +8,7 @@ import java.util.List;
 //Default setting in crypto are period of 9, short 12 and long 26.
 //MACD = 12 EMA - 26 EMA and compare to 9 period of MACD value.
 public class MACD implements Indicator {
+
     private double currentMACD;
     private double currentSignal;
     private final EMA shortEMA; //Will be the EMA object for shortEMA-
@@ -19,14 +20,14 @@ public class MACD implements Indicator {
 
     private double lastTick;
 
-    public MACD(List<BinanceCandlestick> candles, int shortPeriod, int longPeriod, int signalPeriod) {
-        this.shortEMA = new EMA(candles, shortPeriod, true); //true, because history is needed in MACD calculations.
-        this.longEMA = new EMA(candles, longPeriod, true); //true for the same reasons.
+    public MACD(List<Double> closingPrices, int shortPeriod, int longPeriod, int signalPeriod) {
+        this.shortEMA = new EMA(closingPrices, shortPeriod, true); //true, because history is needed in MACD calculations.
+        this.longEMA = new EMA(closingPrices, longPeriod, true); //true for the same reasons.
         this.period = signalPeriod;
         this.multiplier = 2.0 / (double) (signalPeriod + 1);
         this.periodDifference = longPeriod - shortPeriod;
         explanation = "";
-        init(candles); //initializing the calculations to get current MACD and signal line.
+        init(closingPrices); //initializing the calculations to get current MACD and signal line.
     }
 
     @Override
@@ -46,7 +47,7 @@ public class MACD implements Indicator {
     }
 
     @Override
-    public void init(List<BinanceCandlestick> candles) {
+    public void init(List<Double> closingPrices) {
         //Initial signal line
         //i = longEMA.getPeriod(); because the sizes of shortEMA and longEMA are different.
         for (int i = longEMA.getPeriod(); i < longEMA.getPeriod() + period; i++) {

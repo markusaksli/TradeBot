@@ -13,10 +13,10 @@ public class BB implements Indicator{
     private double lowerBand;
     private SMA sma;
 
-    public BB(List<BinanceCandlestick> candles, int period) {
+    public BB(List<Double> closingPrices, int period) {
         this.period = period;
-        this.sma = new SMA(candles, period);
-        init(candles);
+        this.sma = new SMA(closingPrices, period);
+        init(closingPrices);
     }
 
     @Override
@@ -52,10 +52,10 @@ public class BB implements Indicator{
     }
 
     @Override
-    public void init(List<BinanceCandlestick> candles) {
-        if (period > candles.size()) return;
+    public void init(List<Double> closingPrices) {
+        if (period > closingPrices.size()) return;
 
-        closingPrice = candles.size() - 2;
+        closingPrice = closingPrices.size() - 2;
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
         upperBand = middleBand + standardDeviation*2;

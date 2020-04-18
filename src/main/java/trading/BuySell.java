@@ -70,7 +70,7 @@ public class BuySell {
         BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
         BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.SELL);
         placement.setType(BinanceOrderType.MARKET);
-        placement.setQuantity(BigDecimal.valueOf(quantity)); // buy 10000 of asset for 0.00001 BTC
+        placement.setQuantity(BigDecimal.valueOf(quantity));
         BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
         System.out.println(order.toString());
     }

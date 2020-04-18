@@ -6,25 +6,26 @@ import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import java.util.List;
 
 public class RSI implements Indicator {
+
     private double avgUp;
     private double avgDwn;
     private double prevClose;
     private final int period;
     private String explanation;
 
-    public RSI(List<BinanceCandlestick> candles, int period) {
+    public RSI(List<Double> closingPrice, int period) {
         avgUp = 0;
         avgDwn = 0;
         this.period = period;
         explanation = "";
-        init(candles);
+        init(closingPrice);
     }
 
     @Override
-    public void init(List<BinanceCandlestick> candles) {
-        prevClose = candles.get(0).getClose().doubleValue();
+    public void init(List<Double> closingPrices) {
+        prevClose = closingPrices.get(0);
         for (int i = 1; i < period + 1; i++) {
-            double change = candles.get(i).getClose().doubleValue() - prevClose;
+            double change = closingPrices.get(i) - prevClose;
             if (change > 0) {
                 avgUp += change;
             } else {
@@ -37,8 +38,8 @@ public class RSI implements Indicator {
         avgDwn = avgDwn / (double) period;
 
         //Dont use latest unclosed value
-        for (int i = period + 1; i < candles.size() - 1; i++) {
-            update(candles.get(i).getClose().doubleValue());
+        for (int i = period + 1; i < closingPrices.size() - 1; i++) {
+            update(closingPrices.get(i));
         }
     }
 
