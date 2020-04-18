@@ -7,6 +7,7 @@ import trading.Formatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -50,28 +51,36 @@ public class Main {
             Long end = 1585699200000L; //1. aprill hour 0
             Long start = 1583020800000L; // 1. märts hour 0
             Long wholePeriod = end - start;
-            int numOfThreads = 20;
+            int numOfThreads = 80;
             Long toSubtract = wholePeriod / (long) numOfThreads;
 
             final ExecutorService executorService = Executors.newFixedThreadPool(numOfThreads);
+            List<Future<?>> futures = new ArrayList<Future<?>>();
+
             for (int i = 0; i < numOfThreads - 1; i++) {
-                executorService.submit(new TradeCollector(end, end - toSubtract, dataHolder, symbol));
+                Future<?> f = executorService.submit(new TradeCollector(end - toSubtract, end, dataHolder, symbol));
+                futures.add(f);
                 end -= toSubtract;
             }
             executorService.submit(new TradeCollector(end, start, dataHolder, symbol));
             System.out.println("---Submitting complete.");
-            executorService.shutdown();
-            while (executorService.awaitTermination(10, TimeUnit.HOURS)) {
+            boolean done = false;
+            while (!done) {
+                done = true;
                 long initTime = System.currentTimeMillis();
-                boolean timeElapsed = false;
-                while (timeElapsed) {
-                    if (System.currentTimeMillis() - initTime > 60000) {
-                        timeElapsed = true;
+                while (true) { //This check is necessary because we will get banned if we do more than 1000 requests per minute
+                    if (System.currentTimeMillis() - initTime > 60001) {
                         System.out.println("--- 1 minute has passed");
                         TradeCollector.setNumOfRequests(0);
+                        System.out.println(TradeCollector.getNumOfRequests());
+                        break;
                     }
                 }
+                for (Future<?> future : futures) {
+                    done &= future.isDone();
+                }
             }
+            executorService.shutdown();
             System.out.println("-----Size of dataHolder List: " + dataHolder.size());
 
 
