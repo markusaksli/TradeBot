@@ -62,22 +62,20 @@ public class SMA implements Indicator {
         for (double price : prices) {
             stdev += Math.pow(price-mean, 2);
         }
-        return stdev;
+        return Math.sqrt(stdev/ (double) period);
     }
 
     public double tempStandardDeviation(double newPrice){
 
-        double tempMean = currentSum-prices.get(0) + newPrice/ (double) period;
+        double tempMean = (currentSum-prices.get(0) + newPrice) / (double) period;
         double tempStdev = 0.0;
 
-        for (double price : prices){
-            if (price == prices.get(0))
-                continue;
-            tempStdev += Math.pow(price- tempMean, 2);
+        for (int i = 1; i < prices.size(); i++) {
+            tempStdev += Math.pow(prices.get(i) - tempMean, 2);
         }
 
         tempStdev += Math.pow(newPrice - tempMean, 2);
-        return tempStdev;
+        return Math.sqrt(tempStdev/ (double) period);
 
     }
 }
