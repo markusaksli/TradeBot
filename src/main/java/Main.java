@@ -4,17 +4,22 @@ import trading.*;
 import trading.Currency;
 import trading.Formatter;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
     static Set<Currency> currencies; //There should never be two of the same Currency
 
-    public static void main(String[] args) throws BinanceApiException, InterruptedException {
+    public static void main(String[] args) {
 
         Scanner sc = new Scanner(System.in);
         while (true) {
@@ -42,59 +47,98 @@ public class Main {
         System.out.println("---Entering " + Mode.get().name() + " mode");
 
 
-        if (Mode.get() == Mode.BACKTESTING) {
+        if (Mode.get() == Mode.COLLECTION) {
+            System.out.println("Enter desired currency pair");
+            BinanceSymbol symbol = null;
+            try {
+                symbol = new BinanceSymbol(sc.nextLine());
+            } catch (BinanceApiException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Enter start of collection period (Unix epoch milliseconds)");
+            long start = sc.nextLong(); // 1. märts hour 0
+            System.out.println("Enter end of collection period (Unix epoch milliseconds)");
+            long end = sc.nextLong(); // 1. märts hour 0
 
-        } else if (Mode.get() == Mode.COLLECTION) {
-
-            BinanceSymbol symbol = new BinanceSymbol("BTCUSDT");
             List<TradeBean> dataHolder = new ArrayList<>();
-            List<Long> timestamps = new ArrayList<>();
-            Long end = 1583366400000L; //1. aprill hour 0 1585699200000L
-            Long start = 1583020800000L; // 1. märts hour 0
-            Long wholePeriod = end - start;
-            int numOfThreads = 50;
-            Long toSubtract = wholePeriod / (long) numOfThreads;
+            long wholePeriod = end - start;
+            int numOfThreads = 30;
+            long toSubtract = wholePeriod / (long) numOfThreads;
+
+            TradeCollector.setRemaining(numOfThreads);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            TradeBean.setDateFormat(dateFormat);
 
             final ExecutorService executorService = Executors.newCachedThreadPool();
-            TradeCollector.remaining = numOfThreads;
+            List<Future<?>> futures = new ArrayList<>();
+            Instant initTime = Instant.now();
             for (int i = 0; i < numOfThreads - 1; i++) {
-                executorService.submit(new TradeCollector(end - toSubtract, end, dataHolder, symbol));
+                futures.add(executorService.submit(new TradeCollector(end - toSubtract, end, dataHolder, symbol)));
                 end -= toSubtract;
             }
-            executorService.submit(new TradeCollector(end, start, dataHolder, symbol));
-            System.out.println("---Submitting complete.");
-            while (TradeCollector.remaining != 0) {
-                long initTime = System.currentTimeMillis();
+            executorService.submit(new TradeCollector(start, end, dataHolder, symbol));
+            System.out.println("---Started collection.");
+
+            boolean done = false;
+            while (!done) {
+                long sinceTime = System.currentTimeMillis();
                 boolean timeElapsed = true;
                 while (timeElapsed) {
-                    System.out.println("Fastest chunk : " + Formatter.formatPercent(TradeCollector.getProgress()) + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + numOfThreads + ", number of requests hit in 1min: " + TradeCollector.getNumOfRequests());
-                    if (System.currentTimeMillis() - initTime > 60000) {
+                    done = true;
+                    for (Future<?> future : futures) {
+                        done &= future.isDone();
+                    }
+                    timeElapsed = !done;
+
+                    if (System.currentTimeMillis() - sinceTime > 60000) {
+                        System.out.println("---Overall progress : " + Formatter.formatPercent(TradeCollector.getProgress() / numOfThreads) + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + numOfThreads + ", number of requests hit in last minute: " + TradeCollector.getNumOfRequests());
                         timeElapsed = false;
                         TradeCollector.setNumOfRequests(0);
                     }
                 }
             }
             executorService.shutdown();
-            executorService.awaitTermination(1, TimeUnit.HOURS);
-
-            System.out.println("-----Size of dataHolder List: " + dataHolder.size());
-
-            dataHolder.sort(Comparator.comparing(TradeBean::getTimestamp));
-            start += 300000;
-            for (int i = 0; i < dataHolder.size(); i++) {
-                if (dataHolder.get(i).getTimestamp() > start) {
-                    dataHolder.get(i - 1).close();
-                    start += 300000;
-                }
+            try {
+                executorService.awaitTermination(1, TimeUnit.HOURS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-            try (FileWriter writer = new FileWriter("src\\main\\resources\\Backtesting\\BTCUSDT.txt")) {
-                for (TradeBean tradeBean : dataHolder) {
-                    writer.write(tradeBean.toString() + "\n");
+            while (true) {
+                try {
+                    dataHolder.sort(Comparator.comparing(TradeBean::getTimestamp));
+                    break;
+                } catch (NullPointerException e) {
+                    System.out.println("Could not find list to sort");
+                }
+            }
+            System.out.println("---Collected: " + dataHolder.size()
+                    + " aggregated trades from " + dataHolder.get(0).getDate()
+                    + " to " + dataHolder.get(dataHolder.size() - 1).getDate()
+                    + " in " + Formatter.formatDuration(Duration.between(initTime, Instant.now())));
+
+            String filename = "backtesting\\" + symbol + "_" + start + "_" + end + ".txt";
+            try (FileWriter writer = new FileWriter(filename)) {
+                System.out.println("---Writing file");
+                writer.write(dataHolder.size() + " aggregated trades from " + dataHolder.get(0).getDate() + " to " + dataHolder.get(dataHolder.size() - 1).getDate() + "\n");
+                start += 300000;
+                for (int i = 0; i < dataHolder.size(); i++) {
+                    writer.write(dataHolder.get(i).toString() + "\n");
+                    if (i < dataHolder.size() - 3) {
+                        if (dataHolder.get(i + 2).getTimestamp() > start) {
+                            dataHolder.get(i + 1).close();
+                            start += 300000;
+                        }
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            System.out.println("---Collection completed, result in "
+                    + filename
+                    + " (" + Formatter.formatDecimal((double) new File(filename).length() / (double) 1024 / (double) 1024) + " MB)");
+        } else if (Mode.get() == Mode.BACKTESTING) {
 
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
@@ -128,7 +172,11 @@ public class Main {
             long startTime = System.nanoTime();
             for (String arg : args) {
                 //The currency class contains all of the method calls that drive the activity of our bot
-                currencies.add(new Currency(arg, 250, true, false));
+                try {
+                    currencies.add(new Currency(arg, 250, true, false));
+                } catch (BinanceApiException e) {
+                    e.printStackTrace();
+                }
             }
             long endTime = System.nanoTime();
             double time = (endTime - startTime) / 1.e9;

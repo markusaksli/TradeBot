@@ -12,9 +12,11 @@ public class TradeCollector implements Runnable {
     private Long end;
     private final List<TradeBean> dataHolder;
     private final BinanceSymbol symbol;
+    private double lastProgress = 0;
+
+    private static int remaining;
+    private static double progress = 0;
     private static volatile int numOfRequests = 0;
-    private static double progress = 1;
-    public static int remaining;
 
     public static double getProgress() {
         return progress;
@@ -24,29 +26,13 @@ public class TradeCollector implements Runnable {
         return remaining;
     }
 
+    public static void setRemaining(int remaining) {
+        TradeCollector.remaining = remaining;
+    }
+
     public static int getNumOfRequests() {
         return numOfRequests;
     }
-
-    /*BinanceSymbol symbol;
-        try {
-            symbol = new BinanceSymbol("BTCUSDT");
-            List<TradeBean> beanList = new ArrayList<>();
-            readHistory(symbol, 1587225600000L, 1587229200000L, beanList);
-            Collections.reverse(beanList);
-            Long chart = 1587225600000L;
-            double lastPrice = 0;
-            for (TradeBean tradeBean : beanList) {
-                if (tradeBean.getTimestamp() >= chart) {
-                    chart += 300000L;
-                    System.out.println(tradeBean.getDate() + "   " + lastPrice + "   CLOSEEEEEEEEEEEEEEEEEEEEEE");
-                }
-                lastPrice = tradeBean.getPrice();
-            }
-
-        } catch (BinanceApiException e) {
-            e.printStackTrace();
-        }*/
 
     public TradeCollector(Long start, Long end, List<TradeBean> dataHolder, BinanceSymbol symbol) {
         this.start = start;
@@ -65,10 +51,8 @@ public class TradeCollector implements Runnable {
         options.put("endTime", end);
         List<BinanceAggregatedTrades> trades;
         boolean isTime = false;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         while (true) {
-            while (numOfRequests > 990) {
+            while (numOfRequests > 995) {
                 Thread.onSpinWait();
             }
             try {
@@ -89,7 +73,9 @@ public class TradeCollector implements Runnable {
                     dataHolder.add(new TradeBean(trade.getPrice().doubleValue(), trade.getTimestamp()));
                 }
                 if (isTime) break;
-                progress = Math.min(progress, (end - start) / (double) timeLeft);
+                double currentProgress = (1 - (end - start) / (double) timeLeft);
+                progress = progress - lastProgress + currentProgress;
+                lastProgress = currentProgress;
                 options.replace("startTime", end - 3600000L);
                 options.replace("endTime", end);
             } catch (BinanceApiException e) {
@@ -97,7 +83,8 @@ public class TradeCollector implements Runnable {
             }
         }
         remaining--;
-        System.out.println("Thread " + Thread.currentThread().getId() + " has finished");
+        progress = progress - lastProgress + 1;
+        System.out.println(remaining + " chunks remaining");
     }
 
     public static void setNumOfRequests(int numOfRequests) {
