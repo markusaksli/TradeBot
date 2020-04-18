@@ -22,7 +22,7 @@ public class Main {
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
-        System.out.println("Enter 1 or 2. 1: Backtesting; 2: Live ------");
+        System.out.println("---Enter bot mode (live, simulated, backtesting)");
         String mode = sc.nextLine();
         if (mode.equals("1")) {
             System.out.println("Entering BACKTESTING MODE");
@@ -30,20 +30,19 @@ public class Main {
         } else if (mode.equals("2")) {
             System.out.println("Entering LIVE mode");
 
-        /*while (true) {
-            System.out.println("Enter your API Key: ");
-            String apiKey = sc.nextLine();
-            if (apiKey.length() == 64) {
-                CurrentAPI.get().setApiKey(apiKey);
-                System.out.println("Enter your Secret Key: ");
-                String apiSecret = sc.nextLine();
-                if (apiSecret.length() == 64) {
-                    CurrentAPI.get().setSecretKey(apiSecret);
-                    break;
-                } else System.out.println("Secret API is incorrect, enter again.");
-            } else System.out.println("Incorrect API, enter again.");
-
-        }*/
+            /*while (true) {
+                System.out.println("Enter your API Key: ");
+                String apiKey = sc.nextLine();
+                if (apiKey.length() == 64) {
+                    CurrentAPI.get().setApiKey(apiKey);
+                    System.out.println("Enter your Secret Key: ");
+                    String apiSecret = sc.nextLine();
+                    if (apiSecret.length() == 64) {
+                        CurrentAPI.get().setSecretKey(apiSecret);
+                        break;
+                    } else System.out.println("Secret API is incorrect, enter again.");
+                } else System.out.println("Incorrect API, enter again.");
+            }*/
 
         /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
