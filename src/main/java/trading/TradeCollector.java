@@ -12,14 +12,25 @@ import java.util.*;
 public class TradeCollector {
 
     public static void main(String[] args) {
-        BinanceSymbol symbol = null;
+        BinanceSymbol symbol;
         try {
             symbol = new BinanceSymbol("BTCUSDT");
+            List<TradeBean> beanList = new ArrayList<>();
+            readHistory(symbol, 1587225600000L, 1587229200000L, beanList);
+            Collections.reverse(beanList);
+            Long chart = 1587225600000L;
+            double lastPrice = 0;
+            for (TradeBean tradeBean : beanList) {
+                if (tradeBean.getTimestamp() >= chart) {
+                    chart += 300000L;
+                    System.out.println(tradeBean.getDate() + "   " + lastPrice + "   CLOSEEEEEEEEEEEEEEEEEEEEEE");
+                }
+                lastPrice = tradeBean.getPrice();
+            }
+
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }
-        List<TradeBean> beanList = new ArrayList<>();
-        readHistory(symbol, 1583013600000L, 1583017200000L, beanList);
     }
 
     public static void readHistory(BinanceSymbol symbol, Long start, Long end, List<TradeBean> dataHolder) {

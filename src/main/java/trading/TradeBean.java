@@ -18,6 +18,14 @@ public class TradeBean {
         return dateFormat.format(new Date(timestamp));
     }
 
+    public double getPrice() {
+        return price;
+    }
+
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
     @Override
     public String toString() {
         return getDate() + ";" + price + ";" + timestamp;
