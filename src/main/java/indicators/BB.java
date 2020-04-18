@@ -75,7 +75,10 @@ public class BB implements Indicator{
 
     @Override
     public int check(double newPrice) {
-        return 0;
+        if (get() == 2 && getTemp(newPrice) == 3)
+            return 1;
+        else
+            return 0;
     }
 
     @Override
