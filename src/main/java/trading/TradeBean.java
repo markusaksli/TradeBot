@@ -20,6 +20,6 @@ public class TradeBean {
 
     @Override
     public String toString() {
-        return getDate() + ";" + price + timestamp;
+        return getDate() + ";" + price + ";" + timestamp;
     }
 }
