@@ -13,6 +13,26 @@ public class TradeCollector implements Runnable {
     private List<TradeBean> dataHolder;
     private BinanceSymbol symbol;
 
+        /*BinanceSymbol symbol;
+        try {
+            symbol = new BinanceSymbol("BTCUSDT");
+            List<TradeBean> beanList = new ArrayList<>();
+            readHistory(symbol, 1587225600000L, 1587229200000L, beanList);
+            Collections.reverse(beanList);
+            Long chart = 1587225600000L;
+            double lastPrice = 0;
+            for (TradeBean tradeBean : beanList) {
+                if (tradeBean.getTimestamp() >= chart) {
+                    chart += 300000L;
+                    System.out.println(tradeBean.getDate() + "   " + lastPrice + "   CLOSEEEEEEEEEEEEEEEEEEEEEE");
+                }
+                lastPrice = tradeBean.getPrice();
+            }
+
+        } catch (BinanceApiException e) {
+            e.printStackTrace();
+        }*/
+
     public TradeCollector(Long start, Long end, List<TradeBean> dataHolder, BinanceSymbol symbol) {
         this.start = start;
         this.end = end;
