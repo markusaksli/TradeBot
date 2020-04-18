@@ -2,6 +2,7 @@ import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
 import trading.*;
 
+import java.sql.SQLOutput;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
@@ -16,6 +17,14 @@ public class Main {
 
         //Optional for simulation, increases API request limits
         Scanner sc = new Scanner(System.in);
+        System.out.println("Enter 1 or 2. 1: Backtesting; 2: Live ------");
+        String mode = sc.nextLine();
+        if (mode.equals("1")) {
+            System.out.println("Entering BACKTESTING MODE");
+
+        } else if (mode.equals("2")) {
+            System.out.println("Entering LIVE mode");
+
         /*while (true) {
             System.out.println("Enter your API Key: ");
             String apiKey = sc.nextLine();
@@ -41,18 +50,18 @@ public class Main {
         System.out.println("Can Withdraw: " + account.get("canWithdraw").getAsBoolean());
         System.out.println("Can Deposit: " + account.get("canDeposit").getAsBoolean());*/
 
-        currencies = new HashSet<>(); //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
-        long startTime = System.nanoTime();
-        for (String arg : args) {
-            //The currency class contains all of the method calls that drive the activity of our bot
-            currencies.add(new Currency(arg, 250, true));
+            currencies = new HashSet<>(); //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
+            long startTime = System.nanoTime();
+            for (String arg : args) {
+                //The currency class contains all of the method calls that drive the activity of our bot
+                currencies.add(new Currency(arg, 250, true, false));
+            }
+            long endTime = System.nanoTime();
+            double time = (endTime - startTime) / 1.e9;
+
+            System.out.println("---SETUP DONE (" + Formatter.formatDecimal(time) + " s)");
+
         }
-        long endTime = System.nanoTime();
-        double time = (endTime - startTime) / 1.e9;
-
-        System.out.println("---SETUP DONE (" + Formatter.formatDecimal(time) + " s)");
-
-
 
         //From this point we only use the main thread to check how the bot is doing
         while (true) {

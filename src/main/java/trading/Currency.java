@@ -10,6 +10,10 @@ import com.webcerebrium.binance.datatype.BinanceInterval;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import com.webcerebrium.binance.websocket.BinanceWebSocketAdapterKline;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,8 +30,21 @@ public class Currency {
     private double currentPrice;
     private long currentTime;
     private boolean currentlyCalculating = false;
+    private boolean backTesting;
 
-    public Currency(String coin, int historyLength, boolean trade) throws BinanceApiException {
+    public Currency(String coin, int historyLength, boolean trade, boolean backTesting) throws BinanceApiException {
+        this.backTesting = backTesting;
+
+        //Code for reading .txt file from resources
+        /*String filename = "/Backtesting/BTC_aug.txt";
+        InputStream inputStream = CurrencyBack.class.getResourceAsStream(filename);
+        InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        BufferedReader reader = new BufferedReader(streamReader);
+        for (String line; (line = reader.readLine()) != null; ) {
+
+
+        }*/
+
         //Every currency is a USDT pair so we only care about the fiat opposite coin
         this.coin = coin;
         symbol = BinanceSymbol.valueOf(coin + FIAT);
