@@ -1,5 +1,10 @@
 package trading;
 
+import com.webcerebrium.binance.api.BinanceApi;
+import com.webcerebrium.binance.api.BinanceApiException;
+import com.webcerebrium.binance.datatype.*;
+import java.math.BigDecimal;
+
 public class BuySell {
 
     private static Account account;
@@ -48,5 +53,26 @@ public class BuySell {
 
     private static double nextAmount() {
         return Math.min(account.getFiat(), account.getTotalValue() * 0.10);
+    }
+
+    public static void placeBuyOrder(String currencySymbol, double quantity) throws BinanceApiException {
+        BinanceApi api = CurrentAPI.get();
+        BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
+        BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.BUY);
+        placement.setType(BinanceOrderType.MARKET);
+        placement.setQuantity(BigDecimal.valueOf(quantity));
+        BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
+        System.out.println(order.toString());
+    }
+
+    public static void placeSellOrder(String currencySymbol, double quantity) throws BinanceApiException {
+        BinanceApi api = CurrentAPI.get();
+        BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
+        BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.SELL);
+        placement.setType(BinanceOrderType.MARKET);
+        placement.setPrice(BigDecimal.valueOf(0.00001));
+        placement.setQuantity(BigDecimal.valueOf(10000)); // buy 10000 of asset for 0.00001 BTC
+        BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
+        System.out.println(order.toString());
     }
 }
