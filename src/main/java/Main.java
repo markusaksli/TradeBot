@@ -1,14 +1,18 @@
 import com.webcerebrium.binance.api.BinanceApiException;
+import com.webcerebrium.binance.datatype.BinanceSymbol;
 import trading.*;
 import trading.Currency;
 import trading.Formatter;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     static Set<Currency> currencies; //There should never be two of the same Currency
 
-    public static void main(String[] args) throws BinanceApiException {
+    public static void main(String[] args) throws BinanceApiException, InterruptedException {
 
         Scanner sc = new Scanner(System.in);
         while (true) {
@@ -39,6 +43,31 @@ public class Main {
         if (Mode.get() == Mode.BACKTESTING) {
 
         } else if (Mode.get() == Mode.COLLECTION) {
+
+            BinanceSymbol symbol = new BinanceSymbol("BTCUSDT");
+            List<TradeBean> dataHolder = new ArrayList<>();
+            List<Long> timestamps = new ArrayList<>();
+            Long end = 1585699200000L; //1. aprill hour 0
+            Long start = 1583020800000L; // 1. märts hour 1
+            Long wholePeriod = end - start;
+            int numOfThreads = 20;
+            Long toSubtract = wholePeriod / (long) numOfThreads;
+            System.out.println(toSubtract);
+            for (int i = 0; i < numOfThreads; i++) {
+                timestamps.add(end);
+                end -= toSubtract;
+
+            }
+            System.out.println(timestamps.size());
+            System.out.println(timestamps);
+            System.out.println(wholePeriod / (double) numOfThreads);
+            final ExecutorService executorService = Executors.newFixedThreadPool(numOfThreads);
+            for (int i = 0; i < numOfThreads; i++) {
+                executorService.submit(new TradeCollector(timestamps.get(i), timestamps.get(i + 1), dataHolder, symbol));
+            }
+            executorService.shutdown();
+            executorService.awaitTermination(10, TimeUnit.HOURS);
+
 
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
