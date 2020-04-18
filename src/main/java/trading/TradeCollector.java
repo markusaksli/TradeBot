@@ -12,6 +12,7 @@ public class TradeCollector implements Runnable {
     private Long end;
     private List<TradeBean> dataHolder;
     private BinanceSymbol symbol;
+    private static int numOfRequests = 0;
 
         /*BinanceSymbol symbol;
         try {
@@ -42,6 +43,7 @@ public class TradeCollector implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("Markus");
         Long startTime = end - 3600000L;
         Long timeLeft = end - start;
         int limit = 1000;
@@ -53,31 +55,36 @@ public class TradeCollector implements Runnable {
         SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         while (true) {
-            try {
-                trades = (CurrentAPI.get().aggTrades(symbol, limit, options));
-                BinanceAggregatedTrades trade = null;
+            while (numOfRequests > 970)
+                try {
+                    trades = (CurrentAPI.get().aggTrades(symbol, limit, options));
+                    numOfRequests++;
+                    BinanceAggregatedTrades trade = null;
 
-                for (int i = limit - 1; i >= 0; i--) {
-                    trade = trades.get(i);
-                    if (trade.getTimestamp() < start) {
-                        isTime = true;
-                        break;
-                    }
-                    if (i == 0) {
-                        end = trade.getTimestamp();
-                    }
+                    for (int i = limit - 1; i >= 0; i--) {
+                        trade = trades.get(i);
+                        if (trade.getTimestamp() < start) {
+                            isTime = true;
+                            break;
+                        }
+                        if (i == 0) {
+                            end = trade.getTimestamp();
+                        }
 
-                    dataHolder.add(new TradeBean(trade.getPrice().doubleValue(), trade.getTimestamp()));
+                        dataHolder.add(new TradeBean(trade.getPrice().doubleValue(), trade.getTimestamp()));
+                    }
+                    if (isTime) break;
+                    System.out.println(Formatter.formatPercent((end - start) / (double) timeLeft));
+                    System.out.println("thread id: " + Thread.currentThread().getId());
+                    options.replace("startTime", end - 3600000L);
+                    options.replace("endTime", end);
+                } catch (BinanceApiException e) {
+                    e.printStackTrace();
                 }
-                if (isTime) break;
-                System.out.println(Formatter.formatPercent((end - start) / (double) timeLeft));
-
-                options.replace("startTime", end - 3600000L);
-                options.replace("endTime", end);
-            } catch (BinanceApiException e) {
-                e.printStackTrace();
-            }
         }
     }
 
+    public static void setNumOfRequests(int numOfRequests) {
+        TradeCollector.numOfRequests = numOfRequests;
+    }
 }

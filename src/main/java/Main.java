@@ -48,25 +48,31 @@ public class Main {
             List<TradeBean> dataHolder = new ArrayList<>();
             List<Long> timestamps = new ArrayList<>();
             Long end = 1585699200000L; //1. aprill hour 0
-            Long start = 1583020800000L; // 1. märts hour 1
+            Long start = 1583020800000L; // 1. märts hour 0
             Long wholePeriod = end - start;
             int numOfThreads = 20;
             Long toSubtract = wholePeriod / (long) numOfThreads;
-            System.out.println(toSubtract);
-            for (int i = 0; i < numOfThreads; i++) {
-                timestamps.add(end);
-                end -= toSubtract;
 
-            }
-            System.out.println(timestamps.size());
-            System.out.println(timestamps);
-            System.out.println(wholePeriod / (double) numOfThreads);
             final ExecutorService executorService = Executors.newFixedThreadPool(numOfThreads);
-            for (int i = 0; i < numOfThreads; i++) {
-                executorService.submit(new TradeCollector(timestamps.get(i), timestamps.get(i + 1), dataHolder, symbol));
+            for (int i = 0; i < numOfThreads - 1; i++) {
+                executorService.submit(new TradeCollector(end, end - toSubtract, dataHolder, symbol));
+                end -= toSubtract;
             }
+            executorService.submit(new TradeCollector(end, start, dataHolder, symbol));
+            System.out.println("---Submitting complete.");
             executorService.shutdown();
-            executorService.awaitTermination(10, TimeUnit.HOURS);
+            while (executorService.awaitTermination(10, TimeUnit.HOURS)) {
+                long initTime = System.currentTimeMillis();
+                boolean timeElapsed = false;
+                while (timeElapsed) {
+                    if (System.currentTimeMillis() - initTime > 60000) {
+                        timeElapsed = true;
+                        System.out.println("--- 1 minute has passed");
+                        TradeCollector.setNumOfRequests(0);
+                    }
+                }
+            }
+            System.out.println("-----Size of dataHolder List: " + dataHolder.size());
 
 
         } else {
