@@ -4,9 +4,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TradeBean {
-    private double price;
-    private Long timestamp;
-    private static SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+    private final double price;
+    private final Long timestamp;
+    //private final int isClose;
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
     public TradeBean(double price, Long timestamp) {
         this.price = price;
@@ -15,5 +16,10 @@ public class TradeBean {
 
     public String getDate() {
         return dateFormat.format(new Date(timestamp));
+    }
+
+    @Override
+    public String toString() {
+        return getDate() + ";" + price + timestamp;
     }
 }

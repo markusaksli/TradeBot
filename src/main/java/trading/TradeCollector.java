@@ -2,12 +2,25 @@ package trading;
 
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceAggregatedTrades;
+import com.webcerebrium.binance.datatype.BinanceCandlestick;
+import com.webcerebrium.binance.datatype.BinanceInterval;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class TradeCollector {
+
+    public static void main(String[] args) {
+        BinanceSymbol symbol = null;
+        try {
+            symbol = new BinanceSymbol("BTCUSDT");
+        } catch (BinanceApiException e) {
+            e.printStackTrace();
+        }
+        List<TradeBean> beanList = new ArrayList<>();
+        readHistory(symbol, 1583013600000L, 1583017200000L, beanList);
+    }
 
     public static void readHistory(BinanceSymbol symbol, Long start, Long end, List<TradeBean> dataHolder) {
         Long startTime = end - 3600000L;
