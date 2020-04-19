@@ -14,4 +14,7 @@ Link to our Trello:
 https://trello.com/b/HJxkTeWv/assignments
 
 Link to jar download:
-https://cdn.discordapp.com/attachments/689396394296868877/701438599354122250/TradeBot.zip
+https://drive.google.com/open?id=1Rnss483S2dZSLMFyP53jNEDxNRGuFvov
+
+Link to backtesting data download (BTCUSDT 1. January 2020 - 1. April 2020):
+https://drive.google.com/open?id=1m4wZyKLl1bbJ2r9hLT2rLiL7ICZ0MI6x
