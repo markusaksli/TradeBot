@@ -1,7 +1,6 @@
 package indicators;
 
 import trading.Formatter;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
 import java.util.List;
 
@@ -78,10 +77,8 @@ public class MACD implements Indicator {
 
     @Override
     public int check(double newPrice) {
-        double last = get();
-        double diff = (getTemp(newPrice) - last) / Math.abs(last);
-        if (diff > 0.25) {
-            explanation = "MACD histogram grew by " + Formatter.formatPercent(diff) + " in current unclosed candle";
+        if (get() < 0 && getTemp(newPrice) > 0) {
+            explanation = "MACD histogram crossed in current unclosed candle";
             return 1;
         }
         explanation = "";

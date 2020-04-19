@@ -15,7 +15,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class TradeCollector implements Runnable {
+public class PriceCollector implements Runnable {
     private final Long start;
     private long end;
     public long duration;
@@ -34,7 +34,7 @@ public class TradeCollector implements Runnable {
     }
 
     public static void addMinuteRequests(int minuteRequests) {
-        TradeCollector.minuteRequests.release(minuteRequests);
+        PriceCollector.minuteRequests.release(minuteRequests);
     }
 
     public static int getRequestPermits() {
@@ -54,14 +54,14 @@ public class TradeCollector implements Runnable {
     }
 
     public static void setRemaining(long remaining) {
-        TradeCollector.remaining.set(remaining);
+        PriceCollector.remaining.set(remaining);
     }
 
     public static int getTotalRequests() {
         return totalRequests.get();
     }
 
-    public TradeCollector(long start, long end, BinanceSymbol symbol) {
+    public PriceCollector(long start, long end, BinanceSymbol symbol) {
         this.start = start;
         this.end = end;
         this.symbol = symbol;
@@ -107,7 +107,7 @@ public class TradeCollector implements Runnable {
                     end = trade.getTimestamp();
                 }
 
-                data.add(new PriceBean(trade.getPrice().doubleValue(), trade.getTimestamp()));
+                data.add(new PriceBean(trade.getTimestamp(), trade.getPrice().doubleValue()));
             }
             if (isTime) break;
             double currentProgress = (1 - (end - start) / (double) timeLeft);

@@ -4,6 +4,7 @@ import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.*;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 public class BuySell {
 
@@ -18,7 +19,7 @@ public class BuySell {
     }
 
     //Used by strategy
-    public static void open(Currency currency, String explanation) {
+    public static void open(Currency currency, String explanation, long timestamp) {
         double currentPrice = currency.getPrice(); //Current price of the currency
         double amount = nextAmount() / currency.getPrice();
         if (amount == 0) {
@@ -41,6 +42,8 @@ public class BuySell {
     //Used by trade
     public static void close(Trade trade) {
         //Converting coin value back to fiat
+        trade.setClosePrice(trade.getCurrency().getPrice());
+        trade.setCloseTime(trade.getCurrency().getCurrentTime());
         account.closeTrade(trade);
         account.removeFromWallet(trade.getCurrency(), trade.getAmount());
         account.addToFiat(trade.getAmount() * trade.getClosePrice());

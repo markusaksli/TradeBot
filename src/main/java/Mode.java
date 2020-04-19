@@ -1,6 +1,6 @@
 public enum Mode {
     LIVE,
-    SIMULATED,
+    SIMULATION,
     BACKTESTING,
     COLLECTION;
 

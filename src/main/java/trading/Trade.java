@@ -1,18 +1,16 @@
 package trading;
 
-import java.time.LocalDateTime;
-
 public class Trade {
 
     private double high; //Set the highest price
     private final double trailingSL; //It's in percentages, but using double for comfort.
-    private final LocalDateTime entryTime = LocalDateTime.now();
+    private final long entryTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
     private final Currency currency; //What cryptocurrency is used.
     private final double amount; //How much are you buying or selling. I.E 6 bitcoins or smth.
     private double closePrice;
-    private LocalDateTime closeTime;
+    private long closeTime;
     private final String explanation;
 
     public Trade(Currency currency, double entryPrice, double amount, double trailingSL, String explanation) {
@@ -22,6 +20,7 @@ public class Trade {
         this.high = entryPrice;
         this.amount = amount;
         this.explanation = explanation;
+        entryTime = currency.getCurrentTime();
         closePrice = -1;
     }
 
@@ -57,11 +56,15 @@ public class Trade {
         return (getClosePrice() - high) / high;
     }
 
-    public LocalDateTime getCloseTime() {
+    public void setCloseTime(long closeTime) {
+        this.closeTime = closeTime;
+    }
+
+    public long getCloseTime() {
         return closeTime;
     }
 
-    public LocalDateTime getEntryTime() {
+    public long getEntryTime() {
         return entryTime;
     }
 
@@ -99,19 +102,17 @@ public class Trade {
         if (newPrice > high)
             high = newPrice;
         else if (newPrice < high * (1 - trailingSL)) {
-            closePrice = newPrice;
-            closeTime = LocalDateTime.now();
             BuySell.close(this);
         }
     }
 
     @Override
     public String toString() {
-        return
-                currency.getCoin() + " " + amount
-                        + " opened " + Formatter.formatDate(entryTime) + " at " + entryPrice
-                        + (isClosed() ? ", closed " + Formatter.formatDate(closeTime) + " at " + closePrice : ", current price " + currency.getPrice())
-                        + ", high of " + high + ", profit " + Formatter.formatPercent(getProfit())
-                        + (isClosed() ? "\n\t" + explanation : "");
+        return (isClosed() ? (BuySell.getAccount().getTradeHistory().indexOf(this) + 1) : (BuySell.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
+                + currency.getCoin() + " " + amount
+                + " opened " + Formatter.formatDate(entryTime) + " at " + entryPrice
+                + (isClosed() ? ", closed " + Formatter.formatDate(closeTime) + " at " + closePrice : ", current price " + currency.getPrice())
+                + ", high of " + high + ", profit " + Formatter.formatPercent(getProfit())
+                + (isClosed() ? "\n\t" + explanation : "");
     }
 }

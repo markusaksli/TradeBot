@@ -11,6 +11,7 @@ public class BB implements Indicator{
     private double upperBand;
     private double middleBand;
     private double lowerBand;
+    private String explanation;
     private SMA sma;
 
     public BB(List<Double> closingPrices, int period) {
@@ -75,14 +76,16 @@ public class BB implements Indicator{
 
     @Override
     public int check(double newPrice) {
-        if (get() == 2 && getTemp(newPrice) == 3)
+        if (get() == 2 && getTemp(newPrice) == 3) {
+            explanation = "Price crossing from below to above upper BB";
             return 1;
-        else
-            return 0;
+        }
+        explanation = "";
+        return 0;
     }
 
     @Override
     public String getExplanation() {
-        return null;
+        return explanation;
     }
 }
