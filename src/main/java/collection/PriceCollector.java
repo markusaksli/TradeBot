@@ -99,7 +99,7 @@ public class PriceCollector implements Runnable {
                 }
             } catch (BinanceApiException e) {
                 if (e.getLocalizedMessage().toLowerCase().contains("current limit")) {
-                    System.out.println("---Server triggered request limit at " + Formatter.formatDate(LocalDateTime.now()) + "   " + e.getLocalizedMessage());
+                    System.out.println("---Server triggered request limit at " + Formatter.formatDate(LocalDateTime.now()) + " " + e.getLocalizedMessage());
                     minuteRequests.drainPermits();
                 } else {
                     System.out.println(e.getLocalizedMessage());
