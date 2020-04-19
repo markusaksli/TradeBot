@@ -89,6 +89,7 @@ public class TradeCollector implements Runnable {
                         + Formatter.formatDate(LocalDateTime.now())
                         + (e.getLocalizedMessage().toLowerCase().contains("banned") ? "   " + e.getLocalizedMessage() : ""));
                 minuteRequests.set(1200);
+                continue;
             }
 
             for (int i = limit - 1; i >= 0; i--) {
