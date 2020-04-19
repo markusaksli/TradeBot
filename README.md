@@ -14,4 +14,4 @@ Link to our Trello:
 https://trello.com/b/HJxkTeWv/assignments
 
 Link to jar download:
-https://cdn.discordapp.com/attachments/689396394296868877/701378349209092146/TradeBot.zip
+https://cdn.discordapp.com/attachments/689396394296868877/701438599354122250/TradeBot.zip
