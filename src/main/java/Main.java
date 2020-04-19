@@ -128,8 +128,8 @@ public class Main {
                     if (System.currentTimeMillis() - sinceTime > 60000) {
                         System.out.println("---"
                                 + Formatter.formatDate(LocalDateTime.now())
-                                + " Overall progress : " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
-                                + ", remaining chunks: " + PriceCollector.getRemaining() + "/" + chunks);
+                                + " Progress : " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
+                                + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks);
                         if (PriceCollector.getRequestPermits() > 0) {
                             System.out.println("------Bot has not used "
                                     + PriceCollector.getRequestPermits() + "/1200 requests ("

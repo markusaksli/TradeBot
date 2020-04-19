@@ -111,6 +111,9 @@ public class PriceCollector implements Runnable {
             }
             if (isTime) break;
             double currentProgress = (1 - (end - start) / (double) timeLeft);
+            if (currentProgress == lastProgress) {
+                System.out.println("------Collector " + Thread.currentThread().getId() + " is stuck at " + Formatter.formatPercent(currentProgress));
+            }
             progress = progress - lastProgress + currentProgress;
             lastProgress = currentProgress;
             options.replace("startTime", end - 3600000L);
