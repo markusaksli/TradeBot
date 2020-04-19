@@ -77,7 +77,6 @@ public class PriceCollector implements Runnable {
     public void run() {
         long startTime = end - 3600000L;
         long timeLeft = end - start;
-        int limit = 1000;
         Map<String, Long> options = new HashMap<>();
         options.put("startTime", startTime);
         options.put("endTime", end);
@@ -93,18 +92,19 @@ public class PriceCollector implements Runnable {
             workingThreads.getAndIncrement();
 
             try {
-                trades = (CurrentAPI.get().aggTrades(symbol, limit, options));
+                trades = (CurrentAPI.get().aggTrades(symbol, 1000, options));
                 if (trades.get(0).getTimestamp() == end || trades.isEmpty()) { //Empty or redundant request means we have reached the end of the chunk
                     workingThreads.getAndDecrement();
                     break;
                 }
             } catch (BinanceApiException e) {
                 if (e.getLocalizedMessage().toLowerCase().contains("current limit")) {
-                    System.out.println("---Server triggered request limit at " + Formatter.formatDate(LocalDateTime.now()));
+                    System.out.println("---Server triggered request limit at " + Formatter.formatDate(LocalDateTime.now()) + "   " + e.getLocalizedMessage());
                     minuteRequests.drainPermits();
                 } else {
                     System.out.println(e.getLocalizedMessage());
                 }
+                workingThreads.getAndDecrement();
                 continue;
             } finally {
                 totalRequests.getAndIncrement();

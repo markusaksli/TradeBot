@@ -45,8 +45,8 @@ public class Main {
                 "-Data needs to be loaded from a file created with the COLLECTION mode\n" +
                 "---COLLECTION\n" +
                 "-Collects raw market price data from a specified time period\n" +
-                "-Collection is multi-threaded and thus can be CPU intensive\n" +
-                "-Collected data is saved in a .txt file in the /backtesting directory\n" +
+                "-Collection is multi-threaded and can be CPU and memory intensive\n" +
+                "-Collected data is saved in a file in the /backtesting directory\n" +
                 "\n" +
                 "Simulation and backtesting do not always reflect live performance\n" +
                 "Make sure you are ready to commit to a strategy before starting LIVE\n");
