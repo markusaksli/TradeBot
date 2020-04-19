@@ -48,6 +48,11 @@ public class Main {
             long start = sc.nextLong(); // March 1 00:00:00 1583020800000
             System.out.println("Enter end of collection period (Unix epoch milliseconds)");
             long end = sc.nextLong(); // March 2 00:00:00 1583107200000
+            System.out.println("Press enter to continue...");
+            try {
+                System.in.read();
+            } catch (IOException ignored) {
+            }
 
             long wholePeriod = end - start;
             long toSubtract = 3 * 60 * 1000;
@@ -149,6 +154,11 @@ public class Main {
             System.out.println("---Collection completed, result in "
                     + filename
                     + " (" + Formatter.formatDecimal((double) new File(filename).length() / (double) 1024 / (double) 1024) + " MB)");
+            System.out.println("Press enter to continue...");
+            try {
+                System.in.read();
+            } catch (IOException ignored) {
+            }
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
             BuySell.setAccount(toomas);
