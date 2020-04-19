@@ -72,7 +72,7 @@ public class Main {
             Instant initTime = Instant.now();
             for (int i = 0; i < chunks - 1; i++) {
                 TradeCollector collector = new TradeCollector(end - toSubtract, end, dataHolder, symbol);
-                if (i <= 30) {
+                if (i < 30) {
                     futures.add(executorService.submit(collector));
                     lastCollector = i;
                 }
@@ -154,7 +154,7 @@ public class Main {
             System.out.println("---Collection completed, result in "
                     + filename
                     + " (" + Formatter.formatDecimal((double) new File(filename).length() / (double) 1024 / (double) 1024) + " MB)");
-            System.out.println("Press enter to continue...");
+            System.out.println("Press enter to start collection...");
             try {
                 System.in.read();
             } catch (IOException ignored) {
