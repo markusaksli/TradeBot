@@ -75,7 +75,7 @@ public class Main {
             System.out.println("Enter start of collection period (Unix epoch milliseconds)");
             long start = sc.nextLong(); // March 1 00:00:00 1583020800000
             System.out.println("Enter end of collection period (Unix epoch milliseconds)");
-            long end = sc.nextLong(); // March 2 00:00:00 1583107200000
+            long end = sc.nextLong(); // April 1 00:00:00 1585699200000
             /*BinanceSymbol symbol = null;
             try {
                 symbol = new BinanceSymbol("BTCUSDT");
