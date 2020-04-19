@@ -79,11 +79,6 @@ public class Main {
             long start = sc.nextLong(); // March 1 00:00:00 1583020800000
             System.out.println("Enter end of collection period (Unix epoch milliseconds)");
             long end = sc.nextLong(); // March 2 00:00:00 1583107200000
-            System.out.println("Press enter to start collecting backtesting data...");
-            try {
-                System.in.read();
-            } catch (IOException ignored) {
-            }
             /*BinanceSymbol symbol = null;
             try {
                 symbol = new BinanceSymbol("BTCUSDT");
@@ -258,10 +253,10 @@ public class Main {
                             Currency currency = new Currency(path, 250);
                             currencies.add(currency);
                             int i = 0;
-                            String resultPath = path.replace(".txt", "_" + i + ".txt");
+                            String resultPath = path.replace(".txt", "_run_" + i + ".txt");
                             while (new File(resultPath).exists()) {
                                 i++;
-                                resultPath = path.replace(".txt", "_" + i + ".txt");
+                                resultPath = path.replace(".txt", "_run_" + i + ".txt");
                             }
                             FileWriter writer = new FileWriter(resultPath);
                             writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
