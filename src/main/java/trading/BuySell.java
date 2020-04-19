@@ -35,8 +35,13 @@ public class BuySell {
         account.addToWallet(currency, amount);
         account.openTrade(trade);
 
-        System.out.println("---" + Formatter.formatDate(trade.getEntryTime()) + " opened trade (" + amount + " " + currency.getCoin() + "), at " + currency.getPrice());
-        System.out.println("------" + explanation);
+
+        String message = "---" + Formatter.formatDate(trade.getEntryTime())
+                + " opened trade (" + amount + " "
+                + currency.getCoin() + "), at " + currency.getPrice()
+                + "\n------" + explanation;
+        System.out.println(message);
+        if (Mode.get().equals(Mode.BACKTESTING)) currency.appendLogLine(message);
     }
 
     //Used by trade
@@ -48,10 +53,12 @@ public class BuySell {
         account.removeFromWallet(trade.getCurrency(), trade.getAmount());
         account.addToFiat(trade.getAmount() * trade.getClosePrice());
         trade.getCurrency().setActiveTrade(null);
-        System.out.println("---" + (Formatter.formatDate(trade.getCloseTime())) + " closed trade ("
+        String message = "---" + (Formatter.formatDate(trade.getCloseTime())) + " closed trade ("
                 + trade.getAmount() + " " + trade.getCurrency().getCoin()
                 + "), at " + trade.getClosePrice()
-                + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit");
+                + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit";
+        System.out.println(message);
+        if (Mode.get().equals(Mode.BACKTESTING)) trade.getCurrency().appendLogLine(message);
     }
 
     private static double nextAmount() {

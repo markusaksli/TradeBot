@@ -76,10 +76,10 @@ public class BB implements Indicator{
 
     @Override
     public int check(double newPrice) {
-        if (get() == 2 && getTemp(newPrice) == 3) {
+        /*if (get() == 2 && getTemp(newPrice) == 3) {
             explanation = "Price crossing from below to above upper BB";
             return 1;
-        }
+        }*/
         explanation = "";
         return 0;
     }

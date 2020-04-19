@@ -1,3 +1,5 @@
+package trading;
+
 public enum Mode {
     LIVE,
     SIMULATION,

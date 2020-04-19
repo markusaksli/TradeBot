@@ -125,8 +125,9 @@ public class Main {
                     if (System.currentTimeMillis() - sinceTime > 60000) {
                         System.out.println("---"
                                 + Formatter.formatDate(LocalDateTime.now())
-                                + " Progress : " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
-                                + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks);
+                                + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
+                                + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
+                                + ", total requests: " + PriceCollector.getTotalRequests());
                         if (PriceCollector.getRequestPermits() > 0) {
                             System.out.println("------Bot has not used "
                                     + PriceCollector.getRequestPermits() + "/1200 requests ("
@@ -173,8 +174,8 @@ public class Main {
                     writer.write(finalData.get(i).toString() + "\n");
                     if (i < finalData.size() - 3) {
                         if (finalData.get(i + 2).getTimestamp() > start) {
+                            while (finalData.get(i + 2).getTimestamp() > start) start += 300000;
                             finalData.get(i + 1).close();
-                            start += 300000;
                         }
                     }
                 }
@@ -184,6 +185,16 @@ public class Main {
             System.out.println("---Collection completed, result in "
                     + filename
                     + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
+
+            try {
+                for (PriceBean bean : Formatter.formatData(filename)) {
+                    if (bean.isClose()) {
+                        System.out.println(Formatter.formatDate(bean.getTimestamp()) + "   " + bean.getPrice());
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             System.out.println("Press enter to quit...");
             try {
                 System.in.read();
@@ -249,24 +260,51 @@ public class Main {
                             startTime = System.nanoTime();
                             Currency currency = new Currency(path, 250);
                             currencies.add(currency);
+
+                            for (Trade trade : toomas.getActiveTrades()) {
+                                BuySell.close(trade);
+                            }
+                            List<Trade> tradeHistory = toomas.getTradeHistory();
+                            tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
+
+                            double maxLoss = tradeHistory.get(0).getProfit();
+                            double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
+                            int lossTrades = 0;
+                            double lossSum = 0;
+                            int gainTrades = 0;
+                            double gainSum = 0;
+                            for (Trade trade : tradeHistory) {
+                                double profit = trade.getProfit();
+                                if (profit < 0) {
+                                    lossTrades += 1;
+                                    lossSum += profit;
+                                } else if (profit > 0) {
+                                    gainTrades += 1;
+                                    gainSum += profit;
+                                }
+                            }
+
+
                             int i = 0;
                             String resultPath = path.replace(".txt", "_run_" + i + ".txt");
                             while (new File(resultPath).exists()) {
                                 i++;
                                 resultPath = path.replace(".txt", "_run_" + i + ".txt");
                             }
-                            FileWriter writer = new FileWriter(resultPath);
-                            writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                            writer.write("\nTotal profit: " + Formatter.formatPercent(toomas.getProfit()) + "\n");
-                            writer.write("\nActive trades:\n");
-                            for (Trade trade : toomas.getActiveTrades()) {
-                                writer.write(trade.toString());
+                            try (FileWriter writer = new FileWriter(resultPath)) {
+                                writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
+                                writer.write("\nTotal profit: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
+                                writer.write("\nLoss trades:\n");
+                                writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
+                                writer.write("\nProfitable trades:\n");
+                                writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
+                                writer.write("\nClosed trades:\n");
+                                for (Trade trade : toomas.getTradeHistory()) {
+                                    writer.write(trade.toString() + "\n");
+                                }
+                                writer.write("\nFULL LOG:\n\n");
+                                writer.write(currency.getLog());
                             }
-                            writer.write("\nClosed trades:\n");
-                            for (Trade trade : toomas.getTradeHistory()) {
-                                writer.write(trade.toString());
-                            }
-                            writer.close();
                             System.out.println("---Simulation result file generated at " + resultPath);
                             break;
                         } catch (IOException e) {
@@ -283,7 +321,7 @@ public class Main {
             System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time) + " s)");
 
             //From this point we only use the main thread to check how the bot is doing
-            System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all");
+            System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, quit");
             while (true) {
                 String in = sc.nextLine();
                 switch (in) {
@@ -302,7 +340,6 @@ public class Main {
                         for (Trade trade : toomas.getTradeHistory()) {
                             System.out.println(trade);
                         }
-                        System.out.println(" ");
                         break;
                     case "wallet":
                         System.out.println("Total wallet value: " + Formatter.formatDecimal(toomas.getTotalValue()) + " USDT");
@@ -312,7 +349,6 @@ public class Main {
                                 System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
                             }
                         }
-                        System.out.println(" ");
                         break;
                     case "currencies":
                         for (Currency currency : currencies) {
@@ -331,8 +367,10 @@ public class Main {
                     case "close all":
                         toomas.getActiveTrades().forEach(BuySell::close);
                         break;
+                    case "quit":
+                        System.exit(0);
                     default:
-                        System.out.println("Wrong input. Try again (profit, active, history, wallet, currencies, open, close, close all)\n");
+                        System.out.println("Wrong input. Try again (profit, active, history, wallet, currencies, open, close, close all, quit)\n");
                         break;
                 }
             }

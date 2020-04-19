@@ -77,8 +77,12 @@ public class MACD implements Indicator {
 
     @Override
     public int check(double newPrice) {
-        if (get() < 0 && getTemp(newPrice) > 0) {
-            explanation = "MACD histogram crossed in current unclosed candle";
+        /*if (get() < 0 && getTemp(newPrice) > 0) {
+            explanation = "(Positive) MACD histogram crossed in current unclosed candle";
+            return 1;
+        }*/
+        if (getTemp(newPrice) > lastTick) {
+            explanation = "(Positive) MACD histogram was greater than 2 closed candles ago";
             return 1;
         }
         explanation = "";

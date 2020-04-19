@@ -10,6 +10,7 @@ import indicators.RSI;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.websocket.BinanceWebSocketAdapterKline;
 
+import javax.management.modelmbean.ModelMBean;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ public class Currency {
 
     private final List<Indicator> indicators = new ArrayList<>();
 
+    private StringBuilder log = new StringBuilder();
     private double latestClosedPrice;
     private double currentPrice;
     private long candleTime;
@@ -180,12 +182,21 @@ public class Currency {
         this.activeTrade = activeTrade;
     }
 
+    public String getLog() {
+        return log.toString();
+    }
+
+    public void appendLogLine(String s) {
+        log.append(s).append("\n");
+    }
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder(coin + " (price: " + currentPrice);
-        for (Indicator indicator : indicators) {
-            s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.getTemp(currentPrice)));
-        }
+        if (currentTime == candleTime)
+            indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.get())));
+        else
+            indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.getTemp(currentPrice))));
         s.append(", hasActive: ").append(hasActiveTrade()).append(")");
         return s.toString();
     }

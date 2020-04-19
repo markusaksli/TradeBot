@@ -79,8 +79,12 @@ public class RSI implements Indicator {
     public int check(double newPrice) {
         double temp = getTemp(newPrice);
         if (temp < 30) {
-            explanation = "RSI of " + Formatter.formatDecimal(temp);
+            explanation = "(Positive) RSI of " + Formatter.formatDecimal(temp);
             return 1;
+        }
+        if (temp > 80) {
+            explanation = "(Negative) RSI of " + Formatter.formatDecimal(temp);
+            return -2;
         }
         explanation = "";
         return 0;

@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class PriceCollector implements Runnable {
-    private final Long start;
+    private final long start;
     private long end;
     public long duration;
     private final List<PriceBean> data = new ArrayList<>();
@@ -71,7 +71,7 @@ public class PriceCollector implements Runnable {
     @Override
     public void run() {
         threads.getAndIncrement();
-        Long startTime = end - 3600000L;
+        long startTime = end - 3600000L;
         long timeLeft = end - start;
         int limit = 1000;
         Map<String, Long> options = new HashMap<>();
@@ -88,6 +88,10 @@ public class PriceCollector implements Runnable {
 
             try {
                 trades = (CurrentAPI.get().aggTrades(symbol, limit, options));
+                if (trades.isEmpty()) { //Since we get 1H window 3min has to fall in. Usually server maintenence or something
+                    isTime = true;
+                    break;
+                }
                 totalRequests.getAndIncrement();
             } catch (BinanceApiException e) {
                 System.out.println("---Server triggered request limit at "
@@ -112,7 +116,8 @@ public class PriceCollector implements Runnable {
             if (isTime) break;
             double currentProgress = (1 - (end - start) / (double) timeLeft);
             if (currentProgress == lastProgress) {
-                System.out.println("------Collector " + Thread.currentThread().getId() + " is stuck at " + Formatter.formatPercent(currentProgress));
+                System.out.println("------Collector " + Thread.currentThread().getId() + " is stuck at " + Formatter.formatPercent(currentProgress) + ", trades in request " + trades.size());
+                end -= 3600000L;
             }
             progress = progress - lastProgress + currentProgress;
             lastProgress = currentProgress;
