@@ -24,9 +24,6 @@ public class Main {
     static List<Currency> currencies; //There should never be two of the same Currency
 
     public static void main(String[] args) {
-        System.out.println(Formatter.formatDate(1585699200000L));
-        System.out.println(Formatter.formatDate(LocalDateTime.now()));
-
         System.out.println("Welcome to TradeBot\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
