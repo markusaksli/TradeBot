@@ -81,7 +81,7 @@ public class MACD implements Indicator {
             explanation = "(Positive) MACD histogram crossed in current unclosed candle";
             return 1;
         }*/
-        if (getTemp(newPrice) > lastTick) {
+        if (getTemp(newPrice) > get() && get() > lastTick) {
             explanation = "(Positive) MACD histogram was greater than 2 closed candles ago";
             return 1;
         }

@@ -3,9 +3,9 @@ import collection.PriceCollector;
 import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
-import trading.*;
 import trading.Currency;
 import trading.Formatter;
+import trading.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -112,6 +112,7 @@ public class Main {
             System.out.println("---Finished creating " + collectors.size() + " chunk collectors");
 
             boolean done = false;
+            double lastProgress = 0;
             while (!done) {
                 long sinceTime = System.currentTimeMillis();
                 boolean timeElapsed = true;
@@ -121,17 +122,22 @@ public class Main {
                         done &= future.isDone();
                     }
                     timeElapsed = !done;
-
                     if (System.currentTimeMillis() - sinceTime > 60000) {
+                        if (lastProgress == PriceCollector.getProgress()) {
+                            System.out.println("------Progress has halted!");
+                        }
+                        lastProgress = PriceCollector.getProgress();
                         System.out.println("---"
                                 + Formatter.formatDate(LocalDateTime.now())
                                 + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
                                 + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
-                                + ", total requests: " + PriceCollector.getTotalRequests());
+                                + ", total requests: " + PriceCollector.getTotalRequests()
+                                + ", currently mid-work threads: " + PriceCollector.getWorkingThreads());
                         if (PriceCollector.getRequestPermits() > 0) {
                             System.out.println("------Bot has not used "
                                     + PriceCollector.getRequestPermits() + "/1200 requests ("
-                                    + PriceCollector.getThreads() + " collectors)");
+                                    + PriceCollector.getThreads() + " collectors)"
+                                    + ", currently mid-work threads: " + PriceCollector.getWorkingThreads());
                         }
                         timeElapsed = false;
                         PriceCollector.addMinuteRequests(1200);
@@ -149,9 +155,9 @@ public class Main {
             collectors.stream().map(PriceCollector::getData).forEach(finalData::addAll);
             Collections.reverse(finalData);
             /*PriceBean previousDatum = finalData.get(0);
-            for (int i = 0; i < finalData.size(); i++) {
+            for (int i = 0; i < finalData.size() - 1; i++) {
                 PriceBean finalDatum = finalData.get(i);
-                assert finalDatum.getTimestamp() > previousDatum.getTimestamp();
+                assert finalDatum.getTimestamp() >= previousDatum.getTimestamp();
                 previousDatum = finalDatum;
             }
             System.out.println("---Prices are correctly ordered");*/
@@ -186,15 +192,6 @@ public class Main {
                     + filename
                     + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
 
-            try {
-                for (PriceBean bean : Formatter.formatData(filename)) {
-                    if (bean.isClose()) {
-                        System.out.println(Formatter.formatDate(bean.getTimestamp()) + "   " + bean.getPrice());
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             System.out.println("Press enter to quit...");
             try {
                 System.in.read();

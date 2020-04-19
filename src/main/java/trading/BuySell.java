@@ -4,7 +4,6 @@ import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.*;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 public class BuySell {
 
@@ -36,7 +35,7 @@ public class BuySell {
         account.openTrade(trade);
 
 
-        String message = "---" + Formatter.formatDate(trade.getEntryTime())
+        String message = "---" + Formatter.formatDate(trade.getOpenTime())
                 + " opened trade (" + amount + " "
                 + currency.getCoin() + "), at " + currency.getPrice()
                 + "\n------" + explanation;

@@ -4,7 +4,7 @@ public class Trade {
 
     private double high; //Set the highest price
     private final double trailingSL; //It's in percentages, but using double for comfort.
-    private final long entryTime;
+    private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
     private final Currency currency; //What cryptocurrency is used.
@@ -20,7 +20,7 @@ public class Trade {
         this.high = entryPrice;
         this.amount = amount;
         this.explanation = explanation;
-        entryTime = currency.getCurrentTime();
+        openTime = currency.getCurrentTime();
         closePrice = -1;
     }
 
@@ -32,13 +32,6 @@ public class Trade {
     public double getClosePrice() {
         return closePrice;
     }
-
-    /*
-    public void setFillPrice(double fillPrice) {
-        this.fillPrice = fillPrice;
-    }
-
-     */
 
     public Currency getCurrency() { //for getting the currency to calculate what the price is now.
         return currency;
@@ -64,28 +57,13 @@ public class Trade {
         return closeTime;
     }
 
-    public long getEntryTime() {
-        return entryTime;
-    }
-
-    public double getEntryPrice() {
-        return entryPrice;
-    }
-
-    public String getExplanation() {
-        return explanation;
+    public long getOpenTime() {
+        return openTime;
     }
 
     public boolean isClosed() {
         return closePrice != -1;
     }
-
-    /*
-    public double getFillPrice() {
-        return fillPrice;
-    }
-
-     */
 
 
     //Allows user to get the profit percentages on one specific trade.
@@ -110,7 +88,7 @@ public class Trade {
     public String toString() {
         return (isClosed() ? (BuySell.getAccount().getTradeHistory().indexOf(this) + 1) : (BuySell.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
                 + currency.getCoin() + " " + amount
-                + " opened " + Formatter.formatDate(entryTime) + " at " + entryPrice
+                + " opened " + Formatter.formatDate(openTime) + " at " + entryPrice
                 + (isClosed() ? ", closed " + Formatter.formatDate(closeTime) + " at " + closePrice : ", current price " + currency.getPrice())
                 + ", high of " + high + ", profit " + Formatter.formatPercent(getProfit())
                 + (isClosed() ? "\n\t" + explanation : "");

@@ -59,10 +59,11 @@ public class Currency {
         CurrentAPI.get().websocketKlines(symbol, BinanceInterval.FIVE_MIN, new BinanceWebSocketAdapterKline() {
             @Override
             public void onMessage(BinanceEventKline message) {
+                //We want to toss messages that provide no new information
                 if (currentPrice == message.getClose().doubleValue() && candleTime == message.getStartTime()) {
                     return;
                 }
-                PriceBean priceBean = new PriceBean(message.getEndTime(), message.getClose().doubleValue());
+                PriceBean priceBean = new PriceBean(message.getEventTime(), message.getClose().doubleValue());
                 if (candleTime != message.getStartTime()) {
                     try {
                         BinanceCandlestick closeStick = getCandles(2).get(0);
@@ -110,8 +111,6 @@ public class Currency {
         //Every message and the resulting indicator and strategy calculations is handled concurrently
         //System.out.println(Thread.currentThread().getId());
 
-        //We want to toss messages that provide no new information
-
 
         currentPrice = bean.getPrice();
         currentTime = bean.getTimestamp();
@@ -119,6 +118,7 @@ public class Currency {
         if (bean.isClose()) {
             latestClosedPrice = bean.getPrice();
             indicators.forEach(indicator -> indicator.update(latestClosedPrice));
+            if (Mode.get().equals(Mode.BACKTESTING)) appendLogLine(toString());
         }
         //Changed candle start time means the previous candle closed and we need to update our indicators
         //Make sure we dont get concurrency issues
@@ -192,7 +192,7 @@ public class Currency {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder(coin + " (price: " + currentPrice);
+        StringBuilder s = new StringBuilder(coin + "  " + Formatter.formatDate(currentTime) + " price: " + currentPrice);
         if (currentTime == candleTime)
             indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.get())));
         else
