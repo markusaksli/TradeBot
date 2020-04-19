@@ -1,4 +1,4 @@
-import collection.TradeBean;
+import collection.PriceBean;
 import collection.TradeCollector;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
@@ -23,10 +23,37 @@ public class Main {
     static Set<Currency> currencies; //There should never be two of the same Currency
 
     public static void main(String[] args) {
+        System.out.println("Welcome to TradeBot\n" +
+                "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
+                "\n" +
+                "This is a cryptocurrency trading bot that uses the Binance API,\n" +
+                "and a strategy based on a couple of 5 minute chart indicators\n" +
+                "(RSI, MACD, Bollinger Bands)\n" +
+                "(The bot only trades USDT fiat pairs)\n" +
+                "\n" +
+                "The bot has the following modes of operation:\n" +
+                "---LIVE\n" +
+                "-This mode trades with real money on the Binance platform\n" +
+                "---SIMULATED\n" +
+                "-Real-time trading simulation based on actual market data\n" +
+                "-Trades are only simulated based on market prices \n" +
+                "-No actual orders are made\n" +
+                "---BACKTESTING\n" +
+                "-Simulation based on historical data.\n" +
+                "-Allows for quick testing of the behavior and profitability of the bot\n" +
+                "-Data needs to be loaded from a file created with the COLLECTION mode\n" +
+                "---COLLECTION\n" +
+                "-Collects raw market price data from a specified time period\n" +
+                "-Collection is multi-threaded and thus can be CPU intensive\n" +
+                "-Collected data is saved in a .txt file in the /backtesting directory\n" +
+                "\n" +
+                "Simulation and backtesting do not always reflect live performance\n" +
+                "Make sure you are ready to commit to a strategy before starting LIVE\n");
+
         Scanner sc = new Scanner(System.in);
         while (true) {
             try {
-                System.out.println("---Enter bot mode (live, simulated, backtesting, collection)");
+                System.out.println("Enter bot mode (live, simulated, backtesting, collection)");
                 Mode.set(Mode.valueOf(sc.nextLine().toUpperCase()));
                 break;
             } catch (Exception e) {
@@ -48,51 +75,51 @@ public class Main {
             long start = sc.nextLong(); // March 1 00:00:00 1583020800000
             System.out.println("Enter end of collection period (Unix epoch milliseconds)");
             long end = sc.nextLong(); // March 2 00:00:00 1583107200000
-            System.out.println("Press enter to continue...");
+            System.out.println("Press enter to start collecting backtesting data...");
             try {
                 System.in.read();
             } catch (IOException ignored) {
             }
+            /*BinanceSymbol symbol = null;
+            try {
+                symbol = new BinanceSymbol("BTCUSDT");
+            } catch (BinanceApiException e) {
+                e.printStackTrace();
+            }
+            long start = 1585699200000L;
+            long end = 1585710000000L;*/
+            String filename = "backtesting\\" + symbol + "_" + start + "_" + end + ".txt";
 
             long wholePeriod = end - start;
-            long toSubtract = 3 * 60 * 1000;
+            long toSubtract = 3 * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
             long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
 
             TradeCollector.setRemaining(chunks);
             SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            TradeBean.setDateFormat(dateFormat);
+            PriceBean.setDateFormat(dateFormat);
 
             final ExecutorService executorService = Executors.newCachedThreadPool();
             List<TradeCollector> collectors = new ArrayList<>();
             List<Future<?>> futures = new ArrayList<>();
-            List<TradeBean> dataHolder = new ArrayList<>();
-            int lastCollector = 0;
 
             Instant initTime = Instant.now();
             for (int i = 0; i < chunks - 1; i++) {
-                TradeCollector collector = new TradeCollector(end - toSubtract, end, dataHolder, symbol);
-                if (i < 30) {
-                    futures.add(executorService.submit(collector));
-                    lastCollector = i;
-                }
+                TradeCollector collector = new TradeCollector(end - toSubtract, end, symbol);
                 collectors.add(collector);
+                futures.add(executorService.submit(collector));
                 end -= toSubtract;
             }
-            collectors.add(new TradeCollector(start, end, dataHolder, symbol));
-            System.out.println("---Started collection with " + TradeCollector.getThreads() + " collectors...");
+            TradeCollector finalCollector = new TradeCollector(start, end, symbol);
+            collectors.add(finalCollector);
+            futures.add(executorService.submit(finalCollector));
+            System.out.println("---Finished creating " + collectors.size() + " chunk collectors");
 
             boolean done = false;
             while (!done) {
                 long sinceTime = System.currentTimeMillis();
                 boolean timeElapsed = true;
                 while (timeElapsed) {
-                    if (TradeCollector.getThreads() < 30 && lastCollector + 1 < collectors.size()) {
-                        lastCollector++;
-                        //System.out.println("---Started new collector");
-                        futures.add(executorService.submit(collectors.get(lastCollector)));
-                    }
-
                     done = true;
                     for (Future<?> future : futures) {
                         done &= future.isDone();
@@ -103,10 +130,14 @@ public class Main {
                         System.out.println("---"
                                 + Formatter.formatDate(LocalDateTime.now())
                                 + " Overall progress : " + Formatter.formatPercent(TradeCollector.getProgress() / chunks)
-                                + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + chunks
-                                + ", total number of requests: " + TradeCollector.getTotalRequests());
+                                + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + chunks);
+                        if (TradeCollector.getRequestPermits() > 0) {
+                            System.out.println("------Bot has not used "
+                                    + TradeCollector.getRequestPermits() + "/1200 requests ("
+                                    + TradeCollector.getThreads() + " collectors)");
+                        }
                         timeElapsed = false;
-                        TradeCollector.setMinuteRequests(0);
+                        TradeCollector.addMinuteRequests(1200);
                     }
                 }
             }
@@ -117,33 +148,36 @@ public class Main {
                 e.printStackTrace();
             }
 
-            while (true) {
-                try {
-                    dataHolder.sort(Comparator.comparing(TradeBean::getTimestamp));
-                    break;
-                } catch (NullPointerException e) {
-                    System.out.println("Could not find list to sort");
-                }
+            List<PriceBean> finalData = new ArrayList<>();
+            collectors.stream().map(TradeCollector::getData).forEach(finalData::addAll);
+            Collections.reverse(finalData);
+            /*PriceBean previousDatum = finalData.get(0);
+            for (int i = 0; i < finalData.size(); i++) {
+                PriceBean finalDatum = finalData.get(i);
+                assert finalDatum.getTimestamp() > previousDatum.getTimestamp();
+                previousDatum = finalDatum;
             }
-            System.out.println("---Collected: " + dataHolder.size()
-                    + " aggregated trades from " + dataHolder.get(0).getDate()
-                    + " to " + dataHolder.get(dataHolder.size() - 1).getDate()
-                    + " in " + Formatter.formatDuration(Duration.between(initTime, Instant.now())));
+            System.out.println("---Prices are correctly ordered");*/
 
-            String filename = "backtesting\\" + symbol + "_" + dataHolder.get(0).getTimestamp() + "_" + dataHolder.get(dataHolder.size() - 1).getTimestamp() + ".txt";
+            System.out.println("---Collected: " + finalData.size()
+                    + " aggregated trades from " + finalData.get(0).getDate()
+                    + " to " + finalData.get(finalData.size() - 1).getDate()
+                    + " in " + Formatter.formatDuration(Duration.between(initTime, Instant.now()))
+                    + " using " + TradeCollector.getTotalRequests() + " requests");
+
             new File("backtesting").mkdir();
             try (FileWriter writer = new FileWriter(filename)) {
                 System.out.println("---Writing file");
-                writer.write(dataHolder.size() + " aggregated trades from "
-                        + dataHolder.get(0).getDate()
-                        + " to " + dataHolder.get(dataHolder.size() - 1).getDate()
+                writer.write(finalData.size() + " aggregated trades from "
+                        + finalData.get(0).getDate()
+                        + " to " + finalData.get(finalData.size() - 1).getDate()
                         + " (timestamp;price;isClosing5MinCandlePrice)\n");
                 start += 300000;
-                for (int i = 0; i < dataHolder.size(); i++) {
-                    writer.write(dataHolder.get(i).toString() + "\n");
-                    if (i < dataHolder.size() - 3) {
-                        if (dataHolder.get(i + 2).getTimestamp() > start) {
-                            dataHolder.get(i + 1).close();
+                for (int i = 0; i < finalData.size(); i++) {
+                    writer.write(finalData.get(i).toString() + "\n");
+                    if (i < finalData.size() - 3) {
+                        if (finalData.get(i + 2).getTimestamp() > start) {
+                            finalData.get(i + 1).close();
                             start += 300000;
                         }
                     }
@@ -153,12 +187,13 @@ public class Main {
             }
             System.out.println("---Collection completed, result in "
                     + filename
-                    + " (" + Formatter.formatDecimal((double) new File(filename).length() / (double) 1024 / (double) 1024) + " MB)");
-            System.out.println("Press enter to start collection...");
+                    + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
+            System.out.println("Press enter to quit...");
             try {
                 System.in.read();
             } catch (IOException ignored) {
             }
+            System.out.println("...");
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
             BuySell.setAccount(toomas);
