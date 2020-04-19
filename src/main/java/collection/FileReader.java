@@ -1,4 +1,4 @@
-package trading;
+package collection;
 
 import java.io.File;
 import java.io.FileNotFoundException;

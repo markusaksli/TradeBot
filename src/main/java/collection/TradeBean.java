@@ -1,4 +1,4 @@
-package trading;
+package collection;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

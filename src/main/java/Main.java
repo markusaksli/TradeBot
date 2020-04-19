@@ -1,3 +1,5 @@
+import collection.TradeBean;
+import collection.TradeCollector;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import trading.*;
@@ -10,6 +12,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,71 +23,71 @@ public class Main {
     static Set<Currency> currencies; //There should never be two of the same Currency
 
     public static void main(String[] args) {
-
         Scanner sc = new Scanner(System.in);
         while (true) {
-            System.out.println("---Enter bot mode (live, simulated, backtesting, collection)");
-            String mode = sc.nextLine();
-            switch (mode) {
-                case "live":
-                    Mode.set(Mode.LIVE);
-                    break;
-                case "simulated":
-                    Mode.set(Mode.SIMULATED);
-                    break;
-                case "backtesting":
-                    Mode.set(Mode.BACKTESTING);
-                    break;
-                case "collection":
-                    Mode.set(Mode.COLLECTION);
-                    break;
-                default:
-                    System.out.println("Incorrect mode");
-                    continue;
+            try {
+                System.out.println("---Enter bot mode (live, simulated, backtesting, collection)");
+                Mode.set(Mode.valueOf(sc.nextLine().toUpperCase()));
+                break;
+            } catch (Exception e) {
+                System.out.println("Invalid mode");
             }
-            break;
         }
-        System.out.println("---Entering " + Mode.get().name() + " mode");
+        System.out.println("---Entering " + Mode.get().name().toLowerCase() + " mode");
 
 
         if (Mode.get() == Mode.COLLECTION) {
-            System.out.println("Enter desired currency pair");
+            System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
             BinanceSymbol symbol = null;
             try {
-                symbol = new BinanceSymbol(sc.nextLine());
+                symbol = new BinanceSymbol(sc.nextLine().toUpperCase() + "USDT");
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
             System.out.println("Enter start of collection period (Unix epoch milliseconds)");
-            long start = sc.nextLong(); // 1. märts hour 0
+            long start = sc.nextLong(); // March 1 00:00:00 1583020800000
             System.out.println("Enter end of collection period (Unix epoch milliseconds)");
-            long end = sc.nextLong(); // 1. märts hour 0
+            long end = sc.nextLong(); // March 2 00:00:00 1583107200000
 
-            List<TradeBean> dataHolder = new ArrayList<>();
             long wholePeriod = end - start;
-            int numOfThreads = 30;
-            long toSubtract = wholePeriod / (long) numOfThreads;
+            long toSubtract = 3 * 60 * 1000;
+            long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
 
-            TradeCollector.setRemaining(numOfThreads);
+            TradeCollector.setRemaining(chunks);
             SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             TradeBean.setDateFormat(dateFormat);
 
             final ExecutorService executorService = Executors.newCachedThreadPool();
+            List<TradeCollector> collectors = new ArrayList<>();
             List<Future<?>> futures = new ArrayList<>();
+            List<TradeBean> dataHolder = new ArrayList<>();
+            int lastCollector = 0;
+
             Instant initTime = Instant.now();
-            for (int i = 0; i < numOfThreads - 1; i++) {
-                futures.add(executorService.submit(new TradeCollector(end - toSubtract, end, dataHolder, symbol)));
+            for (int i = 0; i < chunks - 1; i++) {
+                TradeCollector collector = new TradeCollector(end - toSubtract, end, dataHolder, symbol);
+                if (i <= 30) {
+                    futures.add(executorService.submit(collector));
+                    lastCollector = i;
+                }
+                collectors.add(collector);
                 end -= toSubtract;
             }
-            executorService.submit(new TradeCollector(start, end, dataHolder, symbol));
-            System.out.println("---Started collection.");
+            collectors.add(new TradeCollector(start, end, dataHolder, symbol));
+            System.out.println("---Started collection with " + TradeCollector.getThreads() + " collectors...");
 
             boolean done = false;
             while (!done) {
                 long sinceTime = System.currentTimeMillis();
                 boolean timeElapsed = true;
                 while (timeElapsed) {
+                    if (TradeCollector.getThreads() < 30 && lastCollector + 1 < collectors.size()) {
+                        lastCollector++;
+                        //System.out.println("---Started new collector");
+                        futures.add(executorService.submit(collectors.get(lastCollector)));
+                    }
+
                     done = true;
                     for (Future<?> future : futures) {
                         done &= future.isDone();
@@ -92,9 +95,13 @@ public class Main {
                     timeElapsed = !done;
 
                     if (System.currentTimeMillis() - sinceTime > 60000) {
-                        System.out.println("---Overall progress : " + Formatter.formatPercent(TradeCollector.getProgress() / numOfThreads) + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + numOfThreads + ", number of requests hit in last minute: " + TradeCollector.getNumOfRequests());
+                        System.out.println("---"
+                                + Formatter.formatDate(LocalDateTime.now())
+                                + " Overall progress : " + Formatter.formatPercent(TradeCollector.getProgress() / chunks)
+                                + ", remaining chunks: " + TradeCollector.getRemaining() + "/" + chunks
+                                + ", total number of requests: " + TradeCollector.getTotalRequests());
                         timeElapsed = false;
-                        TradeCollector.setNumOfRequests(0);
+                        TradeCollector.setMinuteRequests(0);
                     }
                 }
             }
@@ -118,10 +125,14 @@ public class Main {
                     + " to " + dataHolder.get(dataHolder.size() - 1).getDate()
                     + " in " + Formatter.formatDuration(Duration.between(initTime, Instant.now())));
 
-            String filename = "backtesting\\" + symbol + "_" + start + "_" + end + ".txt";
+            String filename = "backtesting\\" + symbol + "_" + dataHolder.get(0).getTimestamp() + "_" + dataHolder.get(dataHolder.size() - 1).getTimestamp() + ".txt";
+            new File("backtesting").mkdir();
             try (FileWriter writer = new FileWriter(filename)) {
                 System.out.println("---Writing file");
-                writer.write(dataHolder.size() + " aggregated trades from " + dataHolder.get(0).getDate() + " to " + dataHolder.get(dataHolder.size() - 1).getDate() + "\n");
+                writer.write(dataHolder.size() + " aggregated trades from "
+                        + dataHolder.get(0).getDate()
+                        + " to " + dataHolder.get(dataHolder.size() - 1).getDate()
+                        + " (timestamp;price;isClosing5MinCandlePrice)\n");
                 start += 300000;
                 for (int i = 0; i < dataHolder.size(); i++) {
                     writer.write(dataHolder.get(i).toString() + "\n");
@@ -138,13 +149,11 @@ public class Main {
             System.out.println("---Collection completed, result in "
                     + filename
                     + " (" + Formatter.formatDecimal((double) new File(filename).length() / (double) 1024 / (double) 1024) + " MB)");
-        } else if (Mode.get() == Mode.BACKTESTING) {
-
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
             BuySell.setAccount(toomas);
 
-            /*while (true) {
+            while (true) {
                 System.out.println("Enter your API Key: ");
                 String apiKey = sc.nextLine();
                 if (apiKey.length() == 64) {
@@ -156,7 +165,7 @@ public class Main {
                         break;
                     } else System.out.println("Secret API is incorrect, enter again.");
                 } else System.out.println("Incorrect API, enter again.");
-            }*/
+            }
 
         /*JsonObject account = CurrentAPI.get().account();
         //Connection with Binance API and sout-ing some info.
@@ -170,7 +179,9 @@ public class Main {
 
             currencies = new HashSet<>(); //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
             long startTime = System.nanoTime();
-            for (String arg : args) {
+            System.out.println("Enter all of the currencies you want to track separated with a space (BTC ETH LINK...)");
+            String[] currencyArr = sc.nextLine().toUpperCase().split(" ");
+            for (String arg : currencyArr) {
                 //The currency class contains all of the method calls that drive the activity of our bot
                 try {
                     currencies.add(new Currency(arg, 250, true, false));
@@ -183,6 +194,7 @@ public class Main {
 
             System.out.println("---SETUP DONE (" + Formatter.formatDecimal(time) + " s)");
 
+            //From this point we only use the main thread to check how the bot is doing
             while (true) {
                 System.out.println("Commands: profit, active, history, wallet, currencies");
                 String in = sc.nextLine();
@@ -227,6 +239,5 @@ public class Main {
             }
         }
 
-        //From this point we only use the main thread to check how the bot is doing
     }
 }
