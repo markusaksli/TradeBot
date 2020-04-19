@@ -3,13 +3,13 @@ package collection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class TradeBean {
+public class PriceBean {
     private final double price;
     private final long timestamp;
     private int isClose = 0;
     private static SimpleDateFormat dateFormat;
 
-    public TradeBean(double price, long timestamp) {
+    public PriceBean(double price, long timestamp) {
         this.price = price;
         this.timestamp = timestamp;
     }
@@ -31,7 +31,7 @@ public class TradeBean {
     }
 
     public static void setDateFormat(SimpleDateFormat dateFormat) {
-        TradeBean.dateFormat = dateFormat;
+        PriceBean.dateFormat = dateFormat;
     }
 
     @Override
