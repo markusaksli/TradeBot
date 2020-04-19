@@ -88,7 +88,7 @@ public class PriceCollector implements Runnable {
 
             try {
                 trades = (CurrentAPI.get().aggTrades(symbol, limit, options));
-                if (trades.isEmpty()) { //Since we get 1H window 3min has to fall in. Usually server maintenence or something
+                if (trades.get(0).getTimestamp() == end || trades.isEmpty()) { //Skip empty and redundant chunk ends
                     isTime = true;
                     break;
                 }
@@ -115,10 +115,6 @@ public class PriceCollector implements Runnable {
             }
             if (isTime) break;
             double currentProgress = (1 - (end - start) / (double) timeLeft);
-            if (currentProgress == lastProgress) {
-                System.out.println("------Collector " + Thread.currentThread().getId() + " is stuck at " + Formatter.formatPercent(currentProgress) + ", trades in request " + trades.size());
-                end -= 3600000L;
-            }
             progress = progress - lastProgress + currentProgress;
             lastProgress = currentProgress;
             options.replace("startTime", end - 3600000L);
