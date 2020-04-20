@@ -8,13 +8,17 @@ The bot uses RSI and MACD, Bollinger Bands indicators to generate and filter buy
 The aim of this project is to create a profitable live trading bot (with paper trading and backtesting functionality).
 
 Link to our work progress report: 
+
 https://docs.google.com/document/d/1aVOx0exkDpZdQAQJyoHyzX_94WfHBqsgrULl79ZV0Nk/edit#
 
 Link to our Trello: 
+
 https://trello.com/b/HJxkTeWv/assignments
 
-Link to jar download:
+JAR:
+
 https://drive.google.com/open?id=1Rnss483S2dZSLMFyP53jNEDxNRGuFvov
 
-Link to backtesting data download (BTCUSDT 1. January 2020 - 1. April 2020):
-https://drive.google.com/open?id=1m4wZyKLl1bbJ2r9hLT2rLiL7ICZ0MI6x
+Backtesting data (BTCUSDT, ETHUSDT, XRPUSDT; 1. January 2020 - 1. April 2020):
+
+https://drive.google.com/open?id=1VkPEZ064EiDEvv9Da-Ba_xn48cCySceU
