@@ -243,7 +243,7 @@ public class Main {
                     for (String arg : currencyArr) {
                         //The currency class contains all of the method calls that drive the activity of our bot
                         try {
-                            currencies.add(new Currency(arg, 250, true));
+                            currencies.add(new Currency(arg, true));
                         } catch (BinanceApiException e) {
                             e.printStackTrace();
                         }
@@ -255,7 +255,7 @@ public class Main {
                         String path = sc.nextLine();
                         try {
                             startTime = System.nanoTime();
-                            Currency currency = new Currency(path, 250);
+                            Currency currency = new Currency(path);
                             currencies.add(currency);
 
                             for (Trade trade : toomas.getActiveTrades()) {

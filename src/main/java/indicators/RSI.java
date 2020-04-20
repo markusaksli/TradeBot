@@ -78,9 +78,13 @@ public class RSI implements Indicator {
     @Override
     public int check(double newPrice) {
         double temp = getTemp(newPrice);
-        if (get() < 30 && temp > get()) {
+        if (temp < 30) {
             explanation = "(Positive) RSI of " + Formatter.formatDecimal(temp);
             return 1;
+        }
+        if (temp > 70) {
+            explanation = "(Negative) RSI of " + Formatter.formatDecimal(temp);
+            return -1;
         }
         if (temp > 80) {
             explanation = "(Negative) RSI of " + Formatter.formatDecimal(temp);

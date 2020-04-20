@@ -11,7 +11,7 @@ public class Trade {
     private final double amount; //How much are you buying or selling. I.E 6 bitcoins or smth.
     private double closePrice;
     private long closeTime;
-    private final String explanation;
+    private String explanation;
 
     public Trade(Currency currency, double entryPrice, double amount, double trailingSL, String explanation) {
         this.currency = currency;
@@ -76,10 +76,11 @@ public class Trade {
     }
 
     //Checks if there is a new highest price for the trade or if the trade has dropped below the stoploss.
-    public void update(double newPrice) {
+    public void update(double newPrice, int confluence) {
         if (newPrice > high)
             high = newPrice;
-        else if (newPrice < high * (1 - trailingSL)) {
+        else if (newPrice < high * (1 - trailingSL) || confluence <= -2) {
+            explanation += "Closed due to " + (confluence <= -2 ? "indicator confluence of " + confluence : "trailing SL");
             BuySell.close(this);
         }
     }
