@@ -237,8 +237,10 @@ public class Main {
                     }
                     break;
                 case SIMULATION:
-                    System.out.println("Enter all of the currencies you want to track separated with a space (BTC ETH LINK...)");
-                    String[] currencyArr = sc.nextLine().toUpperCase().split(" "); //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
+                    //System.out.println("Enter all of the currencies you want to track separated with a space (BTC ETH LINK...)");
+                    //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
+                    //String[] currencyArr = sc.nextLine().toUpperCase().split(" ");
+                    String[] currencyArr = new String[]{"BTC", "ETH", "LINK", "BNB", "BCH", "XRP", "LTC", "EOS", "XTZ", "DASH", "ETC", "TRX", "XLM", "ADA", "ZEC"};
                     startTime = System.nanoTime();
                     for (String arg : currencyArr) {
                         //The currency class contains all of the method calls that drive the activity of our bot
@@ -261,7 +263,7 @@ public class Main {
                             for (Trade trade : toomas.getActiveTrades()) {
                                 BuySell.close(trade);
                             }
-                            List<Trade> tradeHistory = toomas.getTradeHistory();
+                            List<Trade> tradeHistory = new ArrayList<>(toomas.getTradeHistory());
                             tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
 
                             double maxLoss = tradeHistory.get(0).getProfit();
@@ -296,7 +298,7 @@ public class Main {
                                 writer.write("\nProfitable trades:\n");
                                 writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
                                 writer.write("\nClosed trades:\n");
-                                for (Trade trade : toomas.getTradeHistory()) {
+                                for (Trade trade : tradeHistory) {
                                     writer.write(trade.toString() + "\n");
                                 }
                                 writer.write("\nFULL LOG:\n\n");
@@ -318,7 +320,7 @@ public class Main {
             System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time) + " s)");
 
             //From this point we only use the main thread to check how the bot is doing
-            System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, quit");
+            System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, log, quit");
             while (true) {
                 String in = sc.nextLine();
                 switch (in) {
@@ -364,10 +366,53 @@ public class Main {
                     case "close all":
                         toomas.getActiveTrades().forEach(BuySell::close);
                         break;
+                    case "log":
+                        List<Trade> tradeHistory = new ArrayList<>(toomas.getTradeHistory());
+                        if (tradeHistory.isEmpty()) {
+                            System.out.println("---No closed trades yet");
+                            continue;
+                        }
+                        tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
+                        double maxLoss = tradeHistory.get(0).getProfit();
+                        double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
+                        int lossTrades = 0;
+                        double lossSum = 0;
+                        int gainTrades = 0;
+                        double gainSum = 0;
+                        for (Trade trade : tradeHistory) {
+                            double profit = trade.getProfit();
+                            if (profit < 0) {
+                                lossTrades += 1;
+                                lossSum += profit;
+                            } else if (profit > 0) {
+                                gainTrades += 1;
+                                gainSum += profit;
+                            }
+                        }
+                        try (FileWriter writer = new FileWriter("log.txt")) {
+                            writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
+                            writer.write("\nTotal profit: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
+                            writer.write("\nLoss trades:\n");
+                            writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
+                            writer.write("\nProfitable trades:\n");
+                            writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
+                            writer.write("\nActive trades:\n");
+                            for (Trade trade : toomas.getActiveTrades()) {
+                                writer.write(trade.toString() + "\n");
+                            }
+                            writer.write("\nClosed trades:\n");
+                            for (Trade trade : tradeHistory) {
+                                writer.write(trade.toString() + "\n");
+                            }
+                            System.out.println("---Created log in log.txt");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        break;
                     case "quit":
                         System.exit(0);
                     default:
-                        System.out.println("Wrong input. Try again (profit, active, history, wallet, currencies, open, close, close all, quit)\n");
+                        System.out.println("Wrong input. Try again (profit, active, history, wallet, currencies, open, close, close all, log, quit)\n");
                         break;
                 }
             }

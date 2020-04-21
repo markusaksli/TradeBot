@@ -31,7 +31,6 @@ public class Currency {
     private final List<Indicator> indicators = new ArrayList<>();
 
     private final StringBuilder log = new StringBuilder();
-    private PriceBean lastBean;
 
     private double latestClosedPrice;
     private double currentPrice;
@@ -59,7 +58,6 @@ public class Currency {
         candleTime = history.get(history.size() - 1).getOpenTime();
         currentTime = candleTime;
         currentPrice = history.get(history.size() - 1).getClose().doubleValue();
-        lastBean = new PriceBean(currentTime, currentPrice);
 
         //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
         candleTime += 300000L;
@@ -70,20 +68,16 @@ public class Currency {
                 //System.out.println(Thread.currentThread().getId());
 
                 //We want to toss messages that provide no new information
-                if (lastBean.getPrice() == message.getPrice().doubleValue() && !(message.getEventTime() > candleTime)) {
+                if (currentTime == message.getPrice().doubleValue() && !(message.getEventTime() > candleTime)) {
                     return;
                 }
 
                 if (message.getEventTime() > candleTime) {
-                    lastBean.close();
+                    accept(new PriceBean(candleTime, currentPrice));
                     candleTime += 300000L;
                 }
-                accept(lastBean);
-                lastBean = new PriceBean(message.getEventTime(), message.getPrice().doubleValue());
 
-                while (candleTime < currentTime) {
-                    candleTime += 300000L;
-                }
+                accept(new PriceBean(message.getEventTime(), message.getPrice().doubleValue()));
             }
         });
         System.out.println("---SETUP DONE FOR " + this);
@@ -102,25 +96,23 @@ public class Currency {
         indicators.add(new RSI(closingPrices, 14));
         indicators.add(new MACD(closingPrices, 12, 26, 9));
         indicators.add(new BB(closingPrices, 20));
-        lastBean = beans.get(0);
 
         System.out.println("---SETUP DONE FOR " + this);
         for (PriceBean bean : beans) {
-            if (bean.getPrice() == lastBean.getPrice() && !bean.isClose()) continue;
-            accept(lastBean);
-            lastBean = bean;
+            if (currentPrice == bean.getPrice() && !bean.isClose()) continue;
+            accept(bean);
         }
     }
 
     private void accept(PriceBean bean) {
-
         currentPrice = bean.getPrice();
         currentTime = bean.getTimestamp();
 
         if (bean.isClose()) {
             latestClosedPrice = bean.getPrice();
             indicators.forEach(indicator -> indicator.update(latestClosedPrice));
-            if (Mode.get().equals(Mode.BACKTESTING)) appendLogLine(toString());
+            if (Mode.get().equals(Mode.BACKTESTING))
+                appendLogLine(Formatter.formatDate(currentTime) + "  " + toString());
         }
 
         //Make sure we dont get concurrency issues
@@ -190,7 +182,7 @@ public class Currency {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder(coin + "  " + Formatter.formatDate(currentTime) + " price: " + currentPrice);
+        StringBuilder s = new StringBuilder(coin + " price: " + currentPrice);
         if (currentTime == candleTime)
             indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.get())));
         else
