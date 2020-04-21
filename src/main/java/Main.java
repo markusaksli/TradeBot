@@ -122,8 +122,7 @@ public class Main {
                             + Formatter.formatDate(LocalDateTime.now())
                             + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
                             + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
-                            + ", total requests: " + PriceCollector.getTotalRequests()
-                            + ", mid-work threads: " + PriceCollector.getWorkingThreads());
+                            + ", total requests: " + PriceCollector.getTotalRequests());
                     if (PriceCollector.getRequestPermits() > 0) {
                         System.out.println("------Bot has not used " + PriceCollector.getRequestPermits() + "/1200 requests");
                     }

@@ -23,8 +23,6 @@ public class PriceCollector implements Runnable {
     private final BinanceSymbol symbol;
     private double lastProgress = 0;
 
-    private static final AtomicInteger threads = new AtomicInteger();
-    private static final AtomicInteger workingThreads = new AtomicInteger();
     private static final AtomicInteger totalRequests = new AtomicInteger();
     private static final AtomicLong remaining = new AtomicLong();
     private static double progress = 0;
@@ -41,14 +39,6 @@ public class PriceCollector implements Runnable {
 
     public static int getRequestPermits() {
         return minuteRequests.availablePermits();
-    }
-
-    public static int getThreads() {
-        return threads.get();
-    }
-
-    public static int getWorkingThreads() {
-        return workingThreads.get();
     }
 
     public static double getProgress() {
@@ -90,12 +80,9 @@ public class PriceCollector implements Runnable {
                 e.printStackTrace();
             }
 
-            workingThreads.getAndIncrement();
-
             try {
                 trades = (CurrentAPI.get().aggTrades(symbol, 1000, options));
                 if (trades.get(0).getTimestamp() == end || trades.isEmpty()) { //Empty or redundant request means we have reached the end of the chunk
-                    workingThreads.getAndDecrement();
                     break;
                 }
             } catch (BinanceApiException e) {
@@ -105,7 +92,6 @@ public class PriceCollector implements Runnable {
                 } else {
                     System.out.println(e.getLocalizedMessage());
                 }
-                workingThreads.getAndDecrement();
                 continue;
             } finally {
                 totalRequests.getAndIncrement();
@@ -120,10 +106,8 @@ public class PriceCollector implements Runnable {
                 if (i == 0) {
                     end = trade.getTimestamp();
                 }
-
                 data.add(new PriceBean(trade.getTimestamp(), trade.getPrice().doubleValue()));
             }
-            workingThreads.getAndDecrement();
             if (isTime) break;
             double currentProgress = (1 - (end - start) / (double) timeLeft);
             progress = progress - lastProgress + currentProgress;
