@@ -236,7 +236,8 @@ public class Main {
                         String path = sc.nextLine();
                         try {
                             startTime = System.nanoTime();
-                            Currency currency = new Currency(path);
+                            List<PriceBean> beans = Formatter.formatData(path);
+                            Currency currency = new Currency(new File(path).getName().split("_")[0], beans);
                             currencies.add(currency);
 
                             for (Trade trade : toomas.getActiveTrades()) {
@@ -271,7 +272,8 @@ public class Main {
                             }
                             try (FileWriter writer = new FileWriter(resultPath)) {
                                 writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                                writer.write("\nTotal profit: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
+                                writer.write("\nMarket performance: " + Formatter.formatPercent(beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice() / beans.get(0).getPrice()) + "\n");
+                                writer.write("\nBot performance: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
                                 writer.write("\nLoss trades:\n");
                                 writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
                                 writer.write("\nProfitable trades:\n");

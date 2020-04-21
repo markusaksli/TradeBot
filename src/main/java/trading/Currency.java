@@ -84,12 +84,11 @@ public class Currency {
     }
 
     //Used for BACKTESTING
-    public Currency(String filename) throws BinanceApiException, IOException {
-        this.symbol = BinanceSymbol.valueOf(new File(filename).getName().split("_")[0]);
-        this.coin = symbol.toString().replace("USDT", "");
+    public Currency(String pair, List<PriceBean> beans) throws BinanceApiException {
+        this.symbol = BinanceSymbol.valueOf(pair);
+        this.coin = pair.replace("USDT", "");
         this.trade = true;
 
-        List<PriceBean> beans = Formatter.formatData(filename);
         long start = beans.get(0).getTimestamp();
         List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
         List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
