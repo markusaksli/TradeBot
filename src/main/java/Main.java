@@ -234,6 +234,7 @@ public class Main {
                     while (true) {
                         String path = sc.nextLine();
                         try {
+                            System.out.println("---Setting up...");
                             startTime = System.nanoTime();
                             List<PriceBean> beans = Formatter.formatData(path);
                             Currency currency = new Currency(new File(path).getName().split("_")[0], beans);
@@ -271,7 +272,7 @@ public class Main {
                             }
                             try (FileWriter writer = new FileWriter(resultPath)) {
                                 writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                                writer.write("\nMarket performance: " + Formatter.formatPercent(beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice() / beans.get(0).getPrice()) + "\n");
+                                writer.write("\nMarket performance: " + Formatter.formatPercent((beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice()) / beans.get(0).getPrice()) + "\n");
                                 writer.write("\nBot performance: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
                                 writer.write("\nLoss trades:\n");
                                 writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
@@ -286,10 +287,8 @@ public class Main {
                             }
                             System.out.println("---Simulation result file generated at " + resultPath);
                             break;
-                        } catch (IOException e) {
-                            System.out.println("IO failed, try again   " + e.getLocalizedMessage());
-                        } catch (BinanceApiException e) {
-                            System.out.println("Simulation failed, try again   " + e.getLocalizedMessage());
+                        } catch (Exception | BinanceApiException e) {
+                            System.out.println("Testing failed, try again   " + e.getLocalizedMessage());
                         }
                     }
                     break;
