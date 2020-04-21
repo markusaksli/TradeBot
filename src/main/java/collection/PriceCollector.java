@@ -22,11 +22,23 @@ public class PriceCollector implements Runnable {
     private final List<PriceBean> data = new ArrayList<>();
     private final BinanceSymbol symbol;
     private double lastProgress = 0;
+    private boolean done;
 
     private static final AtomicInteger totalRequests = new AtomicInteger();
     private static final AtomicLong remaining = new AtomicLong();
     private static double progress = 0;
     private static final Semaphore minuteRequests = new Semaphore(1200);
+
+    public PriceCollector(long start, long end, BinanceSymbol symbol) {
+        this.start = start;
+        this.end = end;
+        this.symbol = symbol;
+        this.duration = end - start;
+    }
+
+    public boolean isDone() {
+        return done;
+    }
 
     public List<PriceBean> getData() {
         return data;
@@ -57,12 +69,6 @@ public class PriceCollector implements Runnable {
         return totalRequests.get();
     }
 
-    public PriceCollector(long start, long end, BinanceSymbol symbol) {
-        this.start = start;
-        this.end = end;
-        this.symbol = symbol;
-        this.duration = end - start;
-    }
 
     @Override
     public void run() {
@@ -117,6 +123,7 @@ public class PriceCollector implements Runnable {
         }
         remaining.getAndDecrement();
         progress = progress - lastProgress + 1;
+        done = true;
     }
 }
 

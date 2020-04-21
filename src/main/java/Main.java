@@ -100,23 +100,22 @@ public class Main {
 
             final ExecutorService executorService = Executors.newCachedThreadPool();
             List<PriceCollector> collectors = new ArrayList<>();
-            List<Future<?>> futures = new ArrayList<>();
 
             Instant initTime = Instant.now();
             long minuteEpoch = initTime.toEpochMilli();
             for (int i = 0; i < chunks - 1; i++) {
                 PriceCollector collector = new PriceCollector(end - toSubtract, end, symbol);
                 collectors.add(collector);
-                futures.add(executorService.submit(collector));
+                executorService.submit(collector);
                 end -= toSubtract;
             }
             while (System.currentTimeMillis() > minuteEpoch) minuteEpoch += 60000L;
-            PriceCollector finalCollector = new PriceCollector(start, end, symbol);
+            PriceCollector finalCollector = new PriceCollector(start, end, symbol); //Final chunk is right up to start in case of uneven division
             collectors.add(finalCollector);
-            futures.add(executorService.submit(finalCollector));
+            executorService.submit(finalCollector);
             System.out.println("---Finished creating " + collectors.size() + " chunk collectors");
 
-            while (!futures.stream().map(Future::isDone).reduce(true, (a, b) -> a && b)) {
+            while (collectors.stream().anyMatch(collector -> !collector.isDone())) {
                 if (System.currentTimeMillis() > minuteEpoch) {
                     System.out.println("---"
                             + Formatter.formatDate(LocalDateTime.now())
