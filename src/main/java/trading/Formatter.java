@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 
 public class Formatter {
     private static final SimpleDateFormat SIMPLE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    private static final SimpleDateFormat ONLY_DATE_FORMATTER = new SimpleDateFormat("yyyy.MM.dd");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
     private static final NumberFormat PERCENT_FORMAT = new DecimalFormat("0.000%");
 
@@ -32,6 +33,10 @@ public class Formatter {
 
     public static String formatDate(long timestamp) {
         return SIMPLE_FORMATTER.format(new Date(timestamp));
+    }
+
+    public static String formatOnlyDate(long timestamp) {
+        return ONLY_DATE_FORMATTER.format(new Date(timestamp));
     }
 
     public static String formatPercent(double percentage) {

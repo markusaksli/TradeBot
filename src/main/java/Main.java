@@ -11,9 +11,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +22,11 @@ public class Main {
     static List<Currency> currencies; //There should never be two of the same Currency
 
     public static void main(String[] args) {
+        try {
+            System.out.println(CurrentAPI.get().time().toString());
+        } catch (BinanceApiException e) {
+            e.printStackTrace();
+        }
         System.out.println("Welcome to TradeBot\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
@@ -76,6 +79,7 @@ public class Main {
             long start = sc.nextLong(); // March 1 00:00:00 1583020800000
             System.out.println("Enter end of collection period (Unix epoch milliseconds)");
             long end = sc.nextLong(); // April 1 00:00:00 1585699200000
+            System.out.println("---Setting up...");
             /*BinanceSymbol symbol = null;
             try {
                 symbol = new BinanceSymbol("BTCUSDT");
@@ -84,8 +88,7 @@ public class Main {
             }
             long start = 1585699200000L;
             long end = 1585710000000L;*/
-            String filename = "backtesting\\" + symbol + "_" + start + "_" + end + ".txt";
-
+            String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
             long wholePeriod = end - start;
             long toSubtract = 3 * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
             long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
@@ -100,48 +103,32 @@ public class Main {
             List<Future<?>> futures = new ArrayList<>();
 
             Instant initTime = Instant.now();
+            long minuteEpoch = initTime.toEpochMilli();
             for (int i = 0; i < chunks - 1; i++) {
                 PriceCollector collector = new PriceCollector(end - toSubtract, end, symbol);
                 collectors.add(collector);
                 futures.add(executorService.submit(collector));
                 end -= toSubtract;
             }
+            while (System.currentTimeMillis() > minuteEpoch) minuteEpoch += 60000L;
             PriceCollector finalCollector = new PriceCollector(start, end, symbol);
             collectors.add(finalCollector);
             futures.add(executorService.submit(finalCollector));
             System.out.println("---Finished creating " + collectors.size() + " chunk collectors");
 
-            boolean done = false;
-            double lastProgress = 0;
-            while (!done) {
-                long sinceTime = System.currentTimeMillis();
-                boolean timeElapsed = true;
-                while (timeElapsed) {
-                    done = true;
-                    for (Future<?> future : futures) {
-                        done &= future.isDone();
+            while (!futures.stream().map(Future::isDone).reduce(true, (a, b) -> a && b)) {
+                if (System.currentTimeMillis() > minuteEpoch) {
+                    System.out.println("---"
+                            + Formatter.formatDate(LocalDateTime.now())
+                            + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
+                            + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
+                            + ", total requests: " + PriceCollector.getTotalRequests()
+                            + ", mid-work threads: " + PriceCollector.getWorkingThreads());
+                    if (PriceCollector.getRequestPermits() > 0) {
+                        System.out.println("------Bot has not used " + PriceCollector.getRequestPermits() + "/1200 requests");
                     }
-                    timeElapsed = !done;
-                    if (System.currentTimeMillis() - sinceTime > 60000) {
-                        if (lastProgress == PriceCollector.getProgress()) {
-                            System.out.println("------Progress has halted!");
-                        }
-                        lastProgress = PriceCollector.getProgress();
-                        System.out.println("---"
-                                + Formatter.formatDate(LocalDateTime.now())
-                                + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
-                                + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
-                                + ", total requests: " + PriceCollector.getTotalRequests()
-                                + ", mid-work threads: " + PriceCollector.getWorkingThreads());
-                        if (PriceCollector.getRequestPermits() > 0) {
-                            System.out.println("------Bot has not used "
-                                    + PriceCollector.getRequestPermits() + "/1200 requests ("
-                                    + PriceCollector.getThreads() + " collectors)"
-                                    + ", currently mid-work threads: " + PriceCollector.getWorkingThreads());
-                        }
-                        timeElapsed = false;
-                        PriceCollector.addMinuteRequests(1200);
-                    }
+                    minuteEpoch += 60000L;
+                    PriceCollector.resetPermits(1200);
                 }
             }
             executorService.shutdown();
@@ -154,13 +141,6 @@ public class Main {
             List<PriceBean> finalData = new ArrayList<>();
             collectors.stream().map(PriceCollector::getData).forEach(finalData::addAll);
             Collections.reverse(finalData);
-            /*PriceBean previousDatum = finalData.get(0);
-            for (int i = 0; i < finalData.size() - 1; i++) {
-                PriceBean finalDatum = finalData.get(i);
-                assert finalDatum.getTimestamp() >= previousDatum.getTimestamp();
-                previousDatum = finalDatum;
-            }
-            System.out.println("---Prices are correctly ordered");*/
 
             System.out.println("---Collected: " + finalData.size()
                     + " aggregated trades from " + finalData.get(0).getDate()
@@ -192,12 +172,11 @@ public class Main {
                     + filename
                     + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
 
-            System.out.println("Press enter to quit...");
-            try {
-                System.in.read();
-            } catch (IOException ignored) {
+            while (true) {
+                System.out.println("Type quit to quit");
+                String s = sc.nextLine();
+                if (s.toLowerCase().equals("quit")) break;
             }
-            System.out.println("...");
         } else {
             Account toomas = new Account("Investor Toomas", 1000);
             BuySell.setAccount(toomas);

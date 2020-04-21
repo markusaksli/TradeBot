@@ -34,7 +34,8 @@ public class PriceCollector implements Runnable {
         return data;
     }
 
-    public static void addMinuteRequests(int minuteRequests) {
+    public static void resetPermits(int minuteRequests) {
+        PriceCollector.minuteRequests.drainPermits();
         PriceCollector.minuteRequests.release(minuteRequests);
     }
 
@@ -98,7 +99,7 @@ public class PriceCollector implements Runnable {
                     break;
                 }
             } catch (BinanceApiException e) {
-                if (e.getLocalizedMessage().toLowerCase().contains("current limit")) {
+                if (e.getLocalizedMessage().toLowerCase().contains("request weight")) {
                     System.out.println("---Server triggered request limit at " + Formatter.formatDate(LocalDateTime.now()) + " " + e.getLocalizedMessage());
                     minuteRequests.drainPermits();
                 } else {
