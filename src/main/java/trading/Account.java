@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Account {
     private final String username;
@@ -26,7 +27,7 @@ public class Account {
         fiatValue = startingValue;
         wallet = new ConcurrentHashMap<>();
         tradeHistory = new ArrayList<>();
-        activeTrades = new ArrayList<>();
+        activeTrades = new CopyOnWriteArrayList<>();
     }
 
     //All backend.Trade methods

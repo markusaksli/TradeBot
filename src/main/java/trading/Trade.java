@@ -1,9 +1,12 @@
 package trading;
 
+import java.time.Duration;
+
 public class Trade {
 
     private double high; //Set the highest price
     private static final double TRAILING_SL = 100; //It's in percentages, but using double for comfort.
+    private static final double TAKE_PROFIT = 0.012; //It's in percentages, but using double for comfort.
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
@@ -74,11 +77,15 @@ public class Trade {
         }
     }
 
+    public long getDuration() {
+        return (closeTime - openTime) / 1000;
+    }
+
     //Checks if there is a new highest price for the trade or if the trade has dropped below the stoploss.
     public void update(double newPrice, int confluence) {
         if (newPrice > high)
             high = newPrice;
-        else if (newPrice < high * (1 - TRAILING_SL) || confluence <= -2) {
+        else if (newPrice < high * (1 - TRAILING_SL) || confluence <= -2 || getProfit() > TAKE_PROFIT) {
             explanation += "Closed due to " + (confluence <= -2 ? "indicator confluence of " + confluence : "trailing SL");
             BuySell.close(this);
         }

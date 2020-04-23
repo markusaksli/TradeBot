@@ -269,6 +269,7 @@ public class Main {
                             double lossSum = 0;
                             int gainTrades = 0;
                             double gainSum = 0;
+                            long tradeDurs = 0;
                             for (Trade trade : tradeHistory) {
                                 double profit = trade.getProfit();
                                 if (profit < 0) {
@@ -278,6 +279,7 @@ public class Main {
                                     gainTrades += 1;
                                     gainSum += profit;
                                 }
+                                tradeDurs += trade.getDuration();
                             }
 
 
@@ -290,12 +292,15 @@ public class Main {
                             try (FileWriter writer = new FileWriter(resultPath)) {
                                 writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
                                 writer.write("\nMarket performance: " + Formatter.formatPercent((beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice()) / beans.get(0).getPrice()) + "\n");
-                                writer.write("\nBot performance: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
+                                writer.write("\nBot performance: "
+                                        + Formatter.formatPercent(toomas.getProfit()) + " from "
+                                        + toomas.getTradeHistory().size() + " closed trades with an average trade length of "
+                                        + Formatter.formatDecimal((double) tradeDurs / (double) tradeHistory.size()) + " s\n");
                                 writer.write("\nLoss trades:\n");
                                 writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
                                 writer.write("\nProfitable trades:\n");
                                 writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
-                                writer.write("\nClosed trades:\n");
+                                writer.write("\n\nClosed trades:\n");
                                 for (Trade trade : tradeHistory) {
                                     writer.write(trade.toString() + "\n");
                                 }
@@ -305,7 +310,8 @@ public class Main {
                             System.out.println("---Simulation result file generated at " + resultPath);
                             break;
                         } catch (Exception | BinanceApiException e) {
-                            System.out.println("Testing failed, try again   " + e.getLocalizedMessage());
+                            e.printStackTrace();
+                            System.out.println("Testing failed, try again");
                         }
                     }
                     break;
