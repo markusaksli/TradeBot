@@ -26,7 +26,7 @@ public class BuySell {
             return; //If no fiat is available, we cant trade
         }
         double fiatCost = currentPrice * amount;
-        Trade trade = new Trade(currency, currentPrice, amount, 0.006, explanation);
+        Trade trade = new Trade(currency, currentPrice, amount, explanation);
         currency.setActiveTrade(trade);
 
         //Converting fiat value to coin value

@@ -78,7 +78,7 @@ public class MACD implements Indicator {
     @Override
     public int check(double newPrice) {
         double change = (getTemp(newPrice) - lastTick) / Math.abs(lastTick);
-        if (change > 0.25) {
+        if (change > 0.25 && get() < 0) {
             explanation = "(Positive) MACD histogram grew by " + Formatter.formatPercent(change);
             return 1;
         }
@@ -86,14 +86,6 @@ public class MACD implements Indicator {
             explanation = "(Negative) MACD histogram fell by " + Formatter.formatPercent(change);
             return -1;
         }
-        /*if (get() < 0 && getTemp(newPrice) > 0) {
-            explanation = "(Positive) MACD histogram crossed in current unclosed candle";
-            return 1;
-        }*/
-        /*if (getTemp(newPrice) > get() && get() > lastTick) {
-            explanation = "(Positive) MACD histogram was greater than 2 closed candles ago";
-            return 1;
-        }*/
         explanation = "";
         return 0;
     }

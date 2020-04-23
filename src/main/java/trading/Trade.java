@@ -3,7 +3,7 @@ package trading;
 public class Trade {
 
     private double high; //Set the highest price
-    private final double trailingSL; //It's in percentages, but using double for comfort.
+    private static final double TRAILING_SL = 100; //It's in percentages, but using double for comfort.
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
@@ -13,9 +13,8 @@ public class Trade {
     private long closeTime;
     private String explanation;
 
-    public Trade(Currency currency, double entryPrice, double amount, double trailingSL, String explanation) {
+    public Trade(Currency currency, double entryPrice, double amount, String explanation) {
         this.currency = currency;
-        this.trailingSL = trailingSL;
         this.entryPrice = entryPrice;
         this.high = entryPrice;
         this.amount = amount;
@@ -79,7 +78,7 @@ public class Trade {
     public void update(double newPrice, int confluence) {
         if (newPrice > high)
             high = newPrice;
-        else if (newPrice < high * (1 - trailingSL) || confluence <= -2) {
+        else if (newPrice < high * (1 - TRAILING_SL) || confluence <= -2) {
             explanation += "Closed due to " + (confluence <= -2 ? "indicator confluence of " + confluence : "trailing SL");
             BuySell.close(this);
         }
