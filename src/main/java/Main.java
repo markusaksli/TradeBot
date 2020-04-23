@@ -10,8 +10,11 @@ import trading.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,6 +70,8 @@ public class Main {
 
 
         if (Mode.get() == Mode.COLLECTION) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
             BinanceSymbol symbol = null;
             try {
@@ -74,27 +79,41 @@ public class Main {
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
-            System.out.println("Enter start of collection period (Unix epoch milliseconds)");
-            long start = sc.nextLong(); // March 1 00:00:00 1583020800000
-            System.out.println("Enter end of collection period (Unix epoch milliseconds)");
-            long end = sc.nextLong(); // April 1 00:00:00 1585699200000
-            System.out.println("---Setting up...");
-            /*BinanceSymbol symbol = null;
-            try {
-                symbol = new BinanceSymbol("BTCUSDT");
-            } catch (BinanceApiException e) {
-                e.printStackTrace();
+
+            System.out.println("Enter everything in double digits. (1 = 01)");
+            System.out.println("Date format = 'MM/dd/yyyy HH:mm:ss'");
+
+
+            Date startDate = null;
+            Date stopDate = null;
+            while (true) {
+                System.out.println("Enter the date you want to start from: ");
+                String begin = sc.nextLine();
+                System.out.println("Enter the date you want to finish with: ");
+                String finish = sc.nextLine();
+                try {
+                    if (Formatter.isValidDateFormat("MM/dd/yyyy HH:mm:ss", begin) &&
+                            Formatter.isValidDateFormat("MM/dd/yyyy HH:mm:ss", finish)) {
+                        startDate = dateFormat.parse(begin);
+                        stopDate = dateFormat.parse(finish);
+                        break;
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
             }
-            long start = 1585699200000L;
-            long end = 1585710000000L;*/
+
+            long start = startDate.getTime(); // March 1 00:00:00 1583020800000
+            long end = stopDate.getTime();// April 1 00:00:00 1585699200000
+
+            System.out.println("---Setting up...");
+
             String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
             long wholePeriod = end - start;
             long toSubtract = 3 * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
             long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
 
             PriceCollector.setRemaining(chunks);
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             PriceBean.setDateFormat(dateFormat);
 
             final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -395,4 +414,6 @@ public class Main {
             }
         }
     }
+
 }
+
