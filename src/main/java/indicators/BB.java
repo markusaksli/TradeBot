@@ -1,7 +1,4 @@
 package indicators;
-
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-
 import java.util.List;
 
 public class BB implements Indicator{
@@ -9,7 +6,9 @@ public class BB implements Indicator{
     private double standardDeviation;
     private final int period;
     private double upperBand;
+    private double upperMidBand;
     private double middleBand;
+    private double lowerMidBand;
     private double lowerBand;
     private String explanation;
     private SMA sma;
@@ -22,11 +21,15 @@ public class BB implements Indicator{
 
     @Override
     public double get() {
-        if (upperBand <= closingPrice)
+        if (upperBand < closingPrice)
+            return 5;
+        if (upperMidBand < closingPrice && closingPrice <= upperBand)
+            return 4;
+        if (middleBand < closingPrice && closingPrice <= upperMidBand)
             return 3;
-        if (middleBand < closingPrice && closingPrice < upperBand)
+        if (lowerMidBand< closingPrice && closingPrice <= middleBand)
             return 2;
-        if (lowerBand < closingPrice && closingPrice <= middleBand)
+        if (lowerBand < closingPrice && closingPrice <= lowerMidBand)
             return 1;
         if (closingPrice <= lowerBand)
             return 0;
@@ -39,14 +42,20 @@ public class BB implements Indicator{
         double tempMidBand = sma.getTemp(newPrice);
         double tempStdev = sma.tempStandardDeviation(newPrice);
         double tempUpperBand = tempMidBand + tempStdev*2;
+        double tempUpperMidBand = tempMidBand + tempStdev;
+        double tempLowerMidBand = tempMidBand - tempStdev;
         double tempLowerBand = tempMidBand - tempStdev*2;
         if (tempUpperBand < newPrice)
+            return 5;
+        if (tempUpperMidBand < newPrice && newPrice <= tempUpperBand)
+            return 4;
+        if (tempMidBand < newPrice && newPrice <= tempUpperMidBand)
             return 3;
-        if (tempMidBand < newPrice && newPrice < tempUpperBand)
+        if (tempLowerMidBand< newPrice && newPrice <= tempMidBand)
             return 2;
-        if (tempLowerBand < newPrice && newPrice <= tempMidBand)
+        if (tempLowerBand < newPrice && newPrice <= tempLowerMidBand)
             return 1;
-        if (newPrice < tempLowerBand)
+        if (newPrice <= tempLowerBand)
             return 0;
         else
             return -1;
@@ -60,6 +69,8 @@ public class BB implements Indicator{
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
         upperBand = middleBand + standardDeviation*2;
+        upperMidBand = middleBand + standardDeviation;
+        lowerMidBand = middleBand - standardDeviation;
         lowerBand = middleBand - standardDeviation*2;
 
     }
@@ -71,6 +82,8 @@ public class BB implements Indicator{
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
         upperBand = middleBand + standardDeviation*2;
+        upperMidBand = middleBand + standardDeviation;
+        lowerMidBand = middleBand - standardDeviation;
         lowerBand = middleBand - standardDeviation*2;
     }
 
