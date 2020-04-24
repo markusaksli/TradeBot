@@ -13,8 +13,6 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,6 +52,10 @@ public class Formatter {
         }
         NumberFormat decimalFormat = new DecimalFormat("0." + "0".repeat(3 + zeroes));
         return decimalFormat.format(decimal);
+    }
+
+    public static SimpleDateFormat getSimpleFormatter() {
+        return SIMPLE_FORMATTER;
     }
 
     public static String formatDuration(Duration duration) {
