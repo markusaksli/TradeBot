@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -110,7 +108,7 @@ public class Main {
 
             String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
             long wholePeriod = end - start;
-            long toSubtract = 3 * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
+            long toSubtract = 60 * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
             long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
 
             PriceCollector.setRemaining(chunks);
@@ -420,6 +418,4 @@ public class Main {
             }
         }
     }
-
 }
-

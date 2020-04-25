@@ -72,10 +72,6 @@ public class Formatter {
         return IntStream.range(1, lines.size()).mapToObj(lines::get).map(PriceBean::of).collect(Collectors.toList());
     }
 
-    public static List<Double> formatChart(List<PriceBean> beans) {
-        return beans.stream().filter(PriceBean::isClose).map(PriceBean::getPrice).collect(Collectors.toList());
-    }
-
     public static boolean isValidDateFormat(String format, String value) {
         LocalDateTime ldt = null;
         DateTimeFormatter fomatter = DateTimeFormatter.ofPattern(format);
