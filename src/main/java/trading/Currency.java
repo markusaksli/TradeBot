@@ -12,8 +12,6 @@ import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -4,7 +4,7 @@ import com.webcerebrium.binance.datatype.BinanceCandlestick;
 
 import java.util.List;
 
-public class BB implements Indicator{
+public class BB implements Indicator {
     private double closingPrice;
     private double standardDeviation;
     private final int period;
@@ -38,8 +38,8 @@ public class BB implements Indicator{
     public double getTemp(double newPrice) {
         double tempMidBand = sma.getTemp(newPrice);
         double tempStdev = sma.tempStandardDeviation(newPrice);
-        double tempUpperBand = tempMidBand + tempStdev*2;
-        double tempLowerBand = tempMidBand - tempStdev*2;
+        double tempUpperBand = tempMidBand + tempStdev * 2;
+        double tempLowerBand = tempMidBand - tempStdev * 2;
         if (tempUpperBand < newPrice)
             return 3;
         if (tempMidBand < newPrice && newPrice < tempUpperBand)
@@ -59,8 +59,8 @@ public class BB implements Indicator{
         closingPrice = closingPrices.size() - 2;
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
-        upperBand = middleBand + standardDeviation*2;
-        lowerBand = middleBand - standardDeviation*2;
+        upperBand = middleBand + standardDeviation * 2;
+        lowerBand = middleBand - standardDeviation * 2;
 
     }
 
@@ -70,8 +70,8 @@ public class BB implements Indicator{
         sma.update(newPrice);
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
-        upperBand = middleBand + standardDeviation*2;
-        lowerBand = middleBand - standardDeviation*2;
+        upperBand = middleBand + standardDeviation * 2;
+        lowerBand = middleBand - standardDeviation * 2;
     }
 
     @Override

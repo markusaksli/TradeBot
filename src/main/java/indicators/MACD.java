@@ -16,6 +16,7 @@ public class MACD implements Indicator {
     private final double multiplier;
     private final int periodDifference;
     private String explanation;
+    private static double change;
 
     private double lastTick;
 
@@ -78,11 +79,11 @@ public class MACD implements Indicator {
     @Override
     public int check(double newPrice) {
         double change = (getTemp(newPrice) - lastTick) / Math.abs(lastTick);
-        if (change > 0.25 && get() < 0) {
+        if (change > MACD.change && get() < 0) {
             explanation = "(Positive) MACD histogram grew by " + Formatter.formatPercent(change);
             return 1;
         }
-        if (change < -0.25) {
+        if (change < -MACD.change) {
             explanation = "(Negative) MACD histogram fell by " + Formatter.formatPercent(change);
             return -1;
         }
@@ -93,5 +94,9 @@ public class MACD implements Indicator {
     @Override
     public String getExplanation() {
         return explanation;
+    }
+
+    public static void setChange(double change) {
+        MACD.change = change;
     }
 }

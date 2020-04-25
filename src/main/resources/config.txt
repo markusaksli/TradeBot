@@ -1,0 +1,9 @@
+MACD change indicator:0.25
+RSI positive side minimum:15
+RSI positive side maximum:30
+RSI negative side minimum:70
+RSI negative side maximum:80
+Collection mode chunk size:60
+Simulation mode starting value:1000
+Percentage of money per trade:0.10
+Simulation mode currencies:BTC, ETH, LINK, BNB, BCH, XRP, LTC, EOS, XTZ, DASH, ETC, TRX, XLM, ADA, ZEC

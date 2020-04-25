@@ -85,7 +85,6 @@ public class PriceCollector implements Runnable {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
             try {
                 trades = (CurrentAPI.get().aggTrades(symbol, 1000, options));
                 if (trades.get(0).getTimestamp() == end || trades.isEmpty()) { //Empty or redundant request means we have reached the end of the chunk

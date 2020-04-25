@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 public class BuySell {
 
     private static Account account;
+    private static double moneyPerTrade;
 
     public static void setAccount(Account account) {
         BuySell.account = account;
@@ -43,6 +44,10 @@ public class BuySell {
         if (Mode.get().equals(Mode.BACKTESTING)) currency.appendLogLine(message);
     }
 
+    public static void setMoneyPerTrade(double moneyPerTrade) {
+        BuySell.moneyPerTrade = moneyPerTrade;
+    }
+
     //Used by trade
     public static void close(Trade trade) {
         //Converting coin value back to fiat
@@ -61,7 +66,7 @@ public class BuySell {
     }
 
     private static double nextAmount() {
-        return Math.min(account.getFiat(), account.getTotalValue() * 0.10);
+        return Math.min(account.getFiat(), account.getTotalValue() * moneyPerTrade);
     }
 
     public static void placeBuyOrder(String currencySymbol, double quantity) throws BinanceApiException {

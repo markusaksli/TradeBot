@@ -1,8 +1,10 @@
+import collection.ConfigSetup;
 import collection.PriceBean;
 import collection.PriceCollector;
-import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
+import indicators.MACD;
+import indicators.RSI;
 import trading.Currency;
 import trading.Formatter;
 import trading.*;
@@ -10,13 +12,9 @@ import trading.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.channels.AcceptPendingException;
-import java.text.Normalizer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +24,40 @@ public class Main {
     static List<Currency> currencies; //There should never be two of the same Currency
 
     public static void main(String[] args) {
+
+        ConfigSetup setup = new ConfigSetup();
+        //Program configuration
+        /**
+         * Trading
+         */
+        BuySell.setMoneyPerTrade(setup.getMoneyPerTrade()); //How many percentages of the money you have currently
+        //will the program put into one trade.
+
+        /**
+         * Collection mode
+         */
+        long minutesForCollection = setup.getMinutesForCollection(); //When entering collection mode, how big chuncks do you
+        //want to create
+
+        /**
+         * Simulation
+         */
+        double startingValue = setup.getStartingValue(); //How much money does the simulated acc start with.
+        //The currencies that the simulation MODE will trade with.
+        String[] currencyArr = setup.getCurrencies();
+
+        /**
+         * Indicators
+         */
+        //MACD
+        MACD.setChange(setup.getMACDChange()); //How much change does the program need in order to give a positive signal from MACD
+
+        //RSI
+        RSI.setPositiveMin(setup.getRSIPosMin()); //When RSI reaches this value, it returns 2 as a signal.
+        RSI.setPositivseMax(setup.getRSIPosMax()); //When RSI reaches this value, it returns 1 as a signal.
+        RSI.setNegativeMin(setup.getRSINegMin()); //When RSI reaches this value, it returns -1 as a signal.
+        RSI.setNegativeMax(setup.getRSINegMax()); //When RSI reaches this value it returns -2 as a signal.
+
         try {
             System.out.println(CurrentAPI.get().time().toString());
         } catch (BinanceApiException e) {
@@ -115,8 +147,7 @@ public class Main {
             long wholePeriod = end - start;
             //long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
             //System.out.println(availableMemory / 83451L);
-            long minutes = 60L;
-            long toSubtract = minutes * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
+            long toSubtract = minutesForCollection * 60000;
             long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
 
             PriceCollector.setRemaining(chunks);
@@ -200,7 +231,7 @@ public class Main {
                 if (s.toLowerCase().equals("quit")) break;
             }
         } else {
-            Account toomas = new Account("Investor Toomas", 1000);
+            Account toomas = new Account("Investor Toomas", startingValue);
             BuySell.setAccount(toomas);
             currencies = new ArrayList<>();
 
@@ -230,7 +261,6 @@ public class Main {
                     //System.out.println("Enter all of the currencies you want to track separated with a space (BTC ETH LINK...)");
                     //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
                     //String[] currencyArr = sc.nextLine().toUpperCase().split(" ");
-                    String[] currencyArr = new String[]{"BTC", "ETH", "LINK", "BNB", "BCH", "XRP", "LTC", "EOS", "XTZ", "DASH", "ETC", "TRX", "XLM", "ADA", "ZEC"};
                     startTime = System.nanoTime();
                     for (String arg : currencyArr) {
                         //The currency class contains all of the method calls that drive the activity of our bot
