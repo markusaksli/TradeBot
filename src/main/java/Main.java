@@ -31,28 +31,20 @@ public class Main {
 
         ConfigSetup setup = new ConfigSetup();
         //Program configuration
-        /**
-         * Trading
-         */
+        //TRADING
         BuySell.setMoneyPerTrade(setup.getMoneyPerTrade()); //How many percentages of the money you have currently
         //will the program put into one trade.
 
-        /**
-         * Collection mode
-         */
+        //COLLECTION MODE
         long minutesForCollection = setup.getMinutesForCollection(); //When entering collection mode, how big chuncks do you
         //want to create
 
-        /**
-         * Simulation
-         */
+        //SIMULATION
         double startingValue = setup.getStartingValue(); //How much money does the simulated acc start with.
         //The currencies that the simulation MODE will trade with.
         String[] currencyArr = setup.getCurrencies();
 
-        /**
-         * Indicators
-         */
+        //INDICATORS
         //MACD
         MACD.setChange(setup.getMACDChange()); //How much change does the program need in order to give a positive signal from MACD
 
@@ -123,8 +115,8 @@ public class Main {
             System.out.println("Date format = 'yyyy/MM/dd HH:mm:ss' \n");
 
 
-            Date startDate = null;
-            Date stopDate = null;
+            Date startDate;
+            Date stopDate;
             while (true) {
                 System.out.println("Enter the date you want to start from: ");
                 String begin = sc.nextLine();
@@ -262,10 +254,6 @@ public class Main {
                     }
                     break;
                 case SIMULATION:
-                    //System.out.println("Enter all of the currencies you want to track separated with a space (BTC ETH LINK...)");
-                    //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
-                    //String[] currencyArr = sc.nextLine().toUpperCase().split(" ");
-                    String[] currencyArr = new String[]{"BTC", "ETH", "LINK", "BNB", "BCH", "XRP", "LTC", "EOS", "XTZ", "DASH", "ETC", "TRX", "XLM", "ADA", "ZEC"};
                     startTime = System.nanoTime();
                     for (String arg : currencyArr) {
                         //The currency class contains all of the method calls that drive the activity of our bot
