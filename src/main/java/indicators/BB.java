@@ -1,15 +1,14 @@
 package indicators;
-
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-
 import java.util.List;
 
-public class BB implements Indicator {
+public class BB implements Indicator{
     private double closingPrice;
     private double standardDeviation;
     private final int period;
     private double upperBand;
+    private double upperMidBand;
     private double middleBand;
+    private double lowerMidBand;
     private double lowerBand;
     private String explanation;
     private SMA sma;
@@ -22,16 +21,14 @@ public class BB implements Indicator {
 
     @Override
     public double get() {
-        if (upperBand <= closingPrice)
-            return 3;
-        if (middleBand < closingPrice && closingPrice < upperBand)
-            return 2;
-        if (lowerBand < closingPrice && closingPrice <= middleBand)
-            return 1;
-        if (closingPrice <= lowerBand)
+        if ((upperBand - lowerBand) / middleBand < 0.1) //Low volatility case
             return 0;
-        else
+        if (upperMidBand < closingPrice && closingPrice <= upperBand)
+            return 1;
+        if (lowerBand < closingPrice && closingPrice <= lowerMidBand)
             return -1;
+        else
+            return 0;
     }
 
     @Override
@@ -39,17 +36,17 @@ public class BB implements Indicator {
         double tempMidBand = sma.getTemp(newPrice);
         double tempStdev = sma.tempStandardDeviation(newPrice);
         double tempUpperBand = tempMidBand + tempStdev * 2;
+        double tempUpperMidBand = tempMidBand + tempStdev;
+        double tempLowerMidBand = tempMidBand - tempStdev;
         double tempLowerBand = tempMidBand - tempStdev * 2;
-        if (tempUpperBand < newPrice)
-            return 3;
-        if (tempMidBand < newPrice && newPrice < tempUpperBand)
-            return 2;
-        if (tempLowerBand < newPrice && newPrice <= tempMidBand)
-            return 1;
-        if (newPrice < tempLowerBand)
+        if ((tempUpperBand - tempLowerBand) / tempMidBand < 0.1) //Low volatility case
             return 0;
-        else
+        if (tempUpperMidBand < newPrice && newPrice <= tempUpperBand)
+            return 1;
+        if (tempLowerBand < newPrice && newPrice <= tempLowerMidBand)
             return -1;
+        else
+            return 0;
     }
 
     @Override
@@ -59,8 +56,10 @@ public class BB implements Indicator {
         closingPrice = closingPrices.size() - 2;
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
-        upperBand = middleBand + standardDeviation * 2;
-        lowerBand = middleBand - standardDeviation * 2;
+        upperBand = middleBand + standardDeviation*2;
+        upperMidBand = middleBand + standardDeviation;
+        lowerMidBand = middleBand - standardDeviation;
+        lowerBand = middleBand - standardDeviation*2;
 
     }
 
@@ -70,16 +69,22 @@ public class BB implements Indicator {
         sma.update(newPrice);
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
-        upperBand = middleBand + standardDeviation * 2;
-        lowerBand = middleBand - standardDeviation * 2;
+        upperBand = middleBand + standardDeviation*2;
+        upperMidBand = middleBand + standardDeviation;
+        lowerMidBand = middleBand - standardDeviation;
+        lowerBand = middleBand - standardDeviation*2;
     }
 
     @Override
     public int check(double newPrice) {
-        /*if (get() == 2 && getTemp(newPrice) == 3) {
-            explanation = "Price crossing from below to above upper BB";
+        if (get() == 1 && getTemp(newPrice) == 1) {
+            explanation = "Price in DBB buy zone";
             return 1;
-        }*/
+        }
+        if (get() == -1 && getTemp(newPrice) == -1) {
+            explanation = "Price in DBB sell zone";
+            return -1;
+        }
         explanation = "";
         return 0;
     }

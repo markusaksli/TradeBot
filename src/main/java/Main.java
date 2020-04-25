@@ -15,6 +15,10 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -261,6 +265,7 @@ public class Main {
                     //System.out.println("Enter all of the currencies you want to track separated with a space (BTC ETH LINK...)");
                     //BTC ETH LINK BNB BCH XRP LTC EOS XTZ DASH ETC TRX XLM ADA ZEC
                     //String[] currencyArr = sc.nextLine().toUpperCase().split(" ");
+                    String[] currencyArr = new String[]{"BTC", "ETH", "LINK", "BNB", "BCH", "XRP", "LTC", "EOS", "XTZ", "DASH", "ETC", "TRX", "XLM", "ADA", "ZEC"};
                     startTime = System.nanoTime();
                     for (String arg : currencyArr) {
                         //The currency class contains all of the method calls that drive the activity of our bot
@@ -307,6 +312,16 @@ public class Main {
                                 tradeDurs += trade.getDuration();
                             }
 
+                            double lastPrice = beans.get(0).getPrice();
+                            double maxPossible = 0;
+                            for (PriceBean bean : beans) {
+                                if (bean.isClose()) {
+                                    double change = bean.getPrice() - lastPrice;
+                                    if (change > 0) maxPossible += change;
+                                    lastPrice = bean.getPrice();
+                                }
+                            }
+
 
                             int i = 0;
                             String resultPath = path.replace(".txt", "_run_" + i + ".txt");
@@ -316,11 +331,12 @@ public class Main {
                             }
                             try (FileWriter writer = new FileWriter(resultPath)) {
                                 writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                                writer.write("\nMarket performance: " + Formatter.formatPercent((beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice()) / beans.get(0).getPrice()) + "\n");
+                                writer.write("\nMarket performance: " + Formatter.formatPercent((beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice()) / beans.get(0).getPrice())
+                                        + ", maximum possible performance: " + Formatter.formatPercent(maxPossible / beans.get(0).getPrice()));
                                 writer.write("\nBot performance: "
                                         + Formatter.formatPercent(toomas.getProfit()) + " from "
                                         + toomas.getTradeHistory().size() + " closed trades with an average trade length of "
-                                        + Formatter.formatDecimal((double) tradeDurs / (double) tradeHistory.size()) + " s\n");
+                                        + Formatter.formatDuration(Duration.of(tradeDurs / tradeHistory.size(), ChronoUnit.MILLIS)) + "\n");
                                 writer.write("\nLoss trades:\n");
                                 writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
                                 writer.write("\nProfitable trades:\n");
@@ -337,6 +353,14 @@ public class Main {
                         } catch (Exception | BinanceApiException e) {
                             e.printStackTrace();
                             System.out.println("Testing failed, try again");
+                        }
+                    }
+                    while (true) {
+                        System.out.println("Type quit to quit");
+                        String s = sc.nextLine();
+                        if (s.toLowerCase().equals("quit")) {
+                            System.exit(0);
+                            break;
                         }
                     }
                     break;

@@ -5,7 +5,7 @@ import java.time.Duration;
 public class Trade {
 
     private double high; //Set the highest price
-    private static final double TRAILING_SL = 100; //It's in percentages, but using double for comfort.
+    private static final double TRAILING_SL = 0.05; //It's in percentages, but using double for comfort.
     private static final double TAKE_PROFIT = 0.012; //It's in percentages, but using double for comfort.
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
@@ -78,7 +78,7 @@ public class Trade {
     }
 
     public long getDuration() {
-        return (closeTime - openTime) / 1000;
+        return (closeTime - openTime);
     }
 
     //Checks if there is a new highest price for the trade or if the trade has dropped below the stoploss.
@@ -86,7 +86,10 @@ public class Trade {
         if (newPrice > high)
             high = newPrice;
         else if (newPrice < high * (1 - TRAILING_SL) || confluence <= -2 || getProfit() > TAKE_PROFIT) {
-            explanation += "Closed due to " + (confluence <= -2 ? "indicator confluence of " + confluence : "trailing SL");
+            explanation += "Closed due to ";
+            if (confluence <= -2) explanation += "indicator confluence of " + confluence + " ";
+            if (newPrice < high * (1 - TRAILING_SL)) explanation += "trailing SL";
+            if (getProfit() > TAKE_PROFIT) explanation += "take profit at " + Formatter.formatPercent(getProfit());
             BuySell.close(this);
         }
     }
