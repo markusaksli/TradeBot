@@ -10,9 +10,13 @@ import trading.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.channels.AcceptPendingException;
+import java.text.Normalizer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,7 +72,7 @@ public class Main {
 
 
         if (Mode.get() == Mode.COLLECTION) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+            SimpleDateFormat dateFormat = Formatter.getSimpleFormatter();
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
             BinanceSymbol symbol = null;
@@ -78,8 +82,9 @@ public class Main {
                 e.printStackTrace();
             }
 
-            System.out.println("Enter everything in double digits. (1 = 01)");
-            System.out.println("Date format = 'MM/dd/yyyy HH:mm:ss'");
+            System.out.println("Enter everything in double digits. (1 = 01) \n " +
+                    "example: 2020/03/01 00:00:00");
+            System.out.println("Date format = 'yyyy/MM/dd HH:mm:ss' \n");
 
 
             Date startDate = null;
@@ -90,8 +95,8 @@ public class Main {
                 System.out.println("Enter the date you want to finish with: ");
                 String finish = sc.nextLine();
                 try {
-                    if (Formatter.isValidDateFormat("MM/dd/yyyy HH:mm:ss", begin) &&
-                            Formatter.isValidDateFormat("MM/dd/yyyy HH:mm:ss", finish)) {
+                    if (Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", begin) &&
+                            Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", finish)) {
                         startDate = dateFormat.parse(begin);
                         stopDate = dateFormat.parse(finish);
                         break;
@@ -108,7 +113,10 @@ public class Main {
 
             String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
             long wholePeriod = end - start;
-            long toSubtract = 60 * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
+            //long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            //System.out.println(availableMemory / 83451L);
+            long minutes = 60L;
+            long toSubtract = minutes * 60 * 1000; //3 minute chunks seem most efficient and provide consistent progress.
             long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
 
             PriceCollector.setRemaining(chunks);
@@ -200,33 +208,22 @@ public class Main {
             switch (Mode.get()) {
                 case LIVE:
                     if (Mode.get().equals(Mode.LIVE)) {
+                        String apiKey = null;
+                        String apiSecret = null;
                         while (true) {
                             System.out.println("Enter your API Key: ");
-                            String apiKey = sc.nextLine();
+                            apiKey = sc.nextLine();
                             if (apiKey.length() == 64) {
-                                CurrentAPI.get().setApiKey(apiKey);
                                 System.out.println("Enter your Secret Key: ");
-                                String apiSecret = sc.nextLine();
+                                apiSecret = sc.nextLine();
                                 if (apiSecret.length() == 64) {
-                                    CurrentAPI.get().setSecretKey(apiSecret);
                                     break;
                                 } else System.out.println("Secret API is incorrect, enter again.");
                             } else System.out.println("Incorrect API, enter again.");
                         }
-                        JsonObject account = null;
-                        try {
-                            account = CurrentAPI.get().account();
-                        } catch (BinanceApiException e) {
-                            e.printStackTrace();
-                        }
-                        //Connection with Binance API and sout-ing some info.
-                        System.out.println("Maker Commission: " + account.get("makerCommission").getAsBigDecimal());
-                        System.out.println("Taker Commission: " + account.get("takerCommission").getAsBigDecimal());
-                        System.out.println("Buyer Commission: " + account.get("buyerCommission").getAsBigDecimal());
-                        System.out.println("Seller Commission: " + account.get("sellerCommission").getAsBigDecimal());
-                        System.out.println("Can Trade: " + account.get("canTrade").getAsBoolean());
-                        System.out.println("Can Withdraw: " + account.get("canWithdraw").getAsBoolean());
-                        System.out.println("Can Deposit: " + account.get("canDeposit").getAsBoolean());
+                        Account account = new Account(apiKey, apiSecret);
+
+
                     }
                     break;
                 case SIMULATION:
@@ -418,4 +415,6 @@ public class Main {
             }
         }
     }
+
 }
+

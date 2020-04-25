@@ -1,5 +1,10 @@
 package trading;
 
+import com.google.gson.JsonObject;
+import com.webcerebrium.binance.api.BinanceApiException;
+import com.webcerebrium.binance.datatype.BinanceOrder;
+import com.webcerebrium.binance.datatype.BinanceSymbol;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,10 +16,11 @@ public class Account {
 
     //To give the account a specific final amount of money.
     private double fiatValue;
-    private final double startingValue;
+    private double startingValue;
     private final ConcurrentHashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
     private final List<Trade> activeTrades;
+    private JsonObject account;
 
 
     /**
@@ -28,6 +34,17 @@ public class Account {
         wallet = new ConcurrentHashMap<>();
         tradeHistory = new ArrayList<>();
         activeTrades = new CopyOnWriteArrayList<>();
+    }
+
+    public Account(String apiKey, String secretApiKey) {
+        CurrentAPI.get().setApiKey(apiKey);
+        CurrentAPI.get().setSecretKey(secretApiKey);
+        this.startingValue = 0;
+        username = "";
+        wallet = new ConcurrentHashMap<>();
+        tradeHistory = new ArrayList<>();
+        activeTrades = new CopyOnWriteArrayList<>();
+        initLive();
     }
 
     //All backend.Trade methods
@@ -92,8 +109,8 @@ public class Account {
     }
 
 
-    //All wallet methods
 
+    //All wallet methods
     /**
      * Method allows to add currencies to wallet hashmap.
      *
@@ -115,4 +132,32 @@ public class Account {
     public void removeFromWallet(Currency key, double value) {
         wallet.put(key, wallet.get(key) - value);
     }
+
+    /**
+     * Everything connected to live trading in account.
+     */
+    private void initLive() {
+        List<String> currencies = new ArrayList<>();
+        try {
+            account = CurrentAPI.get().account();
+            startingValue = CurrentAPI.get().balancesMap().get("USDT").free.doubleValue();
+            currencies.addAll(CurrentAPI.get().balancesMap().keySet());
+            for (String current : currencies) {
+                BinanceSymbol symbol = new BinanceSymbol(current + "USDT");
+                //TODO: What is the boolean in currency class and should it be true or false here?
+                Currency currency = new Currency(current, true);
+                addToWallet(currency, 0);
+                for (BinanceOrder order : CurrentAPI.get().openOrders(symbol)) {
+                    activeTrades.add(new Trade(new Currency(current, true),
+                            order.getPrice().doubleValue(), order.getExecutedQty().doubleValue(),
+                            "Already opened before BOT initiated."));
+                    addToWallet(currency, order.getExecutedQty().doubleValue());
+                }
+            }
+        } catch (BinanceApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 }
