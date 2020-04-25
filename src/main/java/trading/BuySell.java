@@ -9,6 +9,8 @@ public class BuySell {
 
     private static Account account;
 
+    private static double RISK = 0.1;
+
     public static void setAccount(Account account) {
         BuySell.account = account;
     }
@@ -61,7 +63,7 @@ public class BuySell {
     }
 
     private static double nextAmount() {
-        return Math.min(account.getFiat(), account.getTotalValue() * 0.10);
+        return Math.min(account.getFiat(), account.getTotalValue() * RISK);
     }
 
     public static void placeBuyOrder(String currencySymbol, double quantity) throws BinanceApiException {

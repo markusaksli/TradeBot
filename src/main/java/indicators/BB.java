@@ -21,44 +21,32 @@ public class BB implements Indicator{
 
     @Override
     public double get() {
-        if (upperBand < closingPrice)
-            return 5;
-        if (upperMidBand < closingPrice && closingPrice <= upperBand)
-            return 4;
-        if (middleBand < closingPrice && closingPrice <= upperMidBand)
-            return 3;
-        if (lowerMidBand< closingPrice && closingPrice <= middleBand)
-            return 2;
-        if (lowerBand < closingPrice && closingPrice <= lowerMidBand)
-            return 1;
-        if (closingPrice <= lowerBand)
+        if ((upperBand - lowerBand) / middleBand < 0.1) //Low volatility case
             return 0;
-        else
+        if (upperMidBand < closingPrice && closingPrice <= upperBand)
+            return 1;
+        if (lowerBand < closingPrice && closingPrice <= lowerMidBand)
             return -1;
+        else
+            return 0;
     }
 
     @Override
     public double getTemp(double newPrice) {
         double tempMidBand = sma.getTemp(newPrice);
         double tempStdev = sma.tempStandardDeviation(newPrice);
-        double tempUpperBand = tempMidBand + tempStdev*2;
+        double tempUpperBand = tempMidBand + tempStdev * 2;
         double tempUpperMidBand = tempMidBand + tempStdev;
         double tempLowerMidBand = tempMidBand - tempStdev;
-        double tempLowerBand = tempMidBand - tempStdev*2;
-        if (tempUpperBand < newPrice)
-            return 5;
-        if (tempUpperMidBand < newPrice && newPrice <= tempUpperBand)
-            return 4;
-        if (tempMidBand < newPrice && newPrice <= tempUpperMidBand)
-            return 3;
-        if (tempLowerMidBand< newPrice && newPrice <= tempMidBand)
-            return 2;
-        if (tempLowerBand < newPrice && newPrice <= tempLowerMidBand)
-            return 1;
-        if (newPrice <= tempLowerBand)
+        double tempLowerBand = tempMidBand - tempStdev * 2;
+        if ((tempUpperBand - tempLowerBand) / tempMidBand < 0.1) //Low volatility case
             return 0;
-        else
+        if (tempUpperMidBand < newPrice && newPrice <= tempUpperBand)
+            return 1;
+        if (tempLowerBand < newPrice && newPrice <= tempLowerMidBand)
             return -1;
+        else
+            return 0;
     }
 
     @Override
@@ -89,10 +77,14 @@ public class BB implements Indicator{
 
     @Override
     public int check(double newPrice) {
-        /*if (get() == 2 && getTemp(newPrice) == 3) {
-            explanation = "Price crossing from below to above upper BB";
+        if (get() == 1 && getTemp(newPrice) == 1) {
+            explanation = "Price in DBB buy zone";
             return 1;
-        }*/
+        }
+        if (get() == -1 && getTemp(newPrice) == -1) {
+            explanation = "Price in DBB sell zone";
+            return -1;
+        }
         explanation = "";
         return 0;
     }

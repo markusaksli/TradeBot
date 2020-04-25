@@ -79,11 +79,11 @@ public class MACD implements Indicator {
     public int check(double newPrice) {
         double change = (getTemp(newPrice) - lastTick) / Math.abs(lastTick);
         if (change > 0.25 && get() < 0) {
-            explanation = "(Positive) MACD histogram grew by " + Formatter.formatPercent(change);
+            explanation = "MACD histogram grew by " + Formatter.formatPercent(change);
             return 1;
         }
-        if (change < -0.25) {
-            explanation = "(Negative) MACD histogram fell by " + Formatter.formatPercent(change);
+        if (change < -0.25 && get() > 0) {
+            explanation = "MACD histogram fell by " + Formatter.formatPercent(change);
             return -1;
         }
         explanation = "";
