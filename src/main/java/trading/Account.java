@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceOrder;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,9 @@ public class Account {
     private final List<Trade> tradeHistory;
     private final List<Trade> activeTrades;
     private JsonObject account;
-
+    private double makerComission;
+    private double takerComission;
+    private double buyerComission;
 
     /**
      * Wallet value will most probably be 0 at first, but you could start
@@ -139,16 +142,33 @@ public class Account {
     private void initLive() {
         List<String> currencies = new ArrayList<>();
         try {
-            account = CurrentAPI.get().account();
-            startingValue = CurrentAPI.get().balancesMap().get("USDT").free.doubleValue();
+            JsonObject account = CurrentAPI.get().account();
+            this.account = account;
+            makerComission = account.get("makerCommission").getAsBigDecimal().doubleValue(); //Maker fees are
+            // paid when you add liquidity to our order book
+            // by placing a limit order below the ticker price for buy, and above the ticker price for sell.
+            takerComission = account.get("takerCommission").getAsBigDecimal().doubleValue();//Taker fees are paid when you remove
+            // liquidity from our order book by placing any order that is executed against an order on the order book.
+            buyerComission = account.get("buyerCommission").getAsBigDecimal().doubleValue();
+
+            //Example: If the current market/ticker price is $2000 for 1 BTC and you market buy bitcoins starting at the market price of $2000, then you will pay the taker fee. In this instance, you have taken liquidity/coins from the order book.
+            //
+            //If the current market/ticker price is $2000 for 1 BTC and you
+            //place a limit buy for bitcoins at $1995, then
+            //you will pay the maker fee IF the market/ticker price moves into your limit order at $1995.
+
+            if (CurrentAPI.get().balancesMap().isEmpty()) {
+                startingValue = 0;
+            } else {
+                startingValue = CurrentAPI.get().balancesMap().get("USDT").free.doubleValue();
+            }
             currencies.addAll(CurrentAPI.get().balancesMap().keySet());
             for (String current : currencies) {
                 BinanceSymbol symbol = new BinanceSymbol(current + "USDT");
-                //TODO: What is the boolean in currency class and should it be true or false here?
-                Currency currency = new Currency(current, true);
+                Currency currency = new Currency(current);
                 addToWallet(currency, 0);
                 for (BinanceOrder order : CurrentAPI.get().openOrders(symbol)) {
-                    activeTrades.add(new Trade(new Currency(current, true),
+                    activeTrades.add(new Trade(new Currency(current),
                             order.getPrice().doubleValue(), order.getExecutedQty().doubleValue(),
                             "Already opened before BOT initiated."));
                     addToWallet(currency, order.getExecutedQty().doubleValue());
@@ -159,5 +179,15 @@ public class Account {
         }
     }
 
+    public double getMakerComission() {
+        return makerComission;
+    }
 
+    public double getTakerComission() {
+        return takerComission;
+    }
+
+    public double getBuyerComission() {
+        return buyerComission;
+    }
 }

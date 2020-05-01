@@ -249,7 +249,9 @@ public class Main {
                             } else System.out.println("Incorrect API, enter again.");
                         }
                         Account account = new Account(apiKey, apiSecret);
-
+                        System.out.println(account.getMakerComission() + " Maker commission.");
+                        System.out.println(account.getBuyerComission() + " Buyer commission");
+                        System.out.println(account.getTakerComission() + " Taker comission");
 
                     }
                     break;
@@ -258,7 +260,7 @@ public class Main {
                     for (String arg : currencyArr) {
                         //The currency class contains all of the method calls that drive the activity of our bot
                         try {
-                            currencies.add(new Currency(arg, true));
+                            currencies.add(new Currency(arg));
                         } catch (BinanceApiException e) {
                             e.printStackTrace();
                         }

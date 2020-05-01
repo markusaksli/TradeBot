@@ -23,7 +23,6 @@ public class Currency {
     private static final String FIAT = "USDT";
     private final String coin;
     private final BinanceSymbol symbol;
-    private final boolean trade;
     private Trade activeTrade;
 
     private final List<Indicator> indicators = new ArrayList<>();
@@ -38,11 +37,10 @@ public class Currency {
 
 
     //Used for SIMULATION and LIVE
-    public Currency(String coin, boolean trade) throws BinanceApiException {
+    public Currency(String coin) throws BinanceApiException {
         //Every currency is a USDT pair so we only care about the fiat opposite coin
         this.symbol = BinanceSymbol.valueOf(coin + FIAT);
         this.coin = coin;
-        this.trade = trade;
 
         //Every currency needs to contain and update our indicators
         List<BinanceCandlestick> history = getCandles(250);//250 gives us functionally the same accuracy as 1000
@@ -85,7 +83,6 @@ public class Currency {
     public Currency(String pair, List<PriceBean> beans) throws BinanceApiException {
         this.symbol = BinanceSymbol.valueOf(pair);
         this.coin = pair.replace("USDT", "");
-        this.trade = true;
 
         long start = beans.get(0).getTimestamp();
         List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
@@ -117,19 +114,19 @@ public class Currency {
             System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
         } else {
             currentlyCalculating = true;
-            if (trade) { //We can disable the strategy and trading logic to only check indicator and price accuracy
-                int confluence = check();
-                if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
-                    activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-                } else {
-                    if (confluence >= 2) {
-                        BuySell.open(Currency.this
-                                , indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", ""))
-                                , bean.getTimestamp()
-                        );
-                    }
+            //We can disable the strategy and trading logic to only check indicator and price accuracy
+            int confluence = check();
+            if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
+                activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
+            } else {
+                if (confluence >= 2) {
+                    BuySell.open(Currency.this
+                            , indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", ""))
+                            , bean.getTimestamp()
+                    );
                 }
             }
+
             currentlyCalculating = false;
         }
     }
