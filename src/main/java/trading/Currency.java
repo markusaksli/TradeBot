@@ -13,7 +13,6 @@ import indicators.MACD;
 import indicators.RSI;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +37,9 @@ public class Currency {
     private long candleTime;
     private long currentTime;
     private boolean currentlyCalculating = false;
+    private double firstPrice;
+    private double lastPrice;
+    private double maxPossible = 0; //The max amount of money possible to earn with backtesting files.
 
 
     //Used for SIMULATION and LIVE
@@ -87,24 +89,30 @@ public class Currency {
     public Currency(String pair, String filePath) throws BinanceApiException {
         this.symbol = BinanceSymbol.valueOf(pair);
         this.coin = pair.replace("USDT", "");
-
-        List<String> lines = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String currentLine;
-            int i = 0;
             System.out.println("Reading from " + br.readLine());
-            PriceBean first = PriceBean.of(br.readLine());
 
-            long start = first.getTimestamp();
-            List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
-            List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
-            indicators.add(new RSI(closingPrices, 14));
-            indicators.add(new MACD(closingPrices, 12, 26, 9));
-            indicators.add(new BB(closingPrices, 20));
-            while ((currentLine = br.readLine()) != null) {
+            String next, currentLine = br.readLine();
+            double previousPrice = PriceBean.of(currentLine).getPrice();
+            for (boolean firstLine = true, last = (currentLine == null); !last; firstLine = false, currentLine = next) {
+                last = ((next = br.readLine()) == null);
+
                 PriceBean currentBean = PriceBean.of(currentLine);
                 if (currentPrice == currentBean.getPrice() && !currentBean.isClose()) continue;
                 accept(PriceBean.of(currentLine));
+                if (currentBean.getPrice() - previousPrice > 0) maxPossible += (currentBean.getPrice() - previousPrice);
+                if (firstLine) {
+                    firstPrice = currentBean.getPrice();
+                    long start = currentBean.getTimestamp();
+                    List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
+                    List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
+                    indicators.add(new RSI(closingPrices, 14));
+                    indicators.add(new MACD(closingPrices, 12, 26, 9));
+                    indicators.add(new BB(closingPrices, 20));
+                } else if (last) {
+                    lastPrice = currentBean.getPrice();
+                }
+                previousPrice = currentBean.getPrice();
             }
             System.out.println("-----Backtesting finished.");
         } catch (IOException e) {
@@ -141,7 +149,6 @@ public class Currency {
                     );
                 }
             }
-
             currentlyCalculating = false;
         }
     }
@@ -159,6 +166,18 @@ public class Currency {
         options.put("startTime", start);
         options.put("endTime", end);
         return (CurrentAPI.get()).klines(symbol, BinanceInterval.FIVE_MIN, length, options);
+    }
+
+    public double getMaxPossible() {
+        return maxPossible;
+    }
+
+    public double getFirstPrice() {
+        return firstPrice;
+    }
+
+    public double getLastPrice() {
+        return lastPrice;
     }
 
     public String getCoin() {

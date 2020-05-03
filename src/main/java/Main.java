@@ -302,15 +302,9 @@ public class Main {
                                 tradeDurs += trade.getDuration();
                             }
 
-                            /*double lastPrice = beans.get(0).getPrice();
-                            double maxPossible = 0;
-                            for (PriceBean bean : beans) {
-                                if (bean.isClose()) {
-                                    double change = bean.getPrice() - lastPrice;
-                                    if (change > 0) maxPossible += change;
-                                    lastPrice = bean.getPrice();
-                                }
-                            }
+                            double lastPrice = currency.getLastPrice();
+                            double firstPrice = currency.getFirstPrice();
+                            double maxPossible = currency.getMaxPossible();
 
 
                             int i = 0;
@@ -321,8 +315,9 @@ public class Main {
                             }
                             try (FileWriter writer = new FileWriter(resultPath)) {
                                 writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                                writer.write("\nMarket performance: " + Formatter.formatPercent((beans.get(beans.size() - 1).getPrice() - beans.get(0).getPrice()) / beans.get(0).getPrice())
-                                        + ", maximum possible performance: " + Formatter.formatPercent(maxPossible / beans.get(0).getPrice()));
+                                //TODO: Fix max possible, right now gives way too big numbers.
+                                writer.write("\nMarket performance: " + Formatter.formatPercent(((lastPrice - firstPrice) / firstPrice))
+                                        + ", maximum possible performance: " + Formatter.formatPercent(maxPossible / firstPrice));
                                 writer.write("\nBot performance: "
                                         + Formatter.formatPercent(toomas.getProfit()) + " from "
                                         + toomas.getTradeHistory().size() + " closed trades with an average trade length of "
@@ -338,7 +333,7 @@ public class Main {
                                 writer.write("\nFULL LOG:\n\n");
                                 writer.write(currency.getLog());
                             }
-                            System.out.println("---Simulation result file generated at " + resultPath);*/
+                            System.out.println("---Simulation result file generated at " + resultPath);
                             break;
                         } catch (Exception | BinanceApiException e) {
                             e.printStackTrace();
