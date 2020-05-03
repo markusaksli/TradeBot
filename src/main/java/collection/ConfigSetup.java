@@ -43,7 +43,7 @@ public class ConfigSetup {
                     case "RSI negative side maximum":
                         RSINegMax = Integer.parseInt(linepieces[1]);
                         break;
-                    case "Collection mode chunk size":
+                    case "Collection mode chunk size(minutes)":
                         minutesForCollection = Long.parseLong(linepieces[1]);
                         break;
                     case "Simulation mode starting value":

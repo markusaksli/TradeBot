@@ -141,10 +141,11 @@ public class Main {
 
             String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
             long wholePeriod = end - start;
-            //long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-            //System.out.println(availableMemory / 83451L);
+            long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            System.out.println(availableMemory / 100000L);
             long toSubtract = minutesForCollection * 60000;
-            long chunks = wholePeriod / toSubtract; //Optimal number to reach 1200 requests per min is about 30
+            long chunks = wholePeriod / toSubtract;//Optimal number to reach 1200 requests per min is about 30
+            System.out.println(chunks + "chunksbackte");
 
             PriceCollector.setRemaining(chunks);
             PriceBean.setDateFormat(dateFormat);
@@ -273,8 +274,7 @@ public class Main {
                         try {
                             System.out.println("---Setting up...");
                             startTime = System.nanoTime();
-                            List<PriceBean> beans = Formatter.formatData(path);
-                            Currency currency = new Currency(new File(path).getName().split("_")[0], beans);
+                            Currency currency = new Currency(new File(path).getName().split("_")[0], path);
                             currencies.add(currency);
 
                             for (Trade trade : toomas.getActiveTrades()) {
@@ -282,7 +282,7 @@ public class Main {
                             }
                             List<Trade> tradeHistory = new ArrayList<>(toomas.getTradeHistory());
                             tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
-
+                            System.out.println(tradeHistory);
                             double maxLoss = tradeHistory.get(0).getProfit();
                             double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
                             int lossTrades = 0;
@@ -302,7 +302,7 @@ public class Main {
                                 tradeDurs += trade.getDuration();
                             }
 
-                            double lastPrice = beans.get(0).getPrice();
+                            /*double lastPrice = beans.get(0).getPrice();
                             double maxPossible = 0;
                             for (PriceBean bean : beans) {
                                 if (bean.isClose()) {
@@ -338,7 +338,7 @@ public class Main {
                                 writer.write("\nFULL LOG:\n\n");
                                 writer.write(currency.getLog());
                             }
-                            System.out.println("---Simulation result file generated at " + resultPath);
+                            System.out.println("---Simulation result file generated at " + resultPath);*/
                             break;
                         } catch (Exception | BinanceApiException e) {
                             e.printStackTrace();

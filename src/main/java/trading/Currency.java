@@ -12,6 +12,10 @@ import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,22 +84,33 @@ public class Currency {
     }
 
     //Used for BACKTESTING
-    public Currency(String pair, List<PriceBean> beans) throws BinanceApiException {
+    public Currency(String pair, String filePath) throws BinanceApiException {
         this.symbol = BinanceSymbol.valueOf(pair);
         this.coin = pair.replace("USDT", "");
 
-        long start = beans.get(0).getTimestamp();
-        List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
-        List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
-        indicators.add(new RSI(closingPrices, 14));
-        indicators.add(new MACD(closingPrices, 12, 26, 9));
-        indicators.add(new BB(closingPrices, 20));
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String currentLine;
+            int i = 0;
+            System.out.println("Reading from " + br.readLine());
+            PriceBean first = PriceBean.of(br.readLine());
 
-        System.out.println("---SETUP DONE FOR " + this);
-        for (PriceBean bean : beans) {
-            if (currentPrice == bean.getPrice() && !bean.isClose()) continue;
-            accept(bean);
+            long start = first.getTimestamp();
+            List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
+            List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
+            indicators.add(new RSI(closingPrices, 14));
+            indicators.add(new MACD(closingPrices, 12, 26, 9));
+            indicators.add(new BB(closingPrices, 20));
+            while ((currentLine = br.readLine()) != null) {
+                PriceBean currentBean = PriceBean.of(currentLine);
+                if (currentPrice == currentBean.getPrice() && !currentBean.isClose()) continue;
+                accept(PriceBean.of(currentLine));
+            }
+            System.out.println("-----Backtesting finished.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
     }
 
     private void accept(PriceBean bean) {

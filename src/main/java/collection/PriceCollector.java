@@ -1,11 +1,13 @@
 package collection;
 
+import com.sun.management.ThreadMXBean;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceAggregatedTrades;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import trading.CurrentAPI;
 import trading.Formatter;
 
+import java.lang.management.ManagementFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,7 +103,11 @@ public class PriceCollector implements Runnable {
             } finally {
                 totalRequests.getAndIncrement();
             }
-
+            //To see how much memory is used per Thread, avg is 100 000. Will use that to calc number on threads in main.
+            /*ThreadMXBean threadMXBean = (ThreadMXBean) ManagementFactory.getThreadMXBean();
+            long id = Thread.currentThread().getId();
+            long before = threadMXBean.getThreadAllocatedBytes(id);
+            System.out.println(before + " memory usage! for " + id);*/
             for (int i = trades.size() - 1; i >= 0; i--) {
                 BinanceAggregatedTrades trade = trades.get(i);
                 if (trade.getTimestamp() < start) {

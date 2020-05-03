@@ -3,7 +3,9 @@ package trading;
 import ch.qos.logback.classic.sift.AppenderFactoryUsingJoran;
 import collection.PriceBean;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,8 +72,15 @@ public class Formatter {
         return seconds < 0 ? "-" + positive : positive;
     }
 
+    //Uses all the memory you have if you dont have a supercomputer. Moved this logic over to Currency constructor.
     public static List<PriceBean> formatData(String path) throws IOException {
-        List<String> lines = Files.readAllLines(Path.of(path));
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            String currentLine;
+            while ((currentLine = br.readLine()) != null) {
+                lines.add(currentLine);
+            }
+        }
         return IntStream.range(1, lines.size()).mapToObj(lines::get).map(PriceBean::of).collect(Collectors.toList());
     }
 

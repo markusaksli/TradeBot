@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceOrder;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
+import com.webcerebrium.binance.datatype.BinanceTrade;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -167,11 +168,11 @@ public class Account {
                 BinanceSymbol symbol = new BinanceSymbol(current + "USDT");
                 Currency currency = new Currency(current);
                 addToWallet(currency, 0);
-                for (BinanceOrder order : CurrentAPI.get().openOrders(symbol)) {
+                for (BinanceTrade trade : CurrentAPI.get().myTrades(symbol)) {
                     activeTrades.add(new Trade(new Currency(current),
-                            order.getPrice().doubleValue(), order.getExecutedQty().doubleValue(),
+                            trade.getPrice().doubleValue(), trade.getQty().doubleValue(),
                             "Already opened before BOT initiated."));
-                    addToWallet(currency, order.getExecutedQty().doubleValue());
+                    addToWallet(currency, trade.getQty().doubleValue());
                 }
             }
         } catch (BinanceApiException e) {
