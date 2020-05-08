@@ -1,3 +1,7 @@
+import Modes.Backtesting;
+import Modes.Collection;
+import Modes.Live;
+import Modes.Simulation;
 import collection.ConfigSetup;
 import collection.PriceBean;
 import collection.PriceCollector;
@@ -9,6 +13,7 @@ import trading.Currency;
 import trading.Formatter;
 import trading.*;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -25,40 +30,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
-    static List<Currency> currencies; //There should never be two of the same Currency
+    private static List<Currency> currencies;
 
     public static void main(String[] args) {
+        //Program config.
+        new ConfigSetup();
 
-        ConfigSetup setup = new ConfigSetup();
-        //Program configuration
-        //TRADING
-        BuySell.setMoneyPerTrade(setup.getMoneyPerTrade()); //How many percentages of the money you have currently
-        //will the program put into one trade.
-
-        //COLLECTION MODE
-        long minutesForCollection = setup.getMinutesForCollection(); //When entering collection mode, how big chuncks do you
-        //want to create
-
-        //SIMULATION
-        double startingValue = setup.getStartingValue(); //How much money does the simulated acc start with.
-        //The currencies that the simulation MODE will trade with.
-        String[] currencyArr = setup.getCurrencies();
-
-        //INDICATORS
-        //MACD
-        MACD.setChange(setup.getMACDChange()); //How much change does the program need in order to give a positive signal from MACD
-
-        //RSI
-        RSI.setPositiveMin(setup.getRSIPosMin()); //When RSI reaches this value, it returns 2 as a signal.
-        RSI.setPositivseMax(setup.getRSIPosMax()); //When RSI reaches this value, it returns 1 as a signal.
-        RSI.setNegativeMin(setup.getRSINegMin()); //When RSI reaches this value, it returns -1 as a signal.
-        RSI.setNegativeMax(setup.getRSINegMax()); //When RSI reaches this value it returns -2 as a signal.
-
-        try {
-            System.out.println(CurrentAPI.get().time().toString());
-        } catch (BinanceApiException e) {
-            e.printStackTrace();
-        }
         System.out.println("Welcome to TradeBot\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
@@ -100,254 +77,26 @@ public class Main {
 
 
         if (Mode.get() == Mode.COLLECTION) {
-            SimpleDateFormat dateFormat = Formatter.getSimpleFormatter();
-            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
-            BinanceSymbol symbol = null;
-            try {
-                symbol = new BinanceSymbol(sc.nextLine().toUpperCase() + "USDT");
-            } catch (BinanceApiException e) {
-                e.printStackTrace();
-            }
+            new Collection(); //Init collection mode.
 
-            System.out.println("Enter everything in double digits. (1 = 01) \n " +
-                    "example: 2020/03/01 00:00:00");
-            System.out.println("Date format = 'yyyy/MM/dd HH:mm:ss' \n");
-
-
-            Date startDate;
-            Date stopDate;
-            while (true) {
-                System.out.println("Enter the date you want to start from: ");
-                String begin = sc.nextLine();
-                System.out.println("Enter the date you want to finish with: ");
-                String finish = sc.nextLine();
-                try {
-                    if (Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", begin) &&
-                            Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", finish)) {
-                        startDate = dateFormat.parse(begin);
-                        stopDate = dateFormat.parse(finish);
-                        break;
-                    }
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            long start = startDate.getTime(); // March 1 00:00:00 1583020800000
-            long end = stopDate.getTime();// April 1 00:00:00 1585699200000
-
-            System.out.println("---Setting up...");
-
-            String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
-            long wholePeriod = end - start;
-            long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-            System.out.println(availableMemory / 100000L);
-            long toSubtract = minutesForCollection * 60000;
-            long chunks = wholePeriod / toSubtract;//Optimal number to reach 1200 requests per min is about 30
-            System.out.println(chunks + "chunksbackte");
-
-            PriceCollector.setRemaining(chunks);
-            PriceBean.setDateFormat(dateFormat);
-
-            final ExecutorService executorService = Executors.newCachedThreadPool();
-            List<PriceCollector> collectors = new ArrayList<>();
-
-            Instant initTime = Instant.now();
-            long minuteEpoch = initTime.toEpochMilli();
-            for (int i = 0; i < chunks - 1; i++) {
-                PriceCollector collector = new PriceCollector(end - toSubtract, end, symbol);
-                collectors.add(collector);
-                executorService.submit(collector);
-                end -= toSubtract;
-            }
-            while (System.currentTimeMillis() > minuteEpoch) minuteEpoch += 60000L;
-            PriceCollector finalCollector = new PriceCollector(start, end, symbol); //Final chunk is right up to start in case of uneven division
-            collectors.add(finalCollector);
-            executorService.submit(finalCollector);
-            System.out.println("---Finished creating " + collectors.size() + " chunk collectors");
-
-            while (collectors.stream().anyMatch(collector -> !collector.isDone())) {
-                if (System.currentTimeMillis() > minuteEpoch) {
-                    System.out.println("---"
-                            + Formatter.formatDate(LocalDateTime.now())
-                            + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
-                            + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
-                            + ", total requests: " + PriceCollector.getTotalRequests());
-                    if (PriceCollector.getRequestPermits() > 0) {
-                        System.out.println("------Bot has not used " + PriceCollector.getRequestPermits() + "/1200 requests");
-                    }
-                    minuteEpoch += 60000L;
-                    PriceCollector.resetPermits(1200);
-                }
-            }
-            executorService.shutdown();
-            try {
-                executorService.awaitTermination(1, TimeUnit.HOURS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            List<PriceBean> finalData = new ArrayList<>();
-            collectors.stream().map(PriceCollector::getData).forEach(finalData::addAll);
-            Collections.reverse(finalData);
-
-            System.out.println("---Collected: " + finalData.size()
-                    + " aggregated trades from " + finalData.get(0).getDate()
-                    + " to " + finalData.get(finalData.size() - 1).getDate()
-                    + " in " + Formatter.formatDuration(Duration.between(initTime, Instant.now()))
-                    + " using " + PriceCollector.getTotalRequests() + " requests");
-
-            new File("backtesting").mkdir();
-            try (FileWriter writer = new FileWriter(filename)) {
-                System.out.println("---Writing file");
-                writer.write(finalData.size() + " aggregated trades from "
-                        + finalData.get(0).getDate()
-                        + " to " + finalData.get(finalData.size() - 1).getDate()
-                        + " (timestamp;price;isClosing5MinCandlePrice)\n");
-                start += 300000;
-                for (int i = 0; i < finalData.size(); i++) {
-                    writer.write(finalData.get(i).toString() + "\n");
-                    if (i < finalData.size() - 3) {
-                        if (finalData.get(i + 2).getTimestamp() > start) {
-                            while (finalData.get(i + 2).getTimestamp() > start) start += 300000;
-                            finalData.get(i + 1).close();
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            System.out.println("---Collection completed, result in "
-                    + filename
-                    + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
-
-            while (true) {
-                System.out.println("Type quit to quit");
-                String s = sc.nextLine();
-                if (s.toLowerCase().equals("quit")) break;
-            }
         } else {
-            Account toomas = new Account("Investor Toomas", startingValue);
-            BuySell.setAccount(toomas);
-            currencies = new ArrayList<>();
-
+            Account toomas = null;
             long startTime = 0;
             switch (Mode.get()) {
                 case LIVE:
-                    if (Mode.get().equals(Mode.LIVE)) {
-                        String apiKey = null;
-                        String apiSecret = null;
-                        while (true) {
-                            System.out.println("Enter your API Key: ");
-                            apiKey = sc.nextLine();
-                            if (apiKey.length() == 64) {
-                                System.out.println("Enter your Secret Key: ");
-                                apiSecret = sc.nextLine();
-                                if (apiSecret.length() == 64) {
-                                    break;
-                                } else System.out.println("Secret API is incorrect, enter again.");
-                            } else System.out.println("Incorrect API, enter again.");
-                        }
-                        Account account = new Account(apiKey, apiSecret);
-                        System.out.println(account.getMakerComission() + " Maker commission.");
-                        System.out.println(account.getBuyerComission() + " Buyer commission");
-                        System.out.println(account.getTakerComission() + " Taker comission");
+                    new Live(); //Init live mode.
+                    toomas = Live.getAccount();
 
-                    }
                     break;
                 case SIMULATION:
-                    startTime = System.nanoTime();
-                    for (String arg : currencyArr) {
-                        //The currency class contains all of the method calls that drive the activity of our bot
-                        try {
-                            currencies.add(new Currency(arg));
-                        } catch (BinanceApiException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    new Simulation(); //Init simulation mode.
+                    currencies = Simulation.getCurrencies();
+                    toomas = Simulation.getAccount();
                     break;
                 case BACKTESTING:
-                    System.out.println("Enter backtesting data file path (absolute or relative)");
-                    while (true) {
-                        String path = sc.nextLine();
-                        try {
-                            System.out.println("---Setting up...");
-                            startTime = System.nanoTime();
-                            Currency currency = new Currency(new File(path).getName().split("_")[0], path);
-                            currencies.add(currency);
-
-                            for (Trade trade : toomas.getActiveTrades()) {
-                                BuySell.close(trade);
-                            }
-                            List<Trade> tradeHistory = new ArrayList<>(toomas.getTradeHistory());
-                            tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
-                            System.out.println(tradeHistory);
-                            double maxLoss = tradeHistory.get(0).getProfit();
-                            double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
-                            int lossTrades = 0;
-                            double lossSum = 0;
-                            int gainTrades = 0;
-                            double gainSum = 0;
-                            long tradeDurs = 0;
-                            for (Trade trade : tradeHistory) {
-                                double profit = trade.getProfit();
-                                if (profit < 0) {
-                                    lossTrades += 1;
-                                    lossSum += profit;
-                                } else if (profit > 0) {
-                                    gainTrades += 1;
-                                    gainSum += profit;
-                                }
-                                tradeDurs += trade.getDuration();
-                            }
-
-                            double lastPrice = currency.getLastPrice();
-                            double firstPrice = currency.getFirstPrice();
-                            double maxPossible = currency.getMaxPossible();
-
-
-                            int i = 0;
-                            String resultPath = path.replace(".txt", "_run_" + i + ".txt");
-                            while (new File(resultPath).exists()) {
-                                i++;
-                                resultPath = path.replace(".txt", "_run_" + i + ".txt");
-                            }
-                            try (FileWriter writer = new FileWriter(resultPath)) {
-                                writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                                //TODO: Fix max possible, right now gives way too big numbers.
-                                writer.write("\nMarket performance: " + Formatter.formatPercent(((lastPrice - firstPrice) / firstPrice))
-                                        + ", maximum possible performance: " + Formatter.formatPercent(maxPossible / firstPrice));
-                                writer.write("\nBot performance: "
-                                        + Formatter.formatPercent(toomas.getProfit()) + " from "
-                                        + toomas.getTradeHistory().size() + " closed trades with an average trade length of "
-                                        + Formatter.formatDuration(Duration.of(tradeDurs / tradeHistory.size(), ChronoUnit.MILLIS)) + "\n");
-                                writer.write("\nLoss trades:\n");
-                                writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
-                                writer.write("\nProfitable trades:\n");
-                                writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
-                                writer.write("\n\nClosed trades:\n");
-                                for (Trade trade : tradeHistory) {
-                                    writer.write(trade.toString() + "\n");
-                                }
-                                writer.write("\nFULL LOG:\n\n");
-                                writer.write(currency.getLog());
-                            }
-                            System.out.println("---Simulation result file generated at " + resultPath);
-                            break;
-                        } catch (Exception | BinanceApiException e) {
-                            e.printStackTrace();
-                            System.out.println("Testing failed, try again");
-                        }
-                    }
-                    while (true) {
-                        System.out.println("Type quit to quit");
-                        String s = sc.nextLine();
-                        if (s.toLowerCase().equals("quit")) {
-                            System.exit(0);
-                            break;
-                        }
-                    }
+                    new Backtesting(); //Init Backtesting mode.
+                    currencies = Backtesting.getCurrencies();
+                    toomas = Backtesting.getAccount();
                     break;
             }
             long endTime = System.nanoTime();
@@ -356,8 +105,8 @@ public class Main {
             System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time) + " s)");
 
             //From this point we only use the main thread to check how the bot is doing
-            System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, log, quit");
             while (true) {
+                System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, log, quit");
                 String in = sc.nextLine();
                 switch (in) {
                     case "profit":
@@ -386,8 +135,8 @@ public class Main {
                         }
                         break;
                     case "currencies":
-                        for (Currency currency : currencies) {
-                            System.out.println((currencies.indexOf(currency) + 1) + "   " + currency);
+                        for (Currency currency : Simulation.getCurrencies()) {
+                            System.out.println((Simulation.getCurrencies().indexOf(currency) + 1) + "   " + currency);
                         }
                         System.out.println(" ");
                         break;
@@ -397,7 +146,10 @@ public class Main {
                         break;
                     case "close":
                         System.out.println("Enter ID of active trade");
-                        BuySell.close(toomas.getActiveTrades().get(Integer.parseInt(sc.nextLine()) - 1));
+                        List<Trade> accTrades = toomas.getActiveTrades();
+                        String tradeId = sc.nextLine();
+                        if (accTrades.contains(tradeId))
+                            BuySell.close(toomas.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
                         break;
                     case "close all":
                         toomas.getActiveTrades().forEach(BuySell::close);
@@ -448,7 +200,7 @@ public class Main {
                     case "quit":
                         System.exit(0);
                     default:
-                        System.out.println("Wrong input. Try again (profit, active, history, wallet, currencies, open, close, close all, log, quit)\n");
+                        System.out.print("Wrong input. Try again. ");
                         break;
                 }
             }

@@ -1,5 +1,12 @@
 package collection;
 
+import Modes.Backtesting;
+import Modes.Collection;
+import Modes.Simulation;
+import indicators.MACD;
+import indicators.RSI;
+import trading.BuySell;
+
 import java.io.*;
 import java.util.*;
 
@@ -21,7 +28,6 @@ public class ConfigSetup {
     public void readFile() {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         File file = new File(Objects.requireNonNull(classLoader.getResource("config.txt")).getFile());
-
         try (FileReader reader = new FileReader(file);
              BufferedReader br = new BufferedReader(reader)) {
             String line;
@@ -57,10 +63,41 @@ public class ConfigSetup {
                         break;
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+        //COLLECTION MODE
+        //When entering collection mode, how big chuncks do you
+        //want to create
+        Collection.setMinutesForCollection(getMinutesForCollection());
+
+        //SIMULATION
+        Simulation.setCurrencyArr(getCurrencies());
+        Simulation.setStartingValue(getStartingValue()); //How much money does the simulated acc start with.
+        //The currencies that the simulation MODE will trade with.
+
+        //TRADING
+        BuySell.setMoneyPerTrade(getMoneyPerTrade()); //How many percentages of the money you have currently
+        //will the program put into one trade.
+
+        //BACKTESTING
+        Backtesting.setStartingValue(getStartingValue());
+
+        //INDICATORS
+
+        //MACD
+        MACD.setChange(getMACDChange()); //How much change does the program need in order to give a positive signal from MACD
+
+        //RSI
+        RSI.setPositiveMin(getRSIPosMin()); //When RSI reaches this value, it returns 2 as a signal.
+        RSI.setPositivseMax(getRSIPosMax()); //When RSI reaches this value, it returns 1 as a signal.
+        RSI.setNegativeMin(getRSINegMin()); //When RSI reaches this value, it returns -1 as a signal.
+        RSI.setNegativeMax(getRSINegMax()); //When RSI reaches this value it returns -2 as a signal.
     }
+
 
     public double getMoneyPerTrade() {
         return moneyPerTrade;
