@@ -161,6 +161,8 @@ public final class Collection {
             if (s.toLowerCase().equals("quit")) {
                 System.exit(0);
                 break;
+            } else {
+                System.out.println("Wrong input. ");
             }
         }
     }

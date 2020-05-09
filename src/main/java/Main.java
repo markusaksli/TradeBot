@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Main {
     private static List<Currency> currencies;
-    private static final Logger logger = LogManager.getLogger(Main.class);
+    //private static final Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
         //Program config.
@@ -52,7 +52,7 @@ public class Main {
                 "Simulation and backtesting do not always reflect live performance\n" +
                 "Make sure you are ready to commit to a strategy before starting LIVE\n");
         //Tester.
-        logger.debug("Hello");
+        //logger.debug("Hello");
         Scanner sc = new Scanner(System.in);
         while (true) {
             try {
@@ -60,7 +60,7 @@ public class Main {
                 Mode.set(Mode.valueOf(sc.nextLine().toUpperCase()));
                 break;
             } catch (Exception e) {
-                LogManager.getRootLogger().error("Invalid mode");
+                LogManager.getRootLogger().error("Invalid mode, try again.");
             }
         }
         System.out.println("---Entering " + Mode.get().name().toLowerCase() + " mode");

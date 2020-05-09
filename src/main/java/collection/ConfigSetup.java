@@ -26,6 +26,7 @@ public class ConfigSetup {
     }
 
     public void readFile() {
+        int items = 0;
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         File file = new File(Objects.requireNonNull(classLoader.getResource("config.txt")).getFile());
         try (FileReader reader = new FileReader(file);
@@ -36,36 +37,53 @@ public class ConfigSetup {
                 switch (linepieces[0]) {
                     case "MACD change indicator":
                         MACDChange = Double.parseDouble(linepieces[1]);
+                        items++;
                         break;
                     case "RSI positive side minimum":
                         RSIPosMin = Integer.parseInt(linepieces[1]);
+                        items++;
                         break;
-                    case "RSI positivse side maximum":
+                    case "RSI positive side maximum":
                         RSIPosMax = Integer.parseInt(linepieces[1]);
+                        items++;
                         break;
                     case "RSI negative side minimum":
                         RSINegMin = Integer.parseInt(linepieces[1]);
+                        items++;
                         break;
                     case "RSI negative side maximum":
                         RSINegMax = Integer.parseInt(linepieces[1]);
+                        items++;
                         break;
                     case "Collection mode chunk size(minutes)":
                         minutesForCollection = Long.parseLong(linepieces[1]);
+                        items++;
                         break;
                     case "Simulation mode starting value":
                         startingValue = Integer.parseInt(linepieces[1]);
+                        items++;
                         break;
                     case "Simulation mode currencies":
                         currencies = linepieces[1].split(", ");
+                        items++;
                         break;
                     case "Percentage of money per trade":
                         moneyPerTrade = Double.parseDouble(linepieces[1]);
+                        items++;
                         break;
                 }
+            }
+            if (items < 9) { //9 is the number of configuration elements in the file.
+                throw new ConfigException("Config file has some missing elements.");
+            } else if (items > 9) {
+                throw new ConfigException("Config file has too many elements.");
             }
 
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (ConfigException e) {
+            e.printStackTrace();
+            System.exit(0);
         }
 
 
