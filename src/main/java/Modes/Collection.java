@@ -9,6 +9,7 @@ import trading.Formatter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -70,8 +71,8 @@ public final class Collection {
         long end = stopDate.getTime();// April 1 00:00:00 1585699200000
 
         System.out.println("---Setting up...");
-
-        String filename = "backtesting\\" + symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt";
+        //TODO: Markus katseta kas see töötab, minu arvuti ei vea välja collectionit. If works, remove comment.
+        String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt").toString();
         long wholePeriod = end - start;
         long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         System.out.println(availableMemory / 100000L);

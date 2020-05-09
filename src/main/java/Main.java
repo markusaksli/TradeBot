@@ -3,34 +3,23 @@ import Modes.Collection;
 import Modes.Live;
 import Modes.Simulation;
 import collection.ConfigSetup;
-import collection.PriceBean;
-import collection.PriceCollector;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
-import indicators.MACD;
-import indicators.RSI;
+import org.apache.logging.log4j.LogManager;
 import trading.Currency;
 import trading.Formatter;
 import trading.*;
 
-import javax.swing.*;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 public class Main {
     private static List<Currency> currencies;
+    private static final Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
         //Program config.
@@ -62,7 +51,8 @@ public class Main {
                 "\n" +
                 "Simulation and backtesting do not always reflect live performance\n" +
                 "Make sure you are ready to commit to a strategy before starting LIVE\n");
-
+        //Tester.
+        logger.debug("Hello");
         Scanner sc = new Scanner(System.in);
         while (true) {
             try {
@@ -70,7 +60,7 @@ public class Main {
                 Mode.set(Mode.valueOf(sc.nextLine().toUpperCase()));
                 break;
             } catch (Exception e) {
-                System.out.println("Invalid mode");
+                LogManager.getRootLogger().error("Invalid mode");
             }
         }
         System.out.println("---Entering " + Mode.get().name().toLowerCase() + " mode");
@@ -200,7 +190,7 @@ public class Main {
                     case "quit":
                         System.exit(0);
                     default:
-                        System.out.print("Wrong input. Try again. ");
+                        LogManager.getRootLogger().error("Wrong input. Try again. ");
                         break;
                 }
             }

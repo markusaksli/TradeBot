@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.LogManager;
 
 public final class Backtesting {
     private static double startingValue;
@@ -117,6 +118,8 @@ public final class Backtesting {
             if (s.toLowerCase().equals("quit")) {
                 System.exit(0);
                 break;
+            } else {
+                System.out.println("Wrong input. ");
             }
         }
     }

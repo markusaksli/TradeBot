@@ -81,7 +81,7 @@ public class Formatter {
                 lines.add(currentLine);
             }
         }
-        return IntStream.range(1, lines.size()).mapToObj(lines::get).map(PriceBean::of).collect(Collectors.toList());
+        return lines.stream().skip(1).map(PriceBean::of).collect(Collectors.toList());
     }
 
     public static boolean isValidDateFormat(String format, String value) {
