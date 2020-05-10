@@ -1,8 +1,8 @@
 package collection;
 
-import Modes.Backtesting;
-import Modes.Collection;
-import Modes.Simulation;
+import modes.Backtesting;
+import modes.Collection;
+import modes.Simulation;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;

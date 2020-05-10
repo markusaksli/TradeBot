@@ -1,5 +1,6 @@
 package indicators;
 
+import collection.Database;
 import trading.Formatter;
 
 import java.util.List;
@@ -22,6 +23,14 @@ public class RSI implements Indicator {
         this.period = period;
         explanation = "";
         init(closingPrice);
+    }
+
+    public double getAvgUp() {
+        return avgUp;
+    }
+
+    public double getAvgDwn() {
+        return avgDwn;
     }
 
     public static void setPositiveMin(int positiveMin) {

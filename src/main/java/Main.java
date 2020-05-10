@@ -1,7 +1,7 @@
-import Modes.Backtesting;
-import Modes.Collection;
-import Modes.Live;
-import Modes.Simulation;
+import modes.Backtesting;
+import modes.Collection;
+import modes.Live;
+import modes.Simulation;
 import collection.ConfigSetup;
 import org.apache.logging.log4j.LogManager;
 import trading.Currency;
@@ -12,9 +12,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.*;
 import java.util.*;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 public class Main {

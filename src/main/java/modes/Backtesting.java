@@ -1,4 +1,4 @@
-package Modes;
+package modes;
 
 import com.webcerebrium.binance.api.BinanceApiException;
 import trading.*;
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.LogManager;
 
 public final class Backtesting {
     private static double startingValue;

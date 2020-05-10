@@ -1,5 +1,6 @@
 package trading;
 
+import collection.Database;
 import collection.PriceBean;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
@@ -15,6 +16,7 @@ import indicators.RSI;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +77,7 @@ public class Currency {
                 }
 
                 if (message.getEventTime() > candleTime) {
-                    accept(new PriceBean(candleTime, currentPrice));
+                    accept(new PriceBean(candleTime, currentPrice, 1));
                     candleTime += 300000L;
                 }
 
@@ -128,6 +130,13 @@ public class Currency {
         if (bean.isClose()) {
             latestClosedPrice = bean.getPrice();
             indicators.forEach(indicator -> indicator.update(latestClosedPrice));
+            /*RSI rsi = (RSI) indicators.get(0);
+            try {
+                Database.insertIndicatorValue("rsiAvgUp",symbol.toString(), rsi.getAvgUp(), bean.getTimestamp());
+                Database.insertIndicatorValue("rsiAvgDwn",symbol.toString(), rsi.getAvgDwn(), bean.getTimestamp());
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }*/
             if (Mode.get().equals(Mode.BACKTESTING))
                 appendLogLine(Formatter.formatDate(currentTime) + "  " + toString());
         }
@@ -167,6 +176,10 @@ public class Currency {
         options.put("startTime", start);
         options.put("endTime", end);
         return (CurrentAPI.get()).klines(symbol, BinanceInterval.FIVE_MIN, length, options);
+    }
+
+    public BinanceSymbol getSymbol() {
+        return symbol;
     }
 
     public double getMaxPossible() {

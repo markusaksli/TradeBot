@@ -9,7 +9,6 @@ public class BuySell {
 
     private static Account account;
     private static double moneyPerTrade;
-
     public static void setAccount(Account account) {
         BuySell.account = account;
     }
@@ -34,7 +33,13 @@ public class BuySell {
         account.addToFiat(-fiatCost);
         account.addToWallet(currency, amount);
         account.openTrade(trade);
-
+        if (Mode.get().equals(Mode.LIVE)) {
+            try {
+                placeBuyOrder(currency.getSymbol().toString(), amount);
+            } catch (BinanceApiException e) {
+                e.printStackTrace();
+            }
+        }
 
         String message = "---" + Formatter.formatDate(trade.getOpenTime())
                 + " opened trade (" + amount + " "
@@ -57,6 +62,15 @@ public class BuySell {
         account.removeFromWallet(trade.getCurrency(), trade.getAmount());
         account.addToFiat(trade.getAmount() * trade.getClosePrice());
         trade.getCurrency().setActiveTrade(null);
+
+        if (Mode.get().equals(Mode.LIVE)) {
+            try {
+                placeSellOrder(trade.getCurrency().getSymbol().toString(), trade.getAmount());
+            } catch (BinanceApiException e) {
+                e.printStackTrace();
+            }
+        }
+
         String message = "---" + (Formatter.formatDate(trade.getCloseTime())) + " closed trade ("
                 + trade.getAmount() + " " + trade.getCurrency().getCoin()
                 + "), at " + trade.getClosePrice()

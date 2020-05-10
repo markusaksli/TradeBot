@@ -1,4 +1,4 @@
-package Modes;
+package modes;
 
 import com.webcerebrium.binance.api.BinanceApiException;
 import trading.Account;

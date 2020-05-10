@@ -1,4 +1,4 @@
-package Modes;
+package modes;
 
 import trading.Account;
 
