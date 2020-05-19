@@ -143,7 +143,6 @@ public class Currency {
 
         //Make sure we dont get concurrency issues
         if (currentlyCalculating) {
-            //TODO: Synchronized plokk or reentrantlock or semaphores
             System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
         } else {
             currentlyCalculating = true;

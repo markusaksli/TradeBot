@@ -37,7 +37,6 @@ public final class Simulation {
     private static void init() {
         account = new Account("Investor Toomas", startingValue);
         BuySell.setAccount(account);
-        long startTime = System.nanoTime();
 
         for (String arg : currencyArr) {
             //The currency class contains all of the method calls that drive the activity of our bot

@@ -1,8 +1,5 @@
-package collection;
+package modes;
 
-import modes.Backtesting;
-import modes.Collection;
-import modes.Simulation;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;
@@ -90,6 +87,9 @@ public class ConfigSetup {
         //When entering collection mode, how big chuncks do you
         //want to create
         Collection.setMinutesForCollection(getMinutesForCollection());
+
+        //LIVE
+        Live.setCurrencyArr(getCurrencies());
 
         //SIMULATION
         Simulation.setCurrencyArr(getCurrencies());

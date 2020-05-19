@@ -71,14 +71,10 @@ public final class Collection {
         long end = stopDate.getTime();// April 1 00:00:00 1585699200000
 
         System.out.println("---Setting up...");
-        //TODO: Markus katseta kas see töötab, minu arvuti ei vea välja collectionit. If works, remove comment.
         String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt").toString();
         long wholePeriod = end - start;
-        long availableMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        System.out.println(availableMemory / 100000L);
         long toSubtract = minutesForCollection * 60000;
         long chunks = wholePeriod / toSubtract;//Optimal number to reach 1200 requests per min is about 30
-        System.out.println(chunks + " chunks backtesting");
 
         PriceCollector.setRemaining(chunks);
         PriceBean.setDateFormat(dateFormat);

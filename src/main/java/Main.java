@@ -2,7 +2,7 @@ import modes.Backtesting;
 import modes.Collection;
 import modes.Live;
 import modes.Simulation;
-import collection.ConfigSetup;
+import modes.ConfigSetup;
 import org.apache.logging.log4j.LogManager;
 import trading.Currency;
 import trading.Formatter;
@@ -67,23 +67,23 @@ public class Main {
             new Collection(); //Init collection mode.
 
         } else {
-            Account toomas = null;
+            Account account = null;
             long startTime = 0;
             switch (Mode.get()) {
                 case LIVE:
                     new Live(); //Init live mode.
-                    toomas = Live.getAccount();
-
+                    account = Live.getAccount();
+                    currencies = Live.getCurrencies();
                     break;
                 case SIMULATION:
                     new Simulation(); //Init simulation mode.
                     currencies = Simulation.getCurrencies();
-                    toomas = Simulation.getAccount();
+                    account = Simulation.getAccount();
                     break;
                 case BACKTESTING:
                     new Backtesting(); //Init Backtesting mode.
                     currencies = Backtesting.getCurrencies();
-                    toomas = Backtesting.getAccount();
+                    account = Backtesting.getAccount();
                     break;
             }
             long endTime = System.nanoTime();
@@ -91,31 +91,32 @@ public class Main {
 
             System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time / 10000.0) + " s)");
 
+            assert account != null;
             //From this point we only use the main thread to check how the bot is doing
             while (true) {
                 System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, log, quit");
                 String in = sc.nextLine();
                 switch (in) {
                     case "profit":
-                        System.out.println("Account profit: " + Formatter.formatPercent(toomas.getProfit()) + "\n");
+                        System.out.println("Account profit: " + Formatter.formatPercent(account.getProfit()) + "\n");
                         break;
                     case "active":
                         System.out.println("Active trades:");
-                        for (Trade trade : toomas.getActiveTrades()) {
+                        for (Trade trade : account.getActiveTrades()) {
                             System.out.println(trade);
                         }
                         System.out.println(" ");
                         break;
                     case "history":
                         System.out.println("Closed trades:");
-                        for (Trade trade : toomas.getTradeHistory()) {
+                        for (Trade trade : account.getTradeHistory()) {
                             System.out.println(trade);
                         }
                         break;
                     case "wallet":
-                        System.out.println("Total wallet value: " + Formatter.formatDecimal(toomas.getTotalValue()) + " USDT");
-                        System.out.println(toomas.getFiat() + " USDT");
-                        for (Map.Entry<Currency, Double> entry : toomas.getWallet().entrySet()) {
+                        System.out.println("Total wallet value: " + Formatter.formatDecimal(account.getTotalValue()) + " USDT");
+                        System.out.println(account.getFiat() + " USDT");
+                        for (Map.Entry<Currency, Double> entry : account.getWallet().entrySet()) {
                             if (entry.getValue() != 0) {
                                 System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
                             }
@@ -133,16 +134,16 @@ public class Main {
                         break;
                     case "close":
                         System.out.println("Enter ID of active trade");
-                        List<Trade> accTrades = toomas.getActiveTrades();
+                        List<Trade> accTrades = account.getActiveTrades();
                         String tradeId = sc.nextLine();
                         if (accTrades.contains(tradeId))
-                            BuySell.close(toomas.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
+                            BuySell.close(account.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
                         break;
                     case "close all":
-                        toomas.getActiveTrades().forEach(BuySell::close);
+                        account.getActiveTrades().forEach(BuySell::close);
                         break;
                     case "log":
-                        List<Trade> tradeHistory = new ArrayList<>(toomas.getTradeHistory());
+                        List<Trade> tradeHistory = new ArrayList<>(account.getTradeHistory());
                         if (tradeHistory.isEmpty()) {
                             System.out.println("---No closed trades yet");
                             continue;
@@ -166,13 +167,13 @@ public class Main {
                         }
                         try (FileWriter writer = new FileWriter("log.txt")) {
                             writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                            writer.write("\nTotal profit: " + Formatter.formatPercent(toomas.getProfit()) + " from " + toomas.getTradeHistory().size() + " closed trades\n");
+                            writer.write("\nTotal profit: " + Formatter.formatPercent(account.getProfit()) + " from " + account.getTradeHistory().size() + " closed trades\n");
                             writer.write("\nLoss trades:\n");
                             writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
                             writer.write("\nProfitable trades:\n");
                             writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
                             writer.write("\nActive trades:\n");
-                            for (Trade trade : toomas.getActiveTrades()) {
+                            for (Trade trade : account.getActiveTrades()) {
                                 writer.write(trade.toString() + "\n");
                             }
                             writer.write("\nClosed trades:\n");
