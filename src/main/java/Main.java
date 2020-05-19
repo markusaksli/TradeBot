@@ -107,6 +107,16 @@ public class Main {
                         }
                         System.out.println(" ");
                         break;
+                    case "secret":
+                        for (int i = 0; i < 10000; i++) {
+                            System.out.println(currencies.get(0));
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        break;
                     case "history":
                         System.out.println("Closed trades:");
                         for (Trade trade : account.getTradeHistory()) {
@@ -134,10 +144,8 @@ public class Main {
                         break;
                     case "close":
                         System.out.println("Enter ID of active trade");
-                        List<Trade> accTrades = account.getActiveTrades();
                         String tradeId = sc.nextLine();
-                        if (accTrades.contains(tradeId))
-                            BuySell.close(account.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
+                        BuySell.close(account.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
                         break;
                     case "close all":
                         account.getActiveTrades().forEach(BuySell::close);
@@ -194,6 +202,5 @@ public class Main {
             }
         }
     }
-
 }
 
