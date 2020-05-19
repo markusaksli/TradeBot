@@ -89,7 +89,7 @@ public class Main {
             long endTime = System.nanoTime();
             double time = (endTime - startTime) / 1.e9;
 
-            System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time) + " s)");
+            System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time / 10000.0) + " s)");
 
             //From this point we only use the main thread to check how the bot is doing
             while (true) {

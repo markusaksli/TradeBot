@@ -5,8 +5,8 @@ import java.time.Duration;
 public class Trade {
 
     private double high; //Set the highest price
-    private static final double TRAILING_SL = 0.05; //It's in percentages, but using double for comfort.
-    private static final double TAKE_PROFIT = 0.012; //It's in percentages, but using double for comfort.
+    private static double TRAILING_SL; //It's in percentages, but using double for comfort.
+    private static double TAKE_PROFIT; //It's in percentages, but using double for comfort.
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     //private double fillPrice; //The actual price after the completion of a fill
@@ -67,6 +67,13 @@ public class Trade {
         return closePrice != -1;
     }
 
+    public static void setTrailingSl(double trailingSl) {
+        TRAILING_SL = trailingSl;
+    }
+
+    public static void setTakeProfit(double takeProfit) {
+        TAKE_PROFIT = takeProfit;
+    }
 
     //Allows user to get the profit percentages on one specific trade.
     public double getProfit() {

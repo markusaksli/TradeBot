@@ -6,9 +6,11 @@ import modes.Simulation;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;
+import trading.Trade;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ConfigSetup {
     private double moneyPerTrade;
@@ -20,6 +22,8 @@ public class ConfigSetup {
     private int RSIPosMin;
     private int RSINegMax;
     private int RSINegMin;
+    private double trailingSL;
+    private double takeP;
 
     public ConfigSetup() {
         readFile();
@@ -27,56 +31,51 @@ public class ConfigSetup {
 
     public void readFile() {
         int items = 0;
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        File file = new File(Objects.requireNonNull(classLoader.getResource("config.txt")).getFile());
+        File file = new File("config.txt");
         try (FileReader reader = new FileReader(file);
              BufferedReader br = new BufferedReader(reader)) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] linepieces = line.strip().split(":");
+                items++;
                 switch (linepieces[0]) {
                     case "MACD change indicator":
                         MACDChange = Double.parseDouble(linepieces[1]);
-                        items++;
                         break;
                     case "RSI positive side minimum":
                         RSIPosMin = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "RSI positive side maximum":
                         RSIPosMax = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "RSI negative side minimum":
                         RSINegMin = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "RSI negative side maximum":
                         RSINegMax = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "Collection mode chunk size(minutes)":
                         minutesForCollection = Long.parseLong(linepieces[1]);
-                        items++;
                         break;
                     case "Simulation mode starting value":
                         startingValue = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "Simulation mode currencies":
                         currencies = linepieces[1].split(", ");
-                        items++;
                         break;
                     case "Percentage of money per trade":
                         moneyPerTrade = Double.parseDouble(linepieces[1]);
-                        items++;
+                        break;
+                    case "Trailing SL":
+                        trailingSL = Double.parseDouble(linepieces[1]);
+                        break;
+                    case "Take profit":
+                        takeP = Double.parseDouble(linepieces[1]);
                         break;
                 }
             }
-            if (items < 9) { //9 is the number of configuration elements in the file.
+            if (items < 11) { //11 is the number of configuration elements in the file.
                 throw new ConfigException("Config file has some missing elements.");
-            } else if (items > 9) {
-                throw new ConfigException("Config file has too many elements.");
             }
 
         } catch (IOException e) {
@@ -99,6 +98,8 @@ public class ConfigSetup {
 
         //TRADING
         BuySell.setMoneyPerTrade(getMoneyPerTrade()); //How many percentages of the money you have currently
+        Trade.setTakeProfit(takeP);
+        Trade.setTrailingSl(trailingSL);
         //will the program put into one trade.
 
         //BACKTESTING
@@ -151,5 +152,20 @@ public class ConfigSetup {
 
     public int getRSINegMin() {
         return RSINegMin;
+    }
+
+    @Override
+    public String toString() {
+        return "MACD change indicator:" + MACDChange + "\n" +
+                "RSI positive side minimum:" + RSIPosMin + "\n" +
+                "RSI positive side maximum:" + RSIPosMax + "\n" +
+                "RSI negative side minimum:" + RSINegMin + "\n" +
+                "RSI negative side maximum:" + RSINegMax + "\n" +
+                "Collection mode chunk size(minutes):" + minutesForCollection + "\n" +
+                "Simulation mode starting value:" + startingValue + "\n" +
+                "Simulation mode currencies:" + Arrays.stream(currencies).map(currency -> currency + " ").collect(Collectors.joining()) + "\n" +
+                "Percentage of money per trade:" + moneyPerTrade + "\n" +
+                "Trailing SL:" + trailingSL + "\n" +
+                "Take profit:" + takeP + "\n";
     }
 }
