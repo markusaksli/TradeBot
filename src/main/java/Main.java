@@ -1,19 +1,14 @@
-import modes.Collection;
 import modes.*;
-import trading.Currency;
-import trading.Formatter;
 import trading.*;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
 
 public class Main {
     private static List<Currency> currencies;
-    //private static final Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
         //Program config.
@@ -30,6 +25,7 @@ public class Main {
                 "The bot has the following modes of operation:\n" +
                 "---LIVE\n" +
                 "-This mode trades with real money on the Binance platform\n" +
+                "-API key and Secret key required\n" +
                 "---SIMULATION\n" +
                 "-Real-time trading simulation based on actual market data\n" +
                 "-Trades are only simulated based on market prices \n" +
@@ -40,13 +36,11 @@ public class Main {
                 "-Data needs to be loaded from a .dat file created with the COLLECTION mode\n" +
                 "---COLLECTION\n" +
                 "-Collects raw market price data from a specified time period\n" +
-                "-Collection is multi-threaded and can be CPU and memory intensive\n" +
                 "-Collected data is saved in a file in the /backtesting directory\n" +
+                "-Collection can be very RAM intensive\n" +
                 "\n" +
                 "Simulation and backtesting do not always reflect live performance\n" +
                 "Make sure you are ready to commit to a strategy before starting LIVE\n");
-        //Tester.
-        //logger.debug("Hello");
         Scanner sc = new Scanner(System.in);
         while (true) {
             try {
