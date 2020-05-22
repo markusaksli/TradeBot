@@ -29,11 +29,12 @@ public class Database {
         String path = "backtesting\\XRPUSDT_2020.01.01-2020.04.01.txt";
         String currency = new File(path).getName().split("_")[0];
         int currencyID = getCurrencyID(currency);
-        List<String> lines = Files.readAllLines(Path.of(path));
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i);
-            PriceBean bean = PriceBean.of(line);
-            insertPriceBean(currencyID, bean.getTimestamp(), bean.getPrice());
+        try (PriceReader reader = new PriceReader(path)) {
+            PriceBean bean = reader.readPrice();
+            while (bean != null) {
+                insertPriceBean(currencyID, bean.getTimestamp(), bean.getPrice());
+                bean = reader.readPrice();
+            }
         }
     }
 

@@ -1,28 +1,26 @@
 package collection;
 
+import trading.Formatter;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class PriceBean {
     private final double price;
     private final long timestamp;
-    private int isClose = 0;
+    private boolean closing;
     private static SimpleDateFormat dateFormat;
 
     public PriceBean(long timestamp, double price) {
         this.price = price;
         this.timestamp = timestamp;
+        this.closing = false;
     }
 
-    public PriceBean(long timestamp, double price, int isClose) {
+    public PriceBean(long timestamp, double price, boolean closing) {
         this.price = price;
         this.timestamp = timestamp;
-        this.isClose = isClose;
-    }
-
-    public static PriceBean of(String line) {
-        String[] values = line.split(";");
-        return new PriceBean(Long.parseLong(values[0]), Double.parseDouble(values[1]), Integer.parseInt(values[2]));
+        this.closing = closing;
     }
 
     public double getPrice() {
@@ -38,11 +36,11 @@ public class PriceBean {
     }
 
     public void close() {
-        this.isClose = 1;
+        this.closing = true;
     }
 
-    public boolean isClose() {
-        return isClose == 1;
+    public boolean isClosing() {
+        return closing;
     }
 
     public static void setDateFormat(SimpleDateFormat dateFormat) {
@@ -51,6 +49,6 @@ public class PriceBean {
 
     @Override
     public String toString() {
-        return timestamp + ";" + price + ";" + isClose;
+        return Formatter.formatDate(timestamp) + ";" + price + ";" + closing;
     }
 }

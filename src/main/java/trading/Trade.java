@@ -1,7 +1,5 @@
 package trading;
 
-import java.time.Duration;
-
 public class Trade {
 
     private double high; //Set the highest price
@@ -9,7 +7,6 @@ public class Trade {
     private static double TAKE_PROFIT; //It's in percentages, but using double for comfort.
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
-    //private double fillPrice; //The actual price after the completion of a fill
     private final Currency currency; //What cryptocurrency is used.
     private final double amount; //How much are you buying or selling. I.E 6 bitcoins or smth.
     private double closePrice;
@@ -27,6 +24,12 @@ public class Trade {
     }
 
     //Getters and setters
+
+
+    public String getExplanation() {
+        return explanation;
+    }
+
     public void setClosePrice(double closePrice) {
         this.closePrice = closePrice;
     }
@@ -41,14 +44,6 @@ public class Trade {
 
     public double getAmount() {
         return amount;
-    }
-
-    public double getHigh() {
-        return high;
-    }
-
-    public double getLoss() {
-        return (getClosePrice() - high) / high;
     }
 
     public void setCloseTime(long closeTime) {
@@ -90,24 +85,33 @@ public class Trade {
 
     //Checks if there is a new highest price for the trade or if the trade has dropped below the stoploss.
     public void update(double newPrice, int confluence) {
-        if (newPrice > high)
-            high = newPrice;
-        else if (newPrice < high * (1 - TRAILING_SL) || confluence <= -2 || getProfit() > TAKE_PROFIT) {
-            explanation += "Closed due to ";
-            if (confluence <= -2) explanation += "indicator confluence of " + confluence + " ";
-            if (newPrice < high * (1 - TRAILING_SL)) explanation += "trailing SL";
-            if (getProfit() > TAKE_PROFIT) explanation += "take profit at " + Formatter.formatPercent(getProfit());
+        if (newPrice > high) high = newPrice;
+
+        if (getProfit() > TAKE_PROFIT) {
+            explanation += "Closed due to take profit";
             BuySell.close(this);
+        }
+
+        if (newPrice < high * (1 - TRAILING_SL)) {
+            explanation += "Closed due to trailing SL";
+            BuySell.close(this);
+            return;
+        }
+
+        if (confluence <= -2) {
+            explanation += "Closed due to indicator confluence of " + confluence;
+            BuySell.close(this);
+            return;
         }
     }
 
     @Override
     public String toString() {
         return (isClosed() ? (BuySell.getAccount().getTradeHistory().indexOf(this) + 1) : (BuySell.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
-                + currency.getCoin() + " " + amount
-                + " opened " + Formatter.formatDate(openTime) + " at " + entryPrice
-                + (isClosed() ? ", closed " + Formatter.formatDate(closeTime) + " at " + closePrice : ", current price " + currency.getPrice())
-                + ", high of " + high + ", profit " + Formatter.formatPercent(getProfit())
-                + (isClosed() ? "\n\t" + explanation : "");
+                + currency.getCoin() + " " + Formatter.formatDecimal(amount) + "\n"
+                + "open: " + Formatter.formatDate(openTime) + " at " + entryPrice + "\n"
+                + (isClosed() ? "close: " + Formatter.formatDate(closeTime) + " at " + closePrice : "current price: " + currency.getPrice()) + "\n"
+                + "high: " + high + ", profit: " + Formatter.formatPercent(getProfit())
+                + (isClosed() ? "\n" + explanation : "") + "\n";
     }
 }

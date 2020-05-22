@@ -2,12 +2,12 @@ package modes;
 
 import collection.PriceBean;
 import collection.PriceCollector;
+import collection.PriceWriter;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import trading.Formatter;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.ParseException;
@@ -35,6 +35,7 @@ public final class Collection {
         Scanner sc = new Scanner(System.in);
         SimpleDateFormat dateFormat = Formatter.getSimpleFormatter();
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        PriceBean.setDateFormat(dateFormat);
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
         BinanceSymbol symbol = null;
         try {
@@ -71,13 +72,12 @@ public final class Collection {
         long end = stopDate.getTime();// April 1 00:00:00 1585699200000
 
         System.out.println("---Setting up...");
-        String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".txt").toString();
+        String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".dat").toString();
         long wholePeriod = end - start;
         long toSubtract = minutesForCollection * 60000;
         long chunks = wholePeriod / toSubtract;//Optimal number to reach 1200 requests per min is about 30
-
         PriceCollector.setRemaining(chunks);
-        PriceBean.setDateFormat(dateFormat);
+
 
         final ExecutorService executorService = Executors.newCachedThreadPool();
         List<PriceCollector> collectors = new ArrayList<>();
@@ -128,15 +128,11 @@ public final class Collection {
                 + " using " + PriceCollector.getTotalRequests() + " requests");
 
         new File("backtesting").mkdir();
-        try (FileWriter writer = new FileWriter(filename)) {
+        try (PriceWriter writer = new PriceWriter(filename)) {
             System.out.println("---Writing file");
-            writer.write(finalData.size() + " aggregated trades from "
-                    + finalData.get(0).getDate()
-                    + " to " + finalData.get(finalData.size() - 1).getDate()
-                    + " (timestamp;price;isClosing5MinCandlePrice)\n");
             start += 300000;
             for (int i = 0; i < finalData.size(); i++) {
-                writer.write(finalData.get(i).toString() + "\n");
+                writer.writeBean(finalData.get(i));
                 if (i < finalData.size() - 3) {
                     if (finalData.get(i + 2).getTimestamp() > start) {
                         while (finalData.get(i + 2).getTimestamp() > start) start += 300000;

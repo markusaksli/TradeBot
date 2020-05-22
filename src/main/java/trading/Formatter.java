@@ -3,12 +3,10 @@ package trading;
 import ch.qos.logback.classic.sift.AppenderFactoryUsingJoran;
 import collection.PriceBean;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -70,18 +68,6 @@ public class Formatter {
                 (absSeconds % 3600) / 60,
                 absSeconds % 60);
         return seconds < 0 ? "-" + positive : positive;
-    }
-
-    //Uses all the memory you have if you dont have a supercomputer. Moved this logic over to Currency constructor.
-    public static List<PriceBean> formatData(String path) throws IOException {
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-            String currentLine;
-            while ((currentLine = br.readLine()) != null) {
-                lines.add(currentLine);
-            }
-        }
-        return lines.stream().skip(1).map(PriceBean::of).collect(Collectors.toList());
     }
 
     public static boolean isValidDateFormat(String format, String value) {

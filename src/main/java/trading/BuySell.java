@@ -42,9 +42,8 @@ public class BuySell {
         }
 
         String message = "---" + Formatter.formatDate(trade.getOpenTime())
-                + " opened trade (" + amount + " "
-                + currency.getCoin() + "), at " + currency.getPrice()
-                + "\n------" + explanation;
+                + " opened trade (" + Formatter.formatDecimal(amount) + " "
+                + currency.getCoin() + "), at " + currency.getPrice();
         System.out.println(message);
         if (Mode.get().equals(Mode.BACKTESTING)) currency.appendLogLine(message);
     }
@@ -72,9 +71,10 @@ public class BuySell {
         }
 
         String message = "---" + (Formatter.formatDate(trade.getCloseTime())) + " closed trade ("
-                + trade.getAmount() + " " + trade.getCurrency().getCoin()
+                + Formatter.formatDecimal(trade.getAmount()) + " " + trade.getCurrency().getCoin()
                 + "), at " + trade.getClosePrice()
-                + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit";
+                + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit"
+                + "\n------" + trade.getExplanation();
         System.out.println(message);
         if (Mode.get().equals(Mode.BACKTESTING)) trade.getCurrency().appendLogLine(message);
     }

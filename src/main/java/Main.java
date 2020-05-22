@@ -1,16 +1,13 @@
-import modes.Backtesting;
 import modes.Collection;
-import modes.Live;
-import modes.Simulation;
-import modes.ConfigSetup;
-import org.apache.logging.log4j.LogManager;
+import modes.*;
 import trading.Currency;
 import trading.Formatter;
 import trading.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
 
@@ -40,7 +37,7 @@ public class Main {
                 "---BACKTESTING\n" +
                 "-Simulation based on historical data.\n" +
                 "-Allows for quick testing of the behavior and profitability of the bot\n" +
-                "-Data needs to be loaded from a file created with the COLLECTION mode\n" +
+                "-Data needs to be loaded from a .dat file created with the COLLECTION mode\n" +
                 "---COLLECTION\n" +
                 "-Collects raw market price data from a specified time period\n" +
                 "-Collection is multi-threaded and can be CPU and memory intensive\n" +
@@ -57,7 +54,7 @@ public class Main {
                 Mode.set(Mode.valueOf(sc.nextLine().toUpperCase()));
                 break;
             } catch (Exception e) {
-                LogManager.getRootLogger().error("Invalid mode, try again.");
+                System.out.println("Invalid mode, try again.");
             }
         }
         System.out.println("---Entering " + Mode.get().name().toLowerCase() + " mode");
@@ -68,7 +65,7 @@ public class Main {
 
         } else {
             Account account = null;
-            long startTime = 0;
+            long startTime = System.nanoTime();
             switch (Mode.get()) {
                 case LIVE:
                     new Live(); //Init live mode.
@@ -89,12 +86,22 @@ public class Main {
             long endTime = System.nanoTime();
             double time = (endTime - startTime) / 1.e9;
 
-            System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Simulation" : "Setup") + " DONE (" + Formatter.formatDecimal(time / 10000.0) + " s)");
+            System.out.println("---" + (Mode.get().equals(Mode.BACKTESTING) ? "Backtesting" : "Setup") + " finished (" + Formatter.formatDecimal(time) + " s)");
+            while (Mode.get().equals(Mode.BACKTESTING)) {
+                System.out.println("Type quit to quit");
+                String s = sc.nextLine();
+                if (s.toLowerCase().equals("quit")) {
+                    System.exit(0);
+                    break;
+                } else {
+                    System.out.println("Type quit to quit");
+                }
+            }
 
             assert account != null;
             //From this point we only use the main thread to check how the bot is doing
+            System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, quit");
             while (true) {
-                System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, log, quit");
                 String in = sc.nextLine();
                 switch (in) {
                     case "profit":
@@ -150,53 +157,10 @@ public class Main {
                     case "close all":
                         account.getActiveTrades().forEach(BuySell::close);
                         break;
-                    case "log":
-                        List<Trade> tradeHistory = new ArrayList<>(account.getTradeHistory());
-                        if (tradeHistory.isEmpty()) {
-                            System.out.println("---No closed trades yet");
-                            continue;
-                        }
-                        tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
-                        double maxLoss = tradeHistory.get(0).getProfit();
-                        double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
-                        int lossTrades = 0;
-                        double lossSum = 0;
-                        int gainTrades = 0;
-                        double gainSum = 0;
-                        for (Trade trade : tradeHistory) {
-                            double profit = trade.getProfit();
-                            if (profit < 0) {
-                                lossTrades += 1;
-                                lossSum += profit;
-                            } else if (profit > 0) {
-                                gainTrades += 1;
-                                gainSum += profit;
-                            }
-                        }
-                        try (FileWriter writer = new FileWriter("log.txt")) {
-                            writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-                            writer.write("\nTotal profit: " + Formatter.formatPercent(account.getProfit()) + " from " + account.getTradeHistory().size() + " closed trades\n");
-                            writer.write("\nLoss trades:\n");
-                            writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
-                            writer.write("\nProfitable trades:\n");
-                            writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
-                            writer.write("\nActive trades:\n");
-                            for (Trade trade : account.getActiveTrades()) {
-                                writer.write(trade.toString() + "\n");
-                            }
-                            writer.write("\nClosed trades:\n");
-                            for (Trade trade : tradeHistory) {
-                                writer.write(trade.toString() + "\n");
-                            }
-                            System.out.println("---Created log in log.txt");
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        break;
                     case "quit":
                         System.exit(0);
                     default:
-                        LogManager.getRootLogger().error("Wrong input. Try again. ");
+                        System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, log, quit");
                         break;
                 }
             }

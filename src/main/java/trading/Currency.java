@@ -1,7 +1,7 @@
 package trading;
 
-import collection.Database;
 import collection.PriceBean;
+import collection.PriceReader;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import com.webcerebrium.binance.datatype.BinanceEventAggTrade;
@@ -13,35 +13,32 @@ import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Currency {
     private static final String FIAT = "USDT";
+
     private final String coin;
     private final BinanceSymbol symbol;
     private Trade activeTrade;
-
-    private final List<Indicator> indicators = new ArrayList<>();
-
-    private final StringBuilder log = new StringBuilder();
-
-    private double latestClosedPrice;
-    private double currentPrice;
     private long candleTime;
+    private final List<Indicator> indicators = new ArrayList<>();
+    private final AtomicBoolean currentlyCalculating = new AtomicBoolean(false);
+
+    private double currentPrice;
     private long currentTime;
-    private boolean currentlyCalculating = false;
-    private double firstPrice;
-    private double lastPrice;
-    private double maxPossible = 0; //The max amount of money possible to earn with backtesting files.
+
+    //Backtesting data
+    private final StringBuilder log = new StringBuilder();
+    private PriceBean firstBean;
 
 
     //Used for SIMULATION and LIVE
@@ -58,13 +55,11 @@ public class Currency {
         indicators.add(new BB(closingPrices, 20));
 
         //We set the initial values to check against in onMessage based on the latest candle in history
-        latestClosedPrice = history.get(history.size() - 2).getClose().doubleValue();
-        candleTime = history.get(history.size() - 1).getOpenTime();
-        currentTime = candleTime;
+        currentTime = System.currentTimeMillis();
+        candleTime = history.get(history.size() - 1).getOpenTime() + 300000L;
         currentPrice = history.get(history.size() - 1).getClose().doubleValue();
 
         //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
-        candleTime += 300000L;
         CurrentAPI.get().websocketTrades(symbol, new BinanceWebSocketAdapterAggTrades() {
             @Override
             public void onMessage(BinanceEventAggTrade message) {
@@ -72,12 +67,12 @@ public class Currency {
                 //System.out.println(Thread.currentThread().getId());
 
                 //We want to toss messages that provide no new information
-                if (currentTime == message.getPrice().doubleValue() && !(message.getEventTime() > candleTime)) {
+                if (currentPrice == message.getPrice().doubleValue() && !(message.getEventTime() > candleTime)) {
                     return;
                 }
 
                 if (message.getEventTime() > candleTime) {
-                    accept(new PriceBean(candleTime, currentPrice, 1));
+                    accept(new PriceBean(candleTime, currentPrice, true));
                     candleTime += 300000L;
                 }
 
@@ -91,32 +86,23 @@ public class Currency {
     public Currency(String pair, String filePath) throws BinanceApiException {
         this.symbol = BinanceSymbol.valueOf(pair);
         this.coin = pair.replace("USDT", "");
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            System.out.println("Reading from " + br.readLine());
+        try (PriceReader reader = new PriceReader(filePath)) {
+            PriceBean bean = reader.readPrice();
 
-            String next, currentLine = br.readLine();
-            double previousPrice = PriceBean.of(currentLine).getPrice();
-            for (boolean firstLine = true, last = (currentLine == null); !last; firstLine = false, currentLine = next) {
-                last = ((next = br.readLine()) == null);
+            firstBean = bean;
+            long start = bean.getTimestamp();
 
-                PriceBean currentBean = PriceBean.of(currentLine);
-                if (currentPrice == currentBean.getPrice() && !currentBean.isClose()) continue;
-                accept(PriceBean.of(currentLine));
-                if (currentBean.getPrice() - previousPrice > 0) maxPossible += (currentBean.getPrice() - previousPrice);
-                if (firstLine) {
-                    firstPrice = currentBean.getPrice();
-                    long start = currentBean.getTimestamp();
-                    List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
-                    List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
-                    indicators.add(new RSI(closingPrices, 14));
-                    indicators.add(new MACD(closingPrices, 12, 26, 9));
-                    indicators.add(new BB(closingPrices, 20));
-                } else if (last) {
-                    lastPrice = currentBean.getPrice();
-                }
-                previousPrice = currentBean.getPrice();
+            List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
+            List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
+            indicators.add(new RSI(closingPrices, 14));
+            indicators.add(new MACD(closingPrices, 12, 26, 9));
+            indicators.add(new BB(closingPrices, 20));
+
+            while (bean != null) {
+                accept(bean);
+                bean = reader.readPrice();
             }
-            System.out.println("-----Backtesting finished.");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -124,12 +110,17 @@ public class Currency {
     }
 
     private void accept(PriceBean bean) {
+        //Make sure we dont get concurrency issues
+        if (currentlyCalculating.get()) {
+            System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
+        }
+        currentlyCalculating.set(true);
+
         currentPrice = bean.getPrice();
         currentTime = bean.getTimestamp();
 
-        if (bean.isClose()) {
-            latestClosedPrice = bean.getPrice();
-            indicators.forEach(indicator -> indicator.update(latestClosedPrice));
+        if (bean.isClosing()) {
+            indicators.forEach(indicator -> indicator.update(bean.getPrice()));
             /*RSI rsi = (RSI) indicators.get(0);
             try {
                 Database.insertIndicatorValue("rsiAvgUp",symbol.toString(), rsi.getAvgUp(), bean.getTimestamp());
@@ -137,29 +128,28 @@ public class Currency {
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
             }*/
-            if (Mode.get().equals(Mode.BACKTESTING))
+            if (Mode.get().equals(Mode.BACKTESTING)) {
                 appendLogLine(Formatter.formatDate(currentTime) + "  " + toString());
+            }
         }
 
-        //Make sure we dont get concurrency issues
-        if (currentlyCalculating) {
-            System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
+
+        //We can disable the strategy and trading logic to only check indicator and price accuracy
+        int confluence = check();
+        if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
+            activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
         } else {
-            currentlyCalculating = true;
-            //We can disable the strategy and trading logic to only check indicator and price accuracy
-            int confluence = check();
-            if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
-                activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-            } else {
-                if (confluence >= 2) {
-                    BuySell.open(Currency.this
-                            , indicators.stream().map(indicator -> indicator.getExplanation() + "   ").collect(Collectors.joining("", "Trade opened due to: ", ""))
-                            , bean.getTimestamp()
-                    );
+            if (confluence >= 2) {
+                StringJoiner joiner = new StringJoiner("", "Trade opened due to: ", "");
+                for (Indicator indicator : indicators) {
+                    String explanation = indicator.getExplanation();
+                    joiner.add(explanation.equals("") ? "" : explanation + "\t");
                 }
+                BuySell.open(Currency.this, joiner.toString(), bean.getTimestamp());
             }
-            currentlyCalculating = false;
         }
+
+        currentlyCalculating.set(false);
     }
 
     public int check() {
@@ -179,18 +169,6 @@ public class Currency {
 
     public BinanceSymbol getSymbol() {
         return symbol;
-    }
-
-    public double getMaxPossible() {
-        return maxPossible;
-    }
-
-    public double getFirstPrice() {
-        return firstPrice;
-    }
-
-    public double getLastPrice() {
-        return lastPrice;
     }
 
     public String getCoin() {
@@ -213,12 +191,55 @@ public class Currency {
         this.activeTrade = activeTrade;
     }
 
-    public String getLog() {
-        return log.toString();
-    }
-
     public void appendLogLine(String s) {
         log.append(s).append("\n");
+    }
+
+    public void log(String path) {
+        List<Trade> tradeHistory = new ArrayList<>(BuySell.getAccount().getTradeHistory());
+        tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
+        double maxLoss = tradeHistory.get(0).getProfit();
+        double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
+        int lossTrades = 0;
+        double lossSum = 0;
+        int gainTrades = 0;
+        double gainSum = 0;
+        long tradeDurs = 0;
+        for (Trade trade : tradeHistory) {
+            double profit = trade.getProfit();
+            if (profit < 0) {
+                lossTrades += 1;
+                lossSum += profit;
+            } else if (profit > 0) {
+                gainTrades += 1;
+                gainSum += profit;
+            }
+            tradeDurs += trade.getDuration();
+        }
+
+        double tradePerWeek = 604800000.0 / (double) ((currentTime - firstBean.getTimestamp()) / tradeHistory.size());
+
+        try (FileWriter writer = new FileWriter(path)) {
+            writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
+            writer.write("\nMarket performance: " + Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
+            writer.write("\nBot performance: " + Formatter.formatPercent(BuySell.getAccount().getProfit()) + "\n\n");
+            writer.write(BuySell.getAccount().getTradeHistory().size() + " closed trades"
+                    + " (" + Formatter.formatDecimal(tradePerWeek) + " trades per week) with an average holding length of "
+                    + Formatter.formatDuration(Duration.of(tradeDurs / tradeHistory.size(), ChronoUnit.MILLIS)) + " hours");
+            writer.write("\nLoss trades:\n");
+            writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
+            writer.write("\nProfitable trades:\n");
+            writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
+            writer.write("\n\nClosed trades (least to most profitable):\n");
+            for (Trade trade : tradeHistory) {
+                writer.write(trade.toString() + "\n");
+            }
+            writer.write("\nFULL LOG:\n\n");
+            writer.write(log.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("---Log file generated at " + path);
     }
 
     @Override
