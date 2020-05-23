@@ -22,8 +22,14 @@ public class ConfigSetup {
     private double trailingSL;
     private double takeP;
 
+    private static String setup;
+
     public ConfigSetup() {
         readFile();
+    }
+
+    public static String getSetup() {
+        return setup;
     }
 
     public void readFile() {
@@ -115,6 +121,8 @@ public class ConfigSetup {
         RSI.setPositivseMax(getRSIPosMax()); //When RSI reaches this value, it returns 1 as a signal.
         RSI.setNegativeMin(getRSINegMin()); //When RSI reaches this value, it returns -1 as a signal.
         RSI.setNegativeMax(getRSINegMax()); //When RSI reaches this value it returns -2 as a signal.
+
+        setup = toString();
     }
 
 
@@ -163,9 +171,9 @@ public class ConfigSetup {
                 "RSI negative side maximum:" + RSINegMax + "\n" +
                 "Collection mode chunk size(minutes):" + minutesForCollection + "\n" +
                 "Simulation mode starting value:" + startingValue + "\n" +
-                "Simulation mode currencies:" + Arrays.stream(currencies).map(currency -> currency + " ").collect(Collectors.joining()) + "\n" +
                 "Percentage of money per trade:" + moneyPerTrade + "\n" +
                 "Trailing SL:" + trailingSL + "\n" +
-                "Take profit:" + takeP + "\n";
+                "Take profit:" + takeP + "\n\n" +
+                "Simulation mode currencies:" + Arrays.stream(currencies).map(currency -> currency + " ").collect(Collectors.joining()) + "\n";
     }
 }

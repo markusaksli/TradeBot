@@ -80,6 +80,7 @@ public class BuySell {
     }
 
     private static double nextAmount() {
+        if (Mode.get().equals(Mode.BACKTESTING)) return account.getFiat();
         return Math.min(account.getFiat(), account.getTotalValue() * moneyPerTrade);
     }
 

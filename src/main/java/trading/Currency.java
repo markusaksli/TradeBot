@@ -12,6 +12,7 @@ import indicators.BB;
 import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
+import modes.ConfigSetup;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -234,7 +235,9 @@ public class Currency {
             for (Trade trade : tradeHistory) {
                 writer.write(trade.toString() + "\n");
             }
-            writer.write("\nFULL LOG:\n\n");
+            writer.write("\n\nCONFIG:\n");
+            writer.write(ConfigSetup.getSetup());
+            writer.write("\n\nFULL LOG:\n\n");
             writer.write(log.toString());
         } catch (IOException e) {
             e.printStackTrace();

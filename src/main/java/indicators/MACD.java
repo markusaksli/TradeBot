@@ -83,10 +83,10 @@ public class MACD implements Indicator {
             explanation = "MACD histogram grew by " + Formatter.formatPercent(change);
             return 1;
         }
-        if (change < -MACD.change) {
+        /*if (change < -MACD.change) {
             explanation = "MACD histogram fell by " + Formatter.formatPercent(change);
             return -1;
-        }
+        }*/
         explanation = "";
         return 0;
     }
