@@ -1,24 +1,50 @@
 # TradeBot
-Crypto trading bot using Binance API
+This is a cryptocurrency trading bot that uses the Binance API,
+and a strategy based on a couple of 5 minute chart indicators
+(RSI, MACD, Bollinger Bands)
+(The bot only trades USDT fiat pairs)
 
-The bot uses a Binance API key to get live charts and history.
 
-The bot uses RSI and MACD, Bollinger Bands indicators to generate and filter buy signals. The bot automatically places buy market orders with a trailing stop-loss. The bot constantly monitors all of its positions for close signals.
+The bot has the following modes of operation:
 
-The aim of this project is to create a profitable live trading bot (with paper trading and backtesting functionality).
+---LIVE (CURRENTLY UNTESTED)
 
-Link to our work progress report: 
+-This mode trades with real money on the Binance platform
 
-https://docs.google.com/document/d/1aVOx0exkDpZdQAQJyoHyzX_94WfHBqsgrULl79ZV0Nk/edit#
+-API key and Secret key required
 
-Link to our Trello: 
+---SIMULATION
 
-https://trello.com/b/HJxkTeWv/assignments
+-Real-time trading simulation based on actual market data
+
+-Trades are only simulated based on market prices 
+
+-No actual orders are made
+
+---BACKTESTING
+
+-Simulation based on historical data
+
+-Allows for quick testing of the behavior and profitability of the bot
+
+-Data needs to be loaded from a .dat file created with the COLLECTION mode
+
+---COLLECTION
+
+-Collects raw market price data (aggregated trades) from a specified time period
+
+-Collected data is saved in a file in the /backtesting directory
+
+-Collection can be very RAM intensive
+
+
+The config for the bot can be changed using the config.txt file
+
 
 JAR:
 
 https://drive.google.com/open?id=1Rnss483S2dZSLMFyP53jNEDxNRGuFvov
 
-Backtesting data (BTCUSDT, ETHUSDT, XRPUSDT; 1. January 2020 - 1. April 2020):
+Backtesting data:
 
 https://drive.google.com/open?id=1VkPEZ064EiDEvv9Da-Ba_xn48cCySceU
