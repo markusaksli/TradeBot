@@ -3,12 +3,15 @@ package trading;
 import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.*;
+
 import java.math.BigDecimal;
+import java.sql.SQLException;
 
 public class BuySell {
 
     private static Account account;
     private static double moneyPerTrade;
+
     public static void setAccount(Account account) {
         BuySell.account = account;
     }

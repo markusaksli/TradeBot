@@ -47,6 +47,7 @@ public final class Backtesting {
                 currencies.add(currency);
 
                 for (Trade trade : account.getActiveTrades()) {
+                    trade.setExplanation(trade.getExplanation() + "Manually closed");
                     BuySell.close(trade);
                 }
 

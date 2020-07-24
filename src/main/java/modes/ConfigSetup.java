@@ -3,6 +3,7 @@ package modes;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;
+import trading.Mode;
 import trading.Trade;
 
 import java.io.*;
@@ -39,45 +40,45 @@ public class ConfigSetup {
              BufferedReader br = new BufferedReader(reader)) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] linepieces = line.strip().split(":");
+                String[] arr = line.strip().split(":");
                 items++;
-                switch (linepieces[0]) {
+                switch (arr[0]) {
                     case "MACD change indicator":
-                        MACDChange = Double.parseDouble(linepieces[1]);
+                        MACDChange = Double.parseDouble(arr[1]);
                         break;
                     case "RSI positive side minimum":
-                        RSIPosMin = Integer.parseInt(linepieces[1]);
+                        RSIPosMin = Integer.parseInt(arr[1]);
                         break;
                     case "RSI positive side maximum":
-                        RSIPosMax = Integer.parseInt(linepieces[1]);
+                        RSIPosMax = Integer.parseInt(arr[1]);
                         break;
                     case "RSI negative side minimum":
-                        RSINegMin = Integer.parseInt(linepieces[1]);
+                        RSINegMin = Integer.parseInt(arr[1]);
                         break;
                     case "RSI negative side maximum":
-                        RSINegMax = Integer.parseInt(linepieces[1]);
+                        RSINegMax = Integer.parseInt(arr[1]);
                         break;
                     case "Collection mode chunk size(minutes)":
-                        minutesForCollection = Long.parseLong(linepieces[1]);
+                        minutesForCollection = Long.parseLong(arr[1]);
                         break;
                     case "Simulation mode starting value":
-                        startingValue = Integer.parseInt(linepieces[1]);
+                        startingValue = Integer.parseInt(arr[1]);
                         break;
                     case "Simulation mode currencies":
-                        currencies = linepieces[1].split(", ");
+                        currencies = arr[1].split(", ");
                         break;
                     case "Percentage of money per trade":
-                        moneyPerTrade = Double.parseDouble(linepieces[1]);
+                        moneyPerTrade = Double.parseDouble(arr[1]);
                         break;
                     case "Trailing SL":
-                        trailingSL = Double.parseDouble(linepieces[1]);
+                        trailingSL = Double.parseDouble(arr[1]);
                         break;
                     case "Take profit":
-                        takeP = Double.parseDouble(linepieces[1]);
+                        takeP = Double.parseDouble(arr[1]);
                         break;
                 }
             }
-            if (items < 11) { //11 is the number of configuration elements in the file.
+            if (items < 11) { //12 is the number of configuration elements in the file.
                 throw new ConfigException("Config file has some missing elements.");
             }
 
@@ -173,7 +174,7 @@ public class ConfigSetup {
                 "Simulation mode starting value:" + startingValue + "\n" +
                 "Percentage of money per trade:" + moneyPerTrade + "\n" +
                 "Trailing SL:" + trailingSL + "\n" +
-                "Take profit:" + takeP + "\n\n" +
+                "Take profit:" + takeP + "\n" +
                 "Simulation mode currencies:" + Arrays.stream(currencies).map(currency -> currency + " ").collect(Collectors.joining()) + "\n";
     }
 }

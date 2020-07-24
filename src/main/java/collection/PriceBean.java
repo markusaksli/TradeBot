@@ -49,6 +49,6 @@ public class PriceBean {
 
     @Override
     public String toString() {
-        return Formatter.formatDate(timestamp) + ";" + price + ";" + closing;
+        return timestamp + ";" + price + ";" + closing;
     }
 }

@@ -16,6 +16,7 @@ import modes.ConfigSetup;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +34,7 @@ public class Currency {
     private long candleTime;
     private final List<Indicator> indicators = new ArrayList<>();
     private final AtomicBoolean currentlyCalculating = new AtomicBoolean(false);
+    private int databaseID;
 
     private double currentPrice;
     private long currentTime;
@@ -98,8 +100,16 @@ public class Currency {
             indicators.add(new RSI(closingPrices, 14));
             indicators.add(new MACD(closingPrices, 12, 26, 9));
             indicators.add(new BB(closingPrices, 20));
-
             while (bean != null) {
+                /*if (Mode.useDatabase()) {
+                    try {
+                        Database.insertPriceBean(databaseID, bean.getTimestamp(), bean.getPrice());
+                    } catch (SQLException throwables) {
+                        if (!throwables.getMessage().contains("unique")){
+                            System.out.println(throwables.getMessage());
+                        }
+                    }
+                }*/
                 accept(bean);
                 bean = reader.readPrice();
             }
@@ -122,13 +132,6 @@ public class Currency {
 
         if (bean.isClosing()) {
             indicators.forEach(indicator -> indicator.update(bean.getPrice()));
-            /*RSI rsi = (RSI) indicators.get(0);
-            try {
-                Database.insertIndicatorValue("rsiAvgUp",symbol.toString(), rsi.getAvgUp(), bean.getTimestamp());
-                Database.insertIndicatorValue("rsiAvgDwn",symbol.toString(), rsi.getAvgDwn(), bean.getTimestamp());
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
-            }*/
             if (Mode.get().equals(Mode.BACKTESTING)) {
                 appendLogLine(Formatter.formatDate(currentTime) + "  " + toString());
             }
@@ -190,6 +193,10 @@ public class Currency {
 
     public void setActiveTrade(Trade activeTrade) {
         this.activeTrade = activeTrade;
+    }
+
+    public int getDatabaseID() {
+        return databaseID;
     }
 
     public void appendLogLine(String s) {

@@ -30,8 +30,16 @@ public class Trade {
         return explanation;
     }
 
+    public void setExplanation(String explanation) {
+        this.explanation = explanation;
+    }
+
     public void setClosePrice(double closePrice) {
         this.closePrice = closePrice;
+    }
+
+    public double getEntryPrice() {
+        return entryPrice;
     }
 
     public double getClosePrice() {
@@ -88,20 +96,20 @@ public class Trade {
         if (newPrice > high) high = newPrice;
 
         if (getProfit() > TAKE_PROFIT) {
-            explanation += "Closed due to take profit";
+            explanation += "Closed due to: Take profit";
             BuySell.close(this);
+            return;
         }
 
         if (newPrice < high * (1 - TRAILING_SL)) {
-            explanation += "Closed due to trailing SL";
+            explanation += "Closed due to: Trailing SL";
             BuySell.close(this);
             return;
         }
 
         if (confluence <= -2) {
-            explanation += "Closed due to indicator confluence of " + confluence;
+            explanation += "Closed due to: Indicator confluence of " + confluence;
             BuySell.close(this);
-            return;
         }
     }
 
