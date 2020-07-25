@@ -3,7 +3,7 @@ package modes;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;
-import trading.Mode;
+import trading.Formatter;
 import trading.Trade;
 
 import java.io.*;
@@ -35,6 +35,8 @@ public class ConfigSetup {
     }
 
     public void readFile() {
+        //TODO: Move this somewhere else
+        Formatter.getSimpleFormatter().setTimeZone(TimeZone.getDefault());
         int items = 0;
         File file = new File("config.txt");
         try (FileReader reader = new FileReader(file);

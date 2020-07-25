@@ -1,7 +1,7 @@
 package trading;
 
-import collection.PriceBean;
-import collection.PriceReader;
+import data.PriceBean;
+import data.PriceReader;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
@@ -20,7 +20,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Currency {
     private static final String FIAT = "USDT";
@@ -89,7 +88,8 @@ public class Currency {
             long start = bean.getTimestamp();
             //TODO: Test backtesting with new api (test for candle overlap in the beginning)
             List<Candlestick> history = CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES, null, null, start + 300000L);
-            List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
+            System.out.println(Formatter.formatDate(history.get(0).getCloseTime()));
+            List<Double> closingPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
             indicators.add(new RSI(closingPrices, 14));
             indicators.add(new MACD(closingPrices, 12, 26, 9));
             indicators.add(new BB(closingPrices, 20));
@@ -142,10 +142,6 @@ public class Currency {
 
     public int check() {
         return indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum();
-    }
-
-    public List<Candlestick> getCandles(int length, long start, long end) throws BinanceApiException {
-        return CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES, length, start, end);
     }
 
     public String getPair() {

@@ -9,7 +9,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 public class Formatter {
     private static final SimpleDateFormat SIMPLE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -49,6 +51,10 @@ public class Formatter {
 
     public static SimpleDateFormat getSimpleFormatter() {
         return SIMPLE_FORMATTER;
+    }
+
+    public static String formatDuration(long duration) {
+        return formatDuration(Duration.of(duration, ChronoUnit.MILLIS));
     }
 
     public static String formatDuration(Duration duration) {

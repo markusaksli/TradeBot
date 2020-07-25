@@ -1,3 +1,4 @@
+import com.binance.api.client.domain.market.AggTrade;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import modes.*;

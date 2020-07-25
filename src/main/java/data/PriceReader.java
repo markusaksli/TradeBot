@@ -1,4 +1,4 @@
-package collection;
+package data;
 
 import java.io.*;
 

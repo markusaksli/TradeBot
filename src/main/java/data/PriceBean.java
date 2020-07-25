@@ -1,13 +1,11 @@
-package collection;
+package data;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import trading.Formatter;
 
 public class PriceBean {
     private final double price;
     private final long timestamp;
     private boolean closing;
-    private static SimpleDateFormat dateFormat;
 
     public PriceBean(long timestamp, double price) {
         this.price = price;
@@ -30,7 +28,7 @@ public class PriceBean {
     }
 
     public String getDate() {
-        return dateFormat.format(new Date(timestamp));
+        return Formatter.formatDate((timestamp));
     }
 
     public void close() {
@@ -39,10 +37,6 @@ public class PriceBean {
 
     public boolean isClosing() {
         return closing;
-    }
-
-    public static void setDateFormat(SimpleDateFormat dateFormat) {
-        PriceBean.dateFormat = dateFormat;
     }
 
     @Override
