@@ -198,14 +198,13 @@ public final class Collection {
         System.out.print("\r" + Formatter.formatPercent(1.0));
 
         System.out.println("\n---Checking data for consistency");
-        try (PriceReader reader = new PriceReader(filename); PrintWriter writer = new PrintWriter("result.txt")) {
+        try (PriceReader reader = new PriceReader(filename)) {
             PriceBean bean = reader.readPrice();
             long last = Long.MIN_VALUE;
             while (bean != null) {
-                writer.write(bean + "\n");
                 if (bean.getTimestamp() < last) {
                     System.out.println("---Date regression in data!");
-                    System.out.println(Formatter.formatDate(last) + "   " + Formatter.formatDate(bean.getTimestamp()));
+                    System.out.println(Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));
                 }
                 if (bean.getTimestamp() - last > 60000L && !bean.isClosing())
                     System.out.println("Gap from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));
