@@ -36,6 +36,7 @@ public class Formatter {
     }
 
     public static String formatDecimal(double decimal) {
+        if ((decimal == Math.floor(decimal)) && Double.isFinite(decimal)) return String.valueOf((long) decimal);
         int zeroes = 0;
         String s = String.format("%.12f", decimal).replaceAll("[,.]", "");
         for (char c : s.toCharArray()) {

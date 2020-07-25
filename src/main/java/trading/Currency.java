@@ -6,7 +6,7 @@ import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import com.binance.api.client.exception.BinanceApiException;
-import indicators.BB;
+import indicators.DBB;
 import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
@@ -47,7 +47,7 @@ public class Currency {
         List<Double> closingPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
         indicators.add(new RSI(closingPrices, 14));
         indicators.add(new MACD(closingPrices, 12, 26, 9));
-        indicators.add(new BB(closingPrices, 20));
+        indicators.add(new DBB(closingPrices, 20));
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         currentTime = System.currentTimeMillis();
@@ -85,14 +85,15 @@ public class Currency {
             PriceBean bean = reader.readPrice();
 
             firstBean = bean;
-            long start = bean.getTimestamp();
-            //TODO: Test backtesting with new api (test for candle overlap in the beginning)
-            List<Candlestick> history = CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES, null, null, start + 300000L);
-            System.out.println(Formatter.formatDate(history.get(0).getCloseTime()));
-            List<Double> closingPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
+            List<Double> closingPrices = new ArrayList<>();
+            while (bean.isClosing()) {
+                closingPrices.add(bean.getPrice());
+                bean = reader.readPrice();
+            }
             indicators.add(new RSI(closingPrices, 14));
+            //TODO: Backtesting MACD values are off when compared to server ground truth, need to check EMA, SMA and fix.
             indicators.add(new MACD(closingPrices, 12, 26, 9));
-            indicators.add(new BB(closingPrices, 20));
+            indicators.add(new DBB(closingPrices, 20));
             while (bean != null) {
                 accept(bean);
                 bean = reader.readPrice();
@@ -194,7 +195,9 @@ public class Currency {
 
         try (FileWriter writer = new FileWriter(path)) {
             writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
-            writer.write("\nMarket performance: " + Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
+            writer.write("\n\nCONFIG:\n");
+            writer.write(ConfigSetup.getSetup());
+            writer.write("\n\nMarket performance: " + Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
             writer.write("\nBot performance: " + Formatter.formatPercent(BuySell.getAccount().getProfit()) + "\n\n");
             writer.write(BuySell.getAccount().getTradeHistory().size() + " closed trades"
                     + " (" + Formatter.formatDecimal(tradePerWeek) + " trades per week) with an average holding length of "
@@ -207,8 +210,6 @@ public class Currency {
             for (Trade trade : tradeHistory) {
                 writer.write(trade.toString() + "\n");
             }
-            writer.write("\n\nCONFIG:\n");
-            writer.write(ConfigSetup.getSetup());
             writer.write("\n\nFULL LOG:\n\n");
             writer.write(log.toString());
         } catch (IOException e) {

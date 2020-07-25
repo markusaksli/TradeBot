@@ -30,7 +30,12 @@ public final class Collection {
     private static int chunks;
     private static String symbol;
     private final static Semaphore blocker = new Semaphore(0);
+    private final static Semaphore requestTracker = new Semaphore(1199);
     private final static BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
+
+    public static Semaphore getRequestTracker() {
+        return requestTracker;
+    }
 
     public static Semaphore getBlocker() {
         return blocker;
@@ -79,22 +84,19 @@ public final class Collection {
             System.out.println("Enter the date you want to finish with (type \"now\" for current time): ");
             String finish = sc.nextLine();
             try {
-                if (Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", begin) &&
-                        Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", finish)) {
-                    startDate = dateFormat.parse(begin);
-                    if (finish.equals("now")) {
-                        stopDate = Date.from(Instant.now());
-                    } else {
-                        stopDate = dateFormat.parse(finish);
-                    }
-                    if (startDate.getTime() >= stopDate.getTime() || stopDate.getTime() > CurrentAPI.get().getServerTime()) {
-                        System.out.println("Start needs to be earlier in time than end and end cannot be greater than current server time");
-                        continue;
-                    }
-                    break;
+                startDate = dateFormat.parse(begin);
+                if (finish.toLowerCase().equals("now")) {
+                    stopDate = new Date(System.currentTimeMillis());
+                } else {
+                    stopDate = dateFormat.parse(finish);
                 }
+                if (startDate.getTime() >= stopDate.getTime() || stopDate.getTime() > System.currentTimeMillis()) {
+                    System.out.println("Start needs to be earlier in time than end and end cannot be greater than current server time");
+                    continue;
+                }
+                break;
             } catch (ParseException e) {
-                e.printStackTrace();
+                System.out.println(e.getLocalizedMessage());
             }
         }
 
@@ -113,12 +115,12 @@ public final class Collection {
         File tempFolder = new File("temp");
         tempFolder.mkdir();
 
-        System.out.println("---Sending requests (1200 per minute)...");
-        Semaphore requestTracker = new Semaphore(1199);
+        System.out.println("---Sending " + chunks + " requests at 1200 per minute (rough estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) 1200 * 60000L)) + ")..."));
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                requestTracker.drainPermits();
                 requestTracker.release(1199);
             }
         }, 61 * 1000, 61 * 1000);
@@ -136,7 +138,6 @@ public final class Collection {
             if (diff < 3600000L) break;
             end -= 3600000L;
         }
-        timer.cancel();
         System.out.println("\n---All request submitted");
         System.out.println("---Waiting for " + (chunks - blocker.availablePermits()) + " more requests to return");
         System.out.print(Collection.getProgress());
@@ -145,6 +146,7 @@ public final class Collection {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        timer.cancel();
         System.out.print("\r" + Formatter.formatPercent(1.0));
 
         System.out.println("\n---Writing data from temp files to main file");
@@ -198,13 +200,14 @@ public final class Collection {
         System.out.print("\r" + Formatter.formatPercent(1.0));
 
         System.out.println("\n---Checking data for consistency");
+        long count = 0;
         try (PriceReader reader = new PriceReader(filename)) {
             PriceBean bean = reader.readPrice();
             long last = Long.MIN_VALUE;
             while (bean != null) {
+                count++;
                 if (bean.getTimestamp() < last) {
-                    System.out.println("---Date regression in data!");
-                    System.out.println(Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));
+                    System.out.println("!-----Date regression from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()) + "------!");
                 }
                 if (bean.getTimestamp() - last > 60000L && !bean.isClosing())
                     System.out.println("Gap from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));
@@ -217,7 +220,7 @@ public final class Collection {
 
         System.out.println("---Collection completed, result in "
                 + filename
-                + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
+                + " (" + count + " entries, " + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
 
         while (true) {
             System.out.println("Type \"quit\" to quit");
@@ -245,8 +248,10 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
     @Override
     public void onFailure(Throwable cause) {
         try {
-            Collection.getBlocker().acquire();
-            Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, this);
+            System.out.print("\r" + Formatter.formatPercent(Collection.getProgress()) + " Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
+            Collection.getRequestTracker().acquire();
+            Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end));
+            System.out.print("\r" + Formatter.formatPercent(Collection.getProgress()) + " Resent request " + id);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

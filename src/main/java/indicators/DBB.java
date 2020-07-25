@@ -1,7 +1,7 @@
 package indicators;
 import java.util.List;
 
-public class BB implements Indicator{
+public class DBB implements Indicator {
     private double closingPrice;
     private double standardDeviation;
     private final int period;
@@ -13,7 +13,7 @@ public class BB implements Indicator{
     private String explanation;
     private SMA sma;
 
-    public BB(List<Double> closingPrices, int period) {
+    public DBB(List<Double> closingPrices, int period) {
         this.period = period;
         this.sma = new SMA(closingPrices, period);
         init(closingPrices);
