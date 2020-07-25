@@ -14,6 +14,8 @@ public class Main {
     private static List<Currency> currencies;
 
     public static void main(String[] args) {
+        List<Candlestick> candlesticks = CurrentAPI.get().getCandlestickBars("BTCUSDT", CandlestickInterval.FIVE_MINUTES, null, null, 1595667000000L);
+        System.out.println(Formatter.formatDate(candlesticks.get(candlesticks.size() - 1).getCloseTime()));
         //Program config.
         new ConfigSetup();
 

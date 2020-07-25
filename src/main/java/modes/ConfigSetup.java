@@ -95,10 +95,11 @@ public class ConfigSetup {
         }
 
 
+        //TODO: Remove minutesForCollection from setup
         //COLLECTION MODE
         //When entering collection mode, how big chuncks do you
         //want to create
-        Collection.setMinutesForCollection(getMinutesForCollection());
+        //Collection.setMinutesForCollection(getMinutesForCollection());
 
         //LIVE
         Live.setCurrencyArr(getCurrencies());
