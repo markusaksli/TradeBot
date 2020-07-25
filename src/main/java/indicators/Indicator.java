@@ -1,6 +1,5 @@
 package indicators;
 
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import java.util.List;
 
 public interface Indicator {

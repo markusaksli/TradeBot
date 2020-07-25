@@ -1,23 +1,15 @@
 package trading;
 
-import ch.qos.logback.classic.sift.AppenderFactoryUsingJoran;
-import collection.PriceBean;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Formatter {
     private static final SimpleDateFormat SIMPLE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -71,7 +63,7 @@ public class Formatter {
     }
 
     public static boolean isValidDateFormat(String format, String value) {
-        LocalDateTime ldt = null;
+        LocalDateTime ldt;
         DateTimeFormatter fomatter = DateTimeFormatter.ofPattern(format);
 
         try {

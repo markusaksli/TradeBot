@@ -1,23 +1,19 @@
 package trading;
 
-import com.webcerebrium.binance.api.BinanceApi;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.*;
 
-import java.math.BigDecimal;
-import java.sql.SQLException;
+import com.binance.api.client.exception.BinanceApiException;
 
 public class BuySell {
 
-    private static Account account;
+    private static LocalAccount localAccount;
     private static double moneyPerTrade;
 
-    public static void setAccount(Account account) {
-        BuySell.account = account;
+    public static void setAccount(LocalAccount localAccount) {
+        BuySell.localAccount = localAccount;
     }
 
-    public static Account getAccount() {
-        return account;
+    public static LocalAccount getAccount() {
+        return localAccount;
     }
 
     //Used by strategy
@@ -33,12 +29,12 @@ public class BuySell {
         currency.setActiveTrade(trade);
 
         //Converting fiat value to coin value
-        account.addToFiat(-fiatCost);
-        account.addToWallet(currency, amount);
-        account.openTrade(trade);
+        localAccount.addToFiat(-fiatCost);
+        localAccount.addToWallet(currency, amount);
+        localAccount.openTrade(trade);
         if (Mode.get().equals(Mode.LIVE)) {
             try {
-                placeBuyOrder(currency.getSymbol().toString(), amount);
+                placeBuyOrder(currency.getPair(), amount);
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
@@ -46,7 +42,7 @@ public class BuySell {
 
         String message = "---" + Formatter.formatDate(trade.getOpenTime())
                 + " opened trade (" + Formatter.formatDecimal(amount) + " "
-                + currency.getCoin() + "), at " + currency.getPrice();
+                + currency.getPair() + "), at " + currency.getPrice();
         System.out.println(message);
         if (Mode.get().equals(Mode.BACKTESTING)) currency.appendLogLine(message);
     }
@@ -60,21 +56,21 @@ public class BuySell {
         //Converting coin value back to fiat
         trade.setClosePrice(trade.getCurrency().getPrice());
         trade.setCloseTime(trade.getCurrency().getCurrentTime());
-        account.closeTrade(trade);
-        account.removeFromWallet(trade.getCurrency(), trade.getAmount());
-        account.addToFiat(trade.getAmount() * trade.getClosePrice());
+        localAccount.closeTrade(trade);
+        localAccount.removeFromWallet(trade.getCurrency(), trade.getAmount());
+        localAccount.addToFiat(trade.getAmount() * trade.getClosePrice());
         trade.getCurrency().setActiveTrade(null);
 
         if (Mode.get().equals(Mode.LIVE)) {
             try {
-                placeSellOrder(trade.getCurrency().getSymbol().toString(), trade.getAmount());
+                placeSellOrder(trade.getCurrency().getPair(), trade.getAmount());
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
         }
 
         String message = "---" + (Formatter.formatDate(trade.getCloseTime())) + " closed trade ("
-                + Formatter.formatDecimal(trade.getAmount()) + " " + trade.getCurrency().getCoin()
+                + Formatter.formatDecimal(trade.getAmount()) + " " + trade.getCurrency().getPair()
                 + "), at " + trade.getClosePrice()
                 + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit"
                 + "\n------" + trade.getExplanation();
@@ -83,27 +79,28 @@ public class BuySell {
     }
 
     private static double nextAmount() {
-        if (Mode.get().equals(Mode.BACKTESTING)) return account.getFiat();
-        return Math.min(account.getFiat(), account.getTotalValue() * moneyPerTrade);
+        if (Mode.get().equals(Mode.BACKTESTING)) return localAccount.getFiat();
+        return Math.min(localAccount.getFiat(), localAccount.getTotalValue() * moneyPerTrade);
     }
 
+    //TODO: Fix buy and sell methods for live trading
     public static void placeBuyOrder(String currencySymbol, double quantity) throws BinanceApiException {
-        BinanceApi api = CurrentAPI.get();
+        /*BinanceApi api = CurrentAPI.get();
         BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
         BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.BUY);
         placement.setType(BinanceOrderType.MARKET);
         placement.setQuantity(BigDecimal.valueOf(quantity));
         BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
-        System.out.println(order.toString());
+        System.out.println(order.toString());*/
     }
 
     public static void placeSellOrder(String currencySymbol, double quantity) throws BinanceApiException {
-        BinanceApi api = CurrentAPI.get();
+        /*BinanceApi api = CurrentAPI.get();
         BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
         BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.SELL);
         placement.setType(BinanceOrderType.MARKET);
         placement.setQuantity(BigDecimal.valueOf(quantity));
         BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
-        System.out.println(order.toString());
+        System.out.println(order.toString());*/
     }
 }

@@ -1,13 +1,9 @@
 package collection;
 
-import com.sun.management.ThreadMXBean;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceAggregatedTrades;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
+import com.binance.api.client.domain.market.AggTrade;
 import trading.CurrentAPI;
 import trading.Formatter;
 
-import java.lang.management.ManagementFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,12 +13,13 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+//TODO: Implement temp files in PriceCollector
 public class PriceCollector implements Runnable {
     private final long start;
     private long end;
     public long duration;
     private final List<PriceBean> data = new ArrayList<>();
-    private final BinanceSymbol symbol;
+    private final String symbol;
     private double lastProgress = 0;
     private boolean done;
 
@@ -31,7 +28,7 @@ public class PriceCollector implements Runnable {
     private static double progress = 0;
     private static final Semaphore minuteRequests = new Semaphore(1200);
 
-    public PriceCollector(long start, long end, BinanceSymbol symbol) {
+    public PriceCollector(long start, long end, String symbol) {
         this.start = start;
         this.end = end;
         this.symbol = symbol;
@@ -76,12 +73,11 @@ public class PriceCollector implements Runnable {
     public void run() {
         long startTime = end - 3600000L;
         long timeLeft = end - start;
-        Map<String, Long> options = new HashMap<>();
-        options.put("startTime", startTime);
-        options.put("endTime", end);
-        List<BinanceAggregatedTrades> trades;
+        List<AggTrade> trades;
         boolean isTime = false;
-        while (true) {
+        //TODO: Fix PriceCollector loop, maybe use async client
+        //TODO: Check for repeating prices and skip in PriceCollector loop
+        /*while (true) {
             try {
                 minuteRequests.acquire();
             } catch (InterruptedException e) {
@@ -104,10 +100,10 @@ public class PriceCollector implements Runnable {
                 totalRequests.getAndIncrement();
             }
             //To see how much memory is used per Thread, avg is 100 000. Will use that to calc number on threads in main.
-            /*ThreadMXBean threadMXBean = (ThreadMXBean) ManagementFactory.getThreadMXBean();
+            *//*ThreadMXBean threadMXBean = (ThreadMXBean) ManagementFactory.getThreadMXBean();
             long id = Thread.currentThread().getId();
             long before = threadMXBean.getThreadAllocatedBytes(id);
-            System.out.println(before + " memory usage! for " + id);*/
+            System.out.println(before + " memory usage! for " + id);*//*
             for (int i = trades.size() - 1; i >= 0; i--) {
                 BinanceAggregatedTrades trade = trades.get(i);
                 if (trade.getTimestamp() < start) {
@@ -125,7 +121,7 @@ public class PriceCollector implements Runnable {
             lastProgress = currentProgress;
             options.replace("startTime", end - 3600000L);
             options.replace("endTime", end);
-        }
+        }*/
         remaining.getAndDecrement();
         progress = progress - lastProgress + 1;
         done = true;

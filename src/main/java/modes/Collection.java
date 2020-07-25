@@ -3,8 +3,6 @@ package modes;
 import collection.PriceBean;
 import collection.PriceCollector;
 import collection.PriceWriter;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
 import trading.Formatter;
 
 import java.io.File;
@@ -20,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+//TODO: Check Collection logic
 public final class Collection {
     private static long minutesForCollection;
 
@@ -37,12 +36,7 @@ public final class Collection {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         PriceBean.setDateFormat(dateFormat);
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
-        BinanceSymbol symbol = null;
-        try {
-            symbol = new BinanceSymbol(sc.nextLine().toUpperCase() + "USDT");
-        } catch (BinanceApiException e) {
-            e.printStackTrace();
-        }
+        String symbol = sc.nextLine().toUpperCase() + "USDT";
 
         System.out.println("Enter everything in double digits. (1 = 01) \n " +
                 "example: 2020/03/01 00:00:00");

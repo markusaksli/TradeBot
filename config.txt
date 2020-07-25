@@ -8,5 +8,4 @@ Simulation mode starting value:10000
 Percentage of money per trade:0.10
 Trailing SL:0.1
 Take profit:0.15
-Use database:false
-Simulation mode currencies:BTC, ETH, LINK, BNB, BCH, XRP, LTC, EOS, XTZ, DASH, ETC, TRX, XLM, ADA, ZEC
+Simulation mode currencies: BTC, ETH, LINK, BNB, BCH, XRP, LTC, EOS, XTZ, DASH, ETC, TRX, XLM, ADA, ZEC

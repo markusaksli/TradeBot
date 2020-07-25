@@ -2,12 +2,10 @@ package trading;
 
 import collection.PriceBean;
 import collection.PriceReader;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceEventAggTrade;
-import com.webcerebrium.binance.datatype.BinanceInterval;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
-import com.webcerebrium.binance.websocket.BinanceWebSocketAdapterAggTrades;
+import com.binance.api.client.BinanceApiWebSocketClient;
+import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.CandlestickInterval;
+import com.binance.api.client.exception.BinanceApiException;
 import indicators.BB;
 import indicators.Indicator;
 import indicators.MACD;
@@ -16,7 +14,6 @@ import modes.ConfigSetup;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -28,13 +25,11 @@ import java.util.stream.IntStream;
 public class Currency {
     private static final String FIAT = "USDT";
 
-    private final String coin;
-    private final BinanceSymbol symbol;
+    private final String pair;
     private Trade activeTrade;
     private long candleTime;
     private final List<Indicator> indicators = new ArrayList<>();
     private final AtomicBoolean currentlyCalculating = new AtomicBoolean(false);
-    private int databaseID;
 
     private double currentPrice;
     private long currentTime;
@@ -46,70 +41,59 @@ public class Currency {
 
     //Used for SIMULATION and LIVE
     public Currency(String coin) throws BinanceApiException {
-        //Every currency is a USDT pair so we only care about the fiat opposite coin
-        this.symbol = BinanceSymbol.valueOf(coin + FIAT);
-        this.coin = coin;
+        this.pair = coin + FIAT;
 
         //Every currency needs to contain and update our indicators
-        List<BinanceCandlestick> history = getCandles(250);//250 gives us functionally the same accuracy as 1000
-        List<Double> closingPrices = history.stream().map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
+        List<Candlestick> history = CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES);
+        List<Double> closingPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
         indicators.add(new RSI(closingPrices, 14));
         indicators.add(new MACD(closingPrices, 12, 26, 9));
         indicators.add(new BB(closingPrices, 20));
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         currentTime = System.currentTimeMillis();
-        candleTime = history.get(history.size() - 1).getOpenTime() + 300000L;
-        currentPrice = history.get(history.size() - 1).getClose().doubleValue();
+        candleTime = history.get(history.size() - 1).getCloseTime();
+        currentPrice = Double.parseDouble(history.get(history.size() - 1).getClose());
 
+        BinanceApiWebSocketClient client = CurrentAPI.getFactory().newWebSocketClient();
         //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
-        CurrentAPI.get().websocketTrades(symbol, new BinanceWebSocketAdapterAggTrades() {
-            @Override
-            public void onMessage(BinanceEventAggTrade message) {
-                //Every message and the resulting indicator and strategy calculations is handled concurrently
-                //System.out.println(Thread.currentThread().getId());
+        client.onAggTradeEvent(pair.toLowerCase(), response -> {
+            //Every message and the resulting indicator and strategy calculations is handled concurrently
+            //System.out.println(Thread.currentThread().getId());
+            double newPrice = Double.parseDouble(response.getPrice());
+            long newTime = response.getEventTime();
 
-                //We want to toss messages that provide no new information
-                if (currentPrice == message.getPrice().doubleValue() && !(message.getEventTime() > candleTime)) {
-                    return;
-                }
-
-                if (message.getEventTime() > candleTime) {
-                    accept(new PriceBean(candleTime, currentPrice, true));
-                    candleTime += 300000L;
-                }
-
-                accept(new PriceBean(message.getEventTime(), message.getPrice().doubleValue()));
+            //We want to toss messages that provide no new information
+            if (currentPrice == newPrice && !(newTime > candleTime)) {
+                return;
             }
+
+            if (newTime > candleTime) {
+                System.out.println(newPrice);
+                accept(new PriceBean(candleTime, currentPrice, true));
+                candleTime += 300000L;
+            }
+
+            accept(new PriceBean(newTime, newPrice));
         });
         System.out.println("---SETUP DONE FOR " + this);
     }
 
     //Used for BACKTESTING
     public Currency(String pair, String filePath) throws BinanceApiException {
-        this.symbol = BinanceSymbol.valueOf(pair);
-        this.coin = pair.replace("USDT", "");
+        this.pair = pair;
         try (PriceReader reader = new PriceReader(filePath)) {
             PriceBean bean = reader.readPrice();
 
             firstBean = bean;
             long start = bean.getTimestamp();
-
-            List<BinanceCandlestick> history = getCandles(1000, start - 86400000L, start + 300000);
-            List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> candle.getClose().doubleValue()).collect(Collectors.toList());
+            //TODO: Test backtesting with new api (test for candle overlap in the beginning)
+            List<Candlestick> history = CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES, null, null, start + 300000L);
+            List<Double> closingPrices = IntStream.range(history.size() - 251, history.size() - 1).mapToObj(history::get).map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
             indicators.add(new RSI(closingPrices, 14));
             indicators.add(new MACD(closingPrices, 12, 26, 9));
             indicators.add(new BB(closingPrices, 20));
             while (bean != null) {
-                /*if (Mode.useDatabase()) {
-                    try {
-                        Database.insertPriceBean(databaseID, bean.getTimestamp(), bean.getPrice());
-                    } catch (SQLException throwables) {
-                        if (!throwables.getMessage().contains("unique")){
-                            System.out.println(throwables.getMessage());
-                        }
-                    }
-                }*/
                 accept(bean);
                 bean = reader.readPrice();
             }
@@ -123,7 +107,7 @@ public class Currency {
     private void accept(PriceBean bean) {
         //Make sure we dont get concurrency issues
         if (currentlyCalculating.get()) {
-            System.out.println("------------WARNING, NEW THREAD STARTED ON " + coin + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
+            System.out.println("------------WARNING, NEW THREAD STARTED ON " + pair + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
         }
         currentlyCalculating.set(true);
 
@@ -160,23 +144,12 @@ public class Currency {
         return indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum();
     }
 
-    public List<BinanceCandlestick> getCandles(int length) throws BinanceApiException {
-        return (CurrentAPI.get()).klines(symbol, BinanceInterval.FIVE_MIN, length, null);
+    public List<Candlestick> getCandles(int length, long start, long end) throws BinanceApiException {
+        return CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES, length, start, end);
     }
 
-    public List<BinanceCandlestick> getCandles(int length, long start, long end) throws BinanceApiException {
-        Map<String, Long> options = new HashMap<>();
-        options.put("startTime", start);
-        options.put("endTime", end);
-        return (CurrentAPI.get()).klines(symbol, BinanceInterval.FIVE_MIN, length, options);
-    }
-
-    public BinanceSymbol getSymbol() {
-        return symbol;
-    }
-
-    public String getCoin() {
-        return coin;
+    public String getPair() {
+        return pair;
     }
 
     public double getPrice() {
@@ -193,10 +166,6 @@ public class Currency {
 
     public void setActiveTrade(Trade activeTrade) {
         this.activeTrade = activeTrade;
-    }
-
-    public int getDatabaseID() {
-        return databaseID;
     }
 
     public void appendLogLine(String s) {
@@ -254,7 +223,7 @@ public class Currency {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder(coin + " price: " + currentPrice);
+        StringBuilder s = new StringBuilder(pair + " price: " + currentPrice);
         if (currentTime == candleTime)
             indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.get())));
         else
@@ -265,6 +234,6 @@ public class Currency {
 
     @Override
     public int hashCode() {
-        return coin.hashCode();
+        return pair.hashCode();
     }
 }

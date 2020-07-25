@@ -1,7 +1,5 @@
 package collection;
 
-import trading.Formatter;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 

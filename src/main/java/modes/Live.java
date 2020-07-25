@@ -1,7 +1,6 @@
 package modes;
 
-import com.webcerebrium.binance.api.BinanceApiException;
-import trading.Account;
+import trading.LocalAccount;
 import trading.BuySell;
 import trading.Currency;
 
@@ -9,17 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+//TODO: Clean up Live class
 public final class Live {
-    private static Account account;
-    private static List<Currency> currencies = new ArrayList<>();
+    private static LocalAccount localAccount;
+    private static final List<Currency> currencies = new ArrayList<>();
     private static String[] currencyArr;
 
     public Live() {
         init();
     }
 
-    public static Account getAccount() {
-        return account;
+    public static LocalAccount getAccount() {
+        return localAccount;
     }
 
     public static void setCurrencyArr(String[] currencyArr) {
@@ -45,19 +45,15 @@ public final class Live {
                 } else System.out.println("Secret API is incorrect, enter again.");
             } else System.out.println("Incorrect API, enter again.");
         }
-        account = new Account(apiKey, apiSecret);
-        System.out.println(account.getMakerComission() + " Maker commission.");
-        System.out.println(account.getBuyerComission() + " Buyer commission");
-        System.out.println(account.getTakerComission() + " Taker comission");
-        BuySell.setAccount(account);
+        localAccount = new LocalAccount(apiKey, apiSecret);
+        System.out.println(localAccount.getMakerComission() + " Maker commission.");
+        System.out.println(localAccount.getBuyerComission() + " Buyer commission");
+        System.out.println(localAccount.getTakerComission() + " Taker comission");
+        BuySell.setAccount(localAccount);
 
         for (String arg : currencyArr) {
             //The currency class contains all of the method calls that drive the activity of our bot
-            try {
-                currencies.add(new Currency(arg));
-            } catch (BinanceApiException e) {
-                e.printStackTrace();
-            }
+            currencies.add(new Currency(arg));
         }
     }
 }

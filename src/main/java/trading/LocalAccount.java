@@ -1,11 +1,7 @@
 package trading;
 
-import com.google.gson.JsonObject;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceOrder;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
-import com.webcerebrium.binance.datatype.BinanceTrade;
-import org.json.JSONObject;
+import com.binance.api.client.domain.account.Account;
+import com.binance.api.client.exception.BinanceApiException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +9,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Account {
+public class LocalAccount {
     private final String username;
+    private Account realAccount;
 
     //To give the account a specific final amount of money.
     private double fiatValue;
@@ -22,7 +19,6 @@ public class Account {
     private final ConcurrentHashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
     private final List<Trade> activeTrades;
-    private JsonObject account;
     private double makerComission;
     private double takerComission;
     private double buyerComission;
@@ -31,7 +27,7 @@ public class Account {
      * Wallet value will most probably be 0 at first, but you could start
      * with an existing wallet value as well.
      */
-    public Account(String username, double startingValue) {
+    public LocalAccount(String username, double startingValue) {
         this.username = username;
         this.startingValue = startingValue;
         fiatValue = startingValue;
@@ -40,9 +36,8 @@ public class Account {
         activeTrades = new CopyOnWriteArrayList<>();
     }
 
-    public Account(String apiKey, String secretApiKey) {
-        CurrentAPI.get().setApiKey(apiKey);
-        CurrentAPI.get().setSecretKey(secretApiKey);
+    public LocalAccount(String apiKey, String secretApiKey) {
+        CurrentAPI.setRealFactory(apiKey, secretApiKey);
         this.startingValue = 0;
         username = "";
         wallet = new ConcurrentHashMap<>();
@@ -143,14 +138,13 @@ public class Account {
     private void initLive() {
         List<String> currencies = new ArrayList<>();
         try {
-            JsonObject account = CurrentAPI.get().account();
-            this.account = account;
-            makerComission = account.get("makerCommission").getAsBigDecimal().doubleValue(); //Maker fees are
+            this.realAccount = CurrentAPI.get().getAccount();
+            makerComission = realAccount.getMakerCommission(); //Maker fees are
             // paid when you add liquidity to our order book
             // by placing a limit order below the ticker price for buy, and above the ticker price for sell.
-            takerComission = account.get("takerCommission").getAsBigDecimal().doubleValue();//Taker fees are paid when you remove
+            takerComission = realAccount.getTakerCommission();//Taker fees are paid when you remove
             // liquidity from our order book by placing any order that is executed against an order on the order book.
-            buyerComission = account.get("buyerCommission").getAsBigDecimal().doubleValue();
+            buyerComission = realAccount.getBuyerCommission();
 
             //Example: If the current market/ticker price is $2000 for 1 BTC and you market buy bitcoins starting at the market price of $2000, then you will pay the taker fee. In this instance, you have taken liquidity/coins from the order book.
             //
@@ -158,12 +152,13 @@ public class Account {
             //place a limit buy for bitcoins at $1995, then
             //you will pay the maker fee IF the market/ticker price moves into your limit order at $1995.
 
-            if (CurrentAPI.get().balancesMap().isEmpty()) {
+            if (realAccount.getBalances().isEmpty()) {
                 startingValue = 0;
             } else {
-                startingValue = CurrentAPI.get().balancesMap().get("USDT").free.doubleValue();
+                startingValue = Double.parseDouble(realAccount.getAssetBalance("USDT").getFree());
             }
-            currencies.addAll(CurrentAPI.get().balancesMap().keySet());
+            //TODO: Fix currency adding for live account init
+            /*currencies.addAll(CurrentAPI.get().balancesMap().keySet());
             for (String current : currencies) {
                 BinanceSymbol symbol = new BinanceSymbol(current + "USDT");
                 Currency currency = new Currency(current);
@@ -174,7 +169,7 @@ public class Account {
                             "Already opened before BOT initiated."));
                     addToWallet(currency, trade.getQty().doubleValue());
                 }
-            }
+            }*/
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }

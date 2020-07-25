@@ -1,3 +1,5 @@
+import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.CandlestickInterval;
 import modes.*;
 import trading.*;
 
@@ -58,23 +60,23 @@ public class Main {
             new Collection(); //Init collection mode.
 
         } else {
-            Account account = null;
+            LocalAccount localAccount = null;
             long startTime = System.nanoTime();
             switch (Mode.get()) {
                 case LIVE:
                     new Live(); //Init live mode.
-                    account = Live.getAccount();
+                    localAccount = Live.getAccount();
                     currencies = Live.getCurrencies();
                     break;
                 case SIMULATION:
                     new Simulation(); //Init simulation mode.
                     currencies = Simulation.getCurrencies();
-                    account = Simulation.getAccount();
+                    localAccount = Simulation.getAccount();
                     break;
                 case BACKTESTING:
                     new Backtesting(); //Init Backtesting mode.
                     currencies = Backtesting.getCurrencies();
-                    account = Backtesting.getAccount();
+                    localAccount = Backtesting.getAccount();
                     break;
             }
             long endTime = System.nanoTime();
@@ -92,18 +94,18 @@ public class Main {
                 }
             }
 
-            assert account != null;
+            assert localAccount != null;
             //From this point we only use the main thread to check how the bot is doing
             System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, quit");
             while (true) {
                 String in = sc.nextLine();
                 switch (in) {
                     case "profit":
-                        System.out.println("Account profit: " + Formatter.formatPercent(account.getProfit()) + "\n");
+                        System.out.println("Account profit: " + Formatter.formatPercent(localAccount.getProfit()) + "\n");
                         break;
                     case "active":
                         System.out.println("Active trades:");
-                        for (Trade trade : account.getActiveTrades()) {
+                        for (Trade trade : localAccount.getActiveTrades()) {
                             System.out.println(trade);
                         }
                         System.out.println(" ");
@@ -120,16 +122,16 @@ public class Main {
                         break;
                     case "history":
                         System.out.println("Closed trades:");
-                        for (Trade trade : account.getTradeHistory()) {
+                        for (Trade trade : localAccount.getTradeHistory()) {
                             System.out.println(trade);
                         }
                         break;
                     case "wallet":
-                        System.out.println("Total wallet value: " + Formatter.formatDecimal(account.getTotalValue()) + " USDT");
-                        System.out.println(account.getFiat() + " USDT");
-                        for (Map.Entry<Currency, Double> entry : account.getWallet().entrySet()) {
+                        System.out.println("Total wallet value: " + Formatter.formatDecimal(localAccount.getTotalValue()) + " USDT");
+                        System.out.println(localAccount.getFiat() + " USDT");
+                        for (Map.Entry<Currency, Double> entry : localAccount.getWallet().entrySet()) {
                             if (entry.getValue() != 0) {
-                                System.out.println(entry.getValue() + " " + entry.getKey().getCoin() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
+                                System.out.println(entry.getValue() + " " + entry.getKey().getPair() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
                             }
                         }
                         break;
@@ -146,10 +148,10 @@ public class Main {
                     case "close":
                         System.out.println("Enter ID of active trade");
                         String tradeId = sc.nextLine();
-                        BuySell.close(account.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
+                        BuySell.close(localAccount.getActiveTrades().get(Integer.parseInt(tradeId) - 1));
                         break;
                     case "close all":
-                        account.getActiveTrades().forEach(BuySell::close);
+                        localAccount.getActiveTrades().forEach(BuySell::close);
                         break;
                     case "quit":
                         System.exit(0);

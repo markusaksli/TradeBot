@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+//TODO: Remove boilerplate from ConfigSetup
 public class ConfigSetup {
     private double moneyPerTrade;
     private long minutesForCollection;
@@ -75,6 +76,8 @@ public class ConfigSetup {
                         break;
                     case "Take profit":
                         takeP = Double.parseDouble(arr[1]);
+                        break;
+                    default:
                         break;
                 }
             }
