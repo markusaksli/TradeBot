@@ -68,7 +68,6 @@ public class Currency {
             }
 
             if (newTime > candleTime) {
-                System.out.println(newPrice);
                 accept(new PriceBean(candleTime, currentPrice, true));
                 candleTime += 300000L;
             }
