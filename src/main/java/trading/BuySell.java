@@ -1,7 +1,15 @@
 package trading;
 
 
+import com.binance.api.client.BinanceApiRestClient;
+import com.binance.api.client.domain.account.NewOrderResponse;
+import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.exception.BinanceApiException;
+
+import java.util.List;
+
+import static com.binance.api.client.domain.account.NewOrder.marketBuy;
+import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
 public class BuySell {
 
@@ -34,7 +42,7 @@ public class BuySell {
         localAccount.openTrade(trade);
         if (Mode.get().equals(Mode.LIVE)) {
             try {
-                placeBuyOrder(currency.getPair(), amount);
+                placeOrder(currency.getPair(), amount, true);
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
@@ -63,7 +71,7 @@ public class BuySell {
 
         if (Mode.get().equals(Mode.LIVE)) {
             try {
-                placeSellOrder(trade.getCurrency().getPair(), trade.getAmount());
+                placeOrder(trade.getCurrency().getPair(), trade.getAmount(), false);
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
@@ -83,24 +91,15 @@ public class BuySell {
         return Math.min(localAccount.getFiat(), localAccount.getTotalValue() * moneyPerTrade);
     }
 
-    //TODO: Fix buy and sell methods for live trading
-    public static void placeBuyOrder(String currencySymbol, double quantity) throws BinanceApiException {
-        /*BinanceApi api = CurrentAPI.get();
-        BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
-        BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.BUY);
-        placement.setType(BinanceOrderType.MARKET);
-        placement.setQuantity(BigDecimal.valueOf(quantity));
-        BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
-        System.out.println(order.toString());*/
-    }
-
-    public static void placeSellOrder(String currencySymbol, double quantity) throws BinanceApiException {
-        /*BinanceApi api = CurrentAPI.get();
-        BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
-        BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.SELL);
-        placement.setType(BinanceOrderType.MARKET);
-        placement.setQuantity(BigDecimal.valueOf(quantity));
-        BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
-        System.out.println(order.toString());*/
+    //TODO: Check buy/sell with live account
+    //TODO: Implement limit ordering
+    public static void placeOrder(String currencySymbol, double quantity, boolean buy) throws BinanceApiException {
+        BinanceApiRestClient client = CurrentAPI.get();
+        NewOrderResponse newOrderResponse = client.newOrder(
+                buy ?
+                        marketBuy(currencySymbol, String.valueOf(quantity)).newOrderRespType(NewOrderResponseType.FULL) :
+                        marketSell(currencySymbol, String.valueOf(quantity)).newOrderRespType(NewOrderResponseType.FULL));
+        List<com.binance.api.client.domain.account.Trade> fills = newOrderResponse.getFills();
+        System.out.println("Placed" + (buy ? "buy" : "sell") + " order with id " + newOrderResponse.getClientOrderId());
     }
 }

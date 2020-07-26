@@ -89,8 +89,8 @@ public class Currency {
                 closingPrices.add(bean.getPrice());
                 bean = reader.readPrice();
             }
+            //TODO: Fix slight mismatch between indicator values and server values during backtesting (gets closer towards the end of backtesting data).
             indicators.add(new RSI(closingPrices, 14));
-            //TODO: Backtesting MACD values are off when compared to server ground truth, need to check EMA, SMA and fix.
             indicators.add(new MACD(closingPrices, 12, 26, 9));
             indicators.add(new DBB(closingPrices, 20));
             while (bean != null) {

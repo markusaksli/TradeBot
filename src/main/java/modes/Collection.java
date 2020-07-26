@@ -21,10 +21,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
-//TODO: Check Collection logic
 public final class Collection {
     private static int chunks;
     private static String symbol;
+    private static String lastMessage = "Starting to send messages";
     private final static Semaphore blocker = new Semaphore(0);
     private final static Semaphore requestTracker = new Semaphore(1199);
     private final static BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
@@ -45,8 +45,12 @@ public final class Collection {
         return symbol;
     }
 
-    public static double getProgress() {
-        return (double) blocker.availablePermits() / (double) chunks;
+    public static void printProgress() {
+        System.out.print("\r" + Formatter.formatPercent((double) blocker.availablePermits() / (double) chunks) + " " + lastMessage);
+    }
+
+    public static void setLastMessage(String lastMessage) {
+        Collection.lastMessage = lastMessage;
     }
 
     public Collection() {
@@ -116,6 +120,8 @@ public final class Collection {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                setLastMessage("Sending next 1200 requests...");
+                printProgress();
                 requestTracker.drainPermits();
                 requestTracker.release(1199);
             }
@@ -136,7 +142,7 @@ public final class Collection {
         }
         System.out.println("\n---All request submitted");
         System.out.println("---Waiting for " + (chunks - blocker.availablePermits()) + " more requests to return");
-        System.out.print(Collection.getProgress());
+        Collection.printProgress();
         try {
             blocker.acquire(chunks);
         } catch (InterruptedException e) {
@@ -244,10 +250,10 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
     @Override
     public void onFailure(Throwable cause) {
         try {
-            System.out.print("\r" + Formatter.formatPercent(Collection.getProgress()) + " Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
+            Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
             Collection.getRequestTracker().acquire();
             Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end));
-            System.out.print("\r" + Formatter.formatPercent(Collection.getProgress()) + " Resent request " + id);
+            Collection.setLastMessage("Resent request " + id);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -270,9 +276,7 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
                 return;
             }
         }
-
-
         Collection.getBlocker().release();
-        System.out.print("\r" + Formatter.formatPercent(Collection.getProgress()));
+        Collection.printProgress();
     }
 }
