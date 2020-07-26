@@ -1,6 +1,7 @@
 package trading;
 
 import com.binance.api.client.domain.account.Account;
+import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.exception.BinanceApiException;
 
 import java.util.ArrayList;
@@ -157,19 +158,10 @@ public class LocalAccount {
             } else {
                 startingValue = Double.parseDouble(realAccount.getAssetBalance("USDT").getFree());
             }
-            //TODO: Fix currency adding for live account init
-            /*currencies.addAll(CurrentAPI.get().balancesMap().keySet());
-            for (String current : currencies) {
-                BinanceSymbol symbol = new BinanceSymbol(current + "USDT");
-                Currency currency = new Currency(current);
-                addToWallet(currency, 0);
-                for (BinanceTrade trade : CurrentAPI.get().myTrades(symbol)) {
-                    activeTrades.add(new Trade(new Currency(current),
-                            trade.getPrice().doubleValue(), trade.getQty().doubleValue(),
-                            "Already opened before BOT initiated."));
-                    addToWallet(currency, trade.getQty().doubleValue());
-                }
-            }*/
+            for (AssetBalance balance : realAccount.getBalances()) {
+                addToWallet(new Currency(balance.getAsset()), Double.parseDouble(balance.getFree()));
+            }
+            //TODO: Finish live account init for trades loading
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }

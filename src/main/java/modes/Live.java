@@ -51,6 +51,7 @@ public final class Live {
         System.out.println(localAccount.getTakerComission() + " Taker comission");
         BuySell.setAccount(localAccount);
 
+        //TODO: Differentiate setup between currencies already present in wallet and those that are not
         for (String arg : currencyArr) {
             //The currency class contains all of the method calls that drive the activity of our bot
             currencies.add(new Currency(arg));
