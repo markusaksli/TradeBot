@@ -1,151 +1,228 @@
 package modes;
 
-import collection.PriceBean;
-import collection.PriceCollector;
-import collection.PriceWriter;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
+import com.binance.api.client.BinanceApiAsyncRestClient;
+import com.binance.api.client.BinanceApiCallback;
+import com.binance.api.client.domain.market.AggTrade;
+import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.CandlestickInterval;
+import com.binance.api.client.exception.BinanceApiException;
+import data.PriceBean;
+import data.PriceReader;
+import data.PriceWriter;
+import trading.CurrentAPI;
 import trading.Formatter;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Semaphore;
 
 public final class Collection {
-    private static long minutesForCollection;
+    private static int chunks;
+    private static String symbol;
+    private static String lastMessage = "Starting to send messages";
+    private final static Semaphore blocker = new Semaphore(0);
+    private final static Semaphore requestTracker = new Semaphore(1199);
+    private final static BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
+
+    public static Semaphore getRequestTracker() {
+        return requestTracker;
+    }
+
+    public static Semaphore getBlocker() {
+        return blocker;
+    }
+
+    public static BinanceApiAsyncRestClient getClient() {
+        return client;
+    }
+
+    public static String getSymbol() {
+        return symbol;
+    }
+
+    public static void printProgress() {
+        System.out.print("\r" + Formatter.formatPercent((double) blocker.availablePermits() / (double) chunks) + " " + lastMessage);
+    }
+
+    public static void setLastMessage(String lastMessage) {
+        Collection.lastMessage = lastMessage;
+    }
 
     public Collection() {
         init();
     }
 
-    public static void setMinutesForCollection(long minutesForCollection) {
-        Collection.minutesForCollection = minutesForCollection;
-    }
-
     private static void init() {
         Scanner sc = new Scanner(System.in);
-        SimpleDateFormat dateFormat = Formatter.getSimpleFormatter();
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-        PriceBean.setDateFormat(dateFormat);
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
-        BinanceSymbol symbol = null;
-        try {
-            symbol = new BinanceSymbol(sc.nextLine().toUpperCase() + "USDT");
-        } catch (BinanceApiException e) {
-            e.printStackTrace();
+        while (true) {
+            try {
+                symbol = sc.nextLine().toUpperCase() + "USDT";
+                CurrentAPI.get().getPrice(symbol);
+                break;
+            } catch (BinanceApiException e) {
+                System.out.println(e.getMessage());
+            }
         }
 
         System.out.println("Enter everything in double digits. (1 = 01) \n " +
                 "example: 2020/03/01 00:00:00");
         System.out.println("Date format = 'yyyy/MM/dd HH:mm:ss' \n");
+        System.out.println("Start needs to be earlier than end");
 
-
+        SimpleDateFormat dateFormat = Formatter.getSimpleFormatter();
         Date startDate;
         Date stopDate;
         while (true) {
             System.out.println("Enter the date you want to start from: ");
             String begin = sc.nextLine();
-            System.out.println("Enter the date you want to finish with: ");
+            System.out.println("Enter the date you want to finish with (type \"now\" for current time): ");
             String finish = sc.nextLine();
             try {
-                if (Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", begin) &&
-                        Formatter.isValidDateFormat("yyyy/MM/dd HH:mm:ss", finish)) {
-                    startDate = dateFormat.parse(begin);
+                startDate = dateFormat.parse(begin);
+                if (finish.toLowerCase().equals("now")) {
+                    stopDate = new Date(System.currentTimeMillis());
+                } else {
                     stopDate = dateFormat.parse(finish);
-                    break;
                 }
+                if (startDate.getTime() >= stopDate.getTime() || stopDate.getTime() > System.currentTimeMillis()) {
+                    System.out.println("Start needs to be earlier in time than end and end cannot be greater than current server time");
+                    continue;
+                }
+                break;
             } catch (ParseException e) {
-                e.printStackTrace();
+                System.out.println(e.getLocalizedMessage());
             }
         }
 
         long start = startDate.getTime(); // March 1 00:00:00 1583020800000
         long end = stopDate.getTime();// April 1 00:00:00 1585699200000
+        chunks = (int) Math.ceil((double) (end - start) / 3600000L);
 
         System.out.println("---Setting up...");
         String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".dat").toString();
-        long wholePeriod = end - start;
-        long toSubtract = minutesForCollection * 60000;
-        long chunks = wholePeriod / toSubtract;//Optimal number to reach 1200 requests per min is about 30
-        PriceCollector.setRemaining(chunks);
-
-
-        final ExecutorService executorService = Executors.newCachedThreadPool();
-        List<PriceCollector> collectors = new ArrayList<>();
-
-        Instant initTime = Instant.now();
-        long minuteEpoch = initTime.toEpochMilli();
-        for (int i = 0; i < chunks - 1; i++) {
-            PriceCollector collector = new PriceCollector(end - toSubtract, end, symbol);
-            collectors.add(collector);
-            executorService.submit(collector);
-            end -= toSubtract;
-        }
-        while (System.currentTimeMillis() > minuteEpoch) minuteEpoch += 60000L;
-        PriceCollector finalCollector = new PriceCollector(start, end, symbol); //Final chunk is right up to start in case of uneven division
-        collectors.add(finalCollector);
-        executorService.submit(finalCollector);
-        System.out.println("---Finished creating " + collectors.size() + " chunk collectors");
-
-        while (collectors.stream().anyMatch(collector -> !collector.isDone())) {
-            if (System.currentTimeMillis() > minuteEpoch) {
-                System.out.println("---"
-                        + Formatter.formatDate(LocalDateTime.now())
-                        + " Progress: " + Formatter.formatPercent(PriceCollector.getProgress() / chunks)
-                        + ", chunks: " + (chunks - PriceCollector.getRemaining()) + "/" + chunks
-                        + ", total requests: " + PriceCollector.getTotalRequests());
-                if (PriceCollector.getRequestPermits() > 0) {
-                    System.out.println("------Bot has not used " + PriceCollector.getRequestPermits() + "/1200 requests");
-                }
-                minuteEpoch += 60000L;
-                PriceCollector.resetPermits(1200);
-            }
-        }
-        executorService.shutdown();
         try {
-            executorService.awaitTermination(1, TimeUnit.HOURS);
+            Files.deleteIfExists(Path.of("temp"));
+        } catch (IOException e) {
+            System.out.println(Path.of("temp"));
+            e.printStackTrace();
+        }
+        File tempFolder = new File("temp");
+        tempFolder.mkdir();
+
+        System.out.println("---Sending " + chunks + " requests at 1200 per minute (rough estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) 1200 * 60000L)) + ")..."));
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                setLastMessage("Sending next 1200 requests...");
+                printProgress();
+                requestTracker.drainPermits();
+                requestTracker.release(1199);
+            }
+        }, 61 * 1000, 61 * 1000);
+        int id = 0;
+        while (true) {
+            long diff = end - start;
+            if (diff == 0) break;
+            try {
+                requestTracker.acquire();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            id++;
+            client.getAggTrades(symbol, null, null, diff < 3600000L ? start : end - 3600000L, end, new TradesCallback(id, diff < 3600000L ? start : end - 3600000L, end));
+            if (diff < 3600000L) break;
+            end -= 3600000L;
+        }
+        System.out.println("\n---All request submitted");
+        System.out.println("---Waiting for " + (chunks - blocker.availablePermits()) + " more requests to return");
+        Collection.printProgress();
+        try {
+            blocker.acquire(chunks);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        timer.cancel();
+        System.out.print("\r" + Formatter.formatPercent(1.0));
 
-        List<PriceBean> finalData = new ArrayList<>();
-        collectors.stream().map(PriceCollector::getData).forEach(finalData::addAll);
-        Collections.reverse(finalData);
-
-        System.out.println("---Collected: " + finalData.size()
-                + " aggregated trades from " + finalData.get(0).getDate()
-                + " to " + finalData.get(finalData.size() - 1).getDate()
-                + " in " + Formatter.formatDuration(Duration.between(initTime, Instant.now()))
-                + " using " + PriceCollector.getTotalRequests() + " requests");
-
-        new File("backtesting").mkdir();
+        System.out.println("\n---Writing data from temp files to main file");
         try (PriceWriter writer = new PriceWriter(filename)) {
-            System.out.println("---Writing file");
-            start += 300000;
-            for (int i = 0; i < finalData.size(); i++) {
-                writer.writeBean(finalData.get(i));
-                if (i < finalData.size() - 3) {
-                    if (finalData.get(i + 2).getTimestamp() > start) {
-                        while (finalData.get(i + 2).getTimestamp() > start) start += 300000;
-                        finalData.get(i + 1).close();
+            List<Candlestick> candlesticks = CurrentAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
+            for (int i = 0; i < candlesticks.size() - 1; i++) {
+                Candlestick candlestick = candlesticks.get(i);
+                writer.writeBean(new PriceBean(candlestick.getCloseTime(), Double.parseDouble(candlestick.getClose()), true));
+            }
+            Candlestick lastCandle = candlesticks.get(candlesticks.size() - 1);
+            long candleTime = lastCandle.getCloseTime();
+            if (lastCandle.getCloseTime() == start) {
+                candleTime += 300000L;
+                writer.writeBean(new PriceBean(lastCandle.getCloseTime(), Double.parseDouble(lastCandle.getClose())));
+            }
+            PriceBean lastBean = null;
+            boolean first = true;
+            for (int i = chunks; i >= 1; i--) {
+                System.out.print("\r" + Formatter.formatPercent(1 - (double) i / (double) chunks));
+                File tempFile = new File("/temp/" + i + ".dat");
+                try (PriceReader reader = new PriceReader(tempFile.getPath())) {
+                    if (first) {
+                        lastBean = reader.readPrice();
+                        first = false;
                     }
+                    PriceBean bean = reader.readPrice();
+                    while (bean != null) {
+                        if (bean.getTimestamp() > candleTime) {
+                            lastBean.close();
+                            while (candleTime <= bean.getTimestamp()) candleTime += 300000L;
+                        }
+                        writer.writeBean(lastBean);
+                        lastBean = bean;
+                        bean = reader.readPrice();
+                    }
+                } catch (IOException e) {
+                    continue;
                 }
+                tempFile.delete();
+            }
+            assert lastBean != null;
+            writer.writeBean(lastBean);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            Files.deleteIfExists(Path.of("temp"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.print("\r" + Formatter.formatPercent(1.0));
+
+        System.out.println("\n---Checking data for consistency");
+        long count = 0;
+        try (PriceReader reader = new PriceReader(filename)) {
+            PriceBean bean = reader.readPrice();
+            long last = Long.MIN_VALUE;
+            while (bean != null) {
+                count++;
+                if (bean.getTimestamp() < last) {
+                    System.out.println("!-----Date regression from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()) + "------!");
+                }
+                if (bean.getTimestamp() - last > 60000L && !bean.isClosing())
+                    System.out.println("Gap from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));
+                last = bean.getTimestamp();
+                bean = reader.readPrice();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         System.out.println("---Collection completed, result in "
                 + filename
-                + " (" + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
+                + " (" + count + " entries, " + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
 
         while (true) {
             System.out.println("Type \"quit\" to quit");
@@ -153,9 +230,53 @@ public final class Collection {
             if (s.toLowerCase().equals("quit")) {
                 System.exit(0);
                 break;
-            } else {
-                System.out.println("Wrong input. ");
             }
         }
+        System.exit(0);
+    }
+}
+
+class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
+    int id;
+    long start;
+    long end;
+
+    public TradesCallback(int id, long start, long end) {
+        this.id = id;
+        this.start = start;
+        this.end = end;
+    }
+
+    @Override
+    public void onFailure(Throwable cause) {
+        try {
+            Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
+            Collection.getRequestTracker().acquire();
+            Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end));
+            Collection.setLastMessage("Resent request " + id);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onResponse(List<AggTrade> response) {
+        if (!response.isEmpty()) {
+            try (PriceWriter writer = new PriceWriter("/temp/" + id + ".dat")) {
+                double lastPrice = Double.parseDouble(response.get(0).getPrice());
+                for (int i = 1; i < response.size(); i++) {
+                    AggTrade trade = response.get(i);
+                    double newPrice = Double.parseDouble(trade.getPrice());
+                    if (lastPrice == newPrice) continue;
+                    lastPrice = newPrice;
+                    writer.writeBean(new PriceBean(trade.getTradeTime(), newPrice));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+        Collection.getBlocker().release();
+        Collection.printProgress();
     }
 }

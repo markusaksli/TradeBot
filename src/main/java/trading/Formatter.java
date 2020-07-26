@@ -1,23 +1,17 @@
 package trading;
 
-import ch.qos.logback.classic.sift.AppenderFactoryUsingJoran;
-import collection.PriceBean;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.concurrent.TimeUnit;
 
 public class Formatter {
     private static final SimpleDateFormat SIMPLE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -42,6 +36,7 @@ public class Formatter {
     }
 
     public static String formatDecimal(double decimal) {
+        if ((decimal == Math.floor(decimal)) && Double.isFinite(decimal)) return String.valueOf((long) decimal);
         int zeroes = 0;
         String s = String.format("%.12f", decimal).replaceAll("[,.]", "");
         for (char c : s.toCharArray()) {
@@ -59,6 +54,10 @@ public class Formatter {
         return SIMPLE_FORMATTER;
     }
 
+    public static String formatDuration(long duration) {
+        return formatDuration(Duration.of(duration, ChronoUnit.MILLIS));
+    }
+
     public static String formatDuration(Duration duration) {
         long seconds = duration.getSeconds();
         long absSeconds = Math.abs(seconds);
@@ -71,7 +70,7 @@ public class Formatter {
     }
 
     public static boolean isValidDateFormat(String format, String value) {
-        LocalDateTime ldt = null;
+        LocalDateTime ldt;
         DateTimeFormatter fomatter = DateTimeFormatter.ofPattern(format);
 
         try {

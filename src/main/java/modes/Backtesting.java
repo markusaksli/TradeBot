@@ -1,22 +1,17 @@
 package modes;
 
-import com.webcerebrium.binance.api.BinanceApiException;
 import trading.*;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
+//TODO: Clean up Backtesting class.
 public final class Backtesting {
     private static double startingValue;
-    private static List<Currency> currencies = new ArrayList<>();
-    private static Account account;
+    private static final List<Currency> currencies = new ArrayList<>();
+    private static LocalAccount localAccount;
 
     public Backtesting() {
         init();
@@ -30,13 +25,13 @@ public final class Backtesting {
         return currencies;
     }
 
-    public static Account getAccount() {
-        return account;
+    public static LocalAccount getAccount() {
+        return localAccount;
     }
 
     private static void init() {
-        account = new Account("Investor Toomas", startingValue);
-        BuySell.setAccount(account);
+        localAccount = new LocalAccount("Investor Toomas", startingValue);
+        BuySell.setAccount(localAccount);
         Scanner sc = new Scanner(System.in);
         System.out.println("Enter backtesting data file path (absolute or relative)");
         while (true) {
@@ -46,7 +41,7 @@ public final class Backtesting {
                 Currency currency = new Currency(new File(path).getName().split("_")[0], path);
                 currencies.add(currency);
 
-                for (Trade trade : account.getActiveTrades()) {
+                for (Trade trade : localAccount.getActiveTrades()) {
                     trade.setExplanation(trade.getExplanation() + "Manually closed");
                     BuySell.close(trade);
                 }
@@ -60,7 +55,7 @@ public final class Backtesting {
 
                 currency.log(resultPath);
                 break;
-            } catch (Exception | BinanceApiException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Testing failed, try again");
             }

@@ -116,7 +116,7 @@ public class Trade {
     @Override
     public String toString() {
         return (isClosed() ? (BuySell.getAccount().getTradeHistory().indexOf(this) + 1) : (BuySell.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
-                + currency.getCoin() + " " + Formatter.formatDecimal(amount) + "\n"
+                + currency.getPair() + " " + Formatter.formatDecimal(amount) + "\n"
                 + "open: " + Formatter.formatDate(openTime) + " at " + entryPrice + "\n"
                 + (isClosed() ? "close: " + Formatter.formatDate(closeTime) + " at " + closePrice : "current price: " + currency.getPrice()) + "\n"
                 + "high: " + high + ", profit: " + Formatter.formatPercent(getProfit())

@@ -3,13 +3,14 @@ package modes;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;
-import trading.Mode;
+import trading.Formatter;
 import trading.Trade;
 
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+//TODO: Remove boilerplate from ConfigSetup
 public class ConfigSetup {
     private double moneyPerTrade;
     private long minutesForCollection;
@@ -34,6 +35,8 @@ public class ConfigSetup {
     }
 
     public void readFile() {
+        //TODO: Move this somewhere else
+        Formatter.getSimpleFormatter().setTimeZone(TimeZone.getDefault());
         int items = 0;
         File file = new File("config.txt");
         try (FileReader reader = new FileReader(file);
@@ -76,6 +79,8 @@ public class ConfigSetup {
                     case "Take profit":
                         takeP = Double.parseDouble(arr[1]);
                         break;
+                    default:
+                        break;
                 }
             }
             if (items < 11) { //12 is the number of configuration elements in the file.
@@ -90,10 +95,11 @@ public class ConfigSetup {
         }
 
 
+        //TODO: Remove minutesForCollection from setup
         //COLLECTION MODE
         //When entering collection mode, how big chuncks do you
         //want to create
-        Collection.setMinutesForCollection(getMinutesForCollection());
+        //Collection.setMinutesForCollection(getMinutesForCollection());
 
         //LIVE
         Live.setCurrencyArr(getCurrencies());

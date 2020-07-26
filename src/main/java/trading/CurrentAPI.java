@@ -1,17 +1,23 @@
 package trading;
 
-import com.webcerebrium.binance.api.BinanceApi;
+import com.binance.api.client.BinanceApiClientFactory;
+import com.binance.api.client.BinanceApiRestClient;
 
 public final class CurrentAPI {
-    private static final BinanceApi binanceApi = new BinanceApi();
+    private static BinanceApiClientFactory factory;
 
-    /**
-     * Class is created because we would not have to call out a new BinanceApi() every time we need it.
-     * We call it out here and it can be adressed in other classes as follows: backend.CurrentAPI.get();
-     * No need to create an instance backend.CurrentAPI currentapi = new backend.CurrentAPI();
-     */
+    public static void setRealFactory(String apiKey, String secretKey) {
+        factory = BinanceApiClientFactory.newInstance(apiKey, secretKey);
+    }
 
-    public static BinanceApi get() {
-        return binanceApi;
+    public static BinanceApiClientFactory getFactory() {
+        if (factory == null) {
+            factory = BinanceApiClientFactory.newInstance();
+        }
+        return factory;
+    }
+
+    public static BinanceApiRestClient get() {
+        return getFactory().newRestClient();
     }
 }
