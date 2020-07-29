@@ -1,8 +1,11 @@
 package modes;
 
+import com.binance.api.client.domain.general.RateLimit;
+import com.binance.api.client.domain.general.RateLimitType;
 import indicators.MACD;
 import indicators.RSI;
 import trading.BuySell;
+import trading.CurrentAPI;
 import trading.Formatter;
 import trading.Trade;
 
@@ -11,6 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 //TODO: Remove boilerplate from ConfigSetup
+//TODO: Create FIAT config option and replace "USDT" in code with it
 public class ConfigSetup {
     private double moneyPerTrade;
     private long minutesForCollection;
@@ -23,6 +27,9 @@ public class ConfigSetup {
     private int RSINegMin;
     private double trailingSL;
     private double takeP;
+    private static final int requestLimit = CurrentAPI.get().getExchangeInfo().getRateLimits().stream()
+            .filter(rateLimit -> rateLimit.getRateLimitType().equals(RateLimitType.REQUEST_WEIGHT))
+            .findFirst().map(RateLimit::getLimit).orElse(1200);
 
     private static String setup;
 
@@ -132,6 +139,9 @@ public class ConfigSetup {
         setup = toString();
     }
 
+    public static int getRequestLimit() {
+        return requestLimit;
+    }
 
     public double getMoneyPerTrade() {
         return moneyPerTrade;
