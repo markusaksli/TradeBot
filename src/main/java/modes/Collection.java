@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
+//TODO: Identify cause and fix occasional date regression (maybe related to resending?)
 public final class Collection {
     private static int chunks;
     private static String symbol;
@@ -122,6 +123,8 @@ public final class Collection {
 
         System.out.println("\n---Setting up...");
         String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".dat").toString();
+        File backtestingFolder = new File("backtesting");
+        backtestingFolder.mkdir();
         try {
             Files.deleteIfExists(Path.of("temp"));
         } catch (IOException e) {
@@ -164,12 +167,11 @@ public final class Collection {
                 e.printStackTrace();
             }
             id++;
-            client.getAggTrades(symbol, null, null, diff < 3600000L ? start : end - 3600000L, end, new TradesCallback(id, diff < 3600000L ? start : end - 3600000L, end));
+            long requestStart = diff < 3600000L ? start : end - 3600000L;
+            client.getAggTrades(symbol, null, null, requestStart, end, new TradesCallback(id, requestStart, end));
             if (diff < 3600000L) break;
             end -= 3600000L;
         }
-        setLastMessage("All requests sent, waiting for " + (chunks - blocker.availablePermits()) + " more requests to return");
-        Collection.printProgress();
         try {
             blocker.acquire(chunks);
         } catch (InterruptedException e) {
@@ -221,6 +223,7 @@ public final class Collection {
             writer.writeBean(lastBean);
         } catch (IOException e) {
             e.printStackTrace();
+            System.exit(-1);
         }
         System.out.print("\r(" + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ") (" + Formatter.formatPercent(1.0) + ") Temp files processed");
 
