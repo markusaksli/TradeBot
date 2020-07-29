@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Formatter {
@@ -48,6 +49,22 @@ public class Formatter {
         }
         NumberFormat decimalFormat = new DecimalFormat("0." + "0".repeat(3 + zeroes));
         return decimalFormat.format(decimal);
+    }
+
+    public static String formatLarge(long large) {
+        String s = String.valueOf(large);
+        StringBuilder builder = new StringBuilder();
+        int count = 0;
+        char[] chars = s.toCharArray();
+        for (int i = chars.length - 1; i >= 0; i--) {
+            builder.append(chars[i]);
+            count++;
+            if (count == 3 && i != 0) {
+                count = 0;
+                builder.append(",");
+            }
+        }
+        return builder.reverse().toString();
     }
 
     public static SimpleDateFormat getSimpleFormatter() {

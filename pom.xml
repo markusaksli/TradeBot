@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>TradeBot</artifactId>
+    <artifactId>tradebot</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -25,6 +25,4 @@
             <version>master-SNAPSHOT</version>
         </dependency>
     </dependencies>
-
-
 </project>

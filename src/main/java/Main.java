@@ -1,3 +1,5 @@
+import com.binance.api.client.BinanceApiClientFactory;
+import com.binance.api.client.domain.general.RateLimit;
 import com.binance.api.client.domain.market.AggTrade;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
@@ -40,7 +42,7 @@ public class Main {
                 "---COLLECTION\n" +
                 "-Collects raw market price data from a specified time period\n" +
                 "-Collected data is saved in a file in the /backtesting directory\n" +
-                "-Collection can be very RAM intensive\n" +
+                "-Never run more than one TradeBot with this mode at the same time\n" +
                 "\n" +
                 "Simulation and backtesting do not always reflect live performance\n" +
                 "Make sure you are ready to commit to a strategy before starting LIVE\n");
