@@ -162,6 +162,7 @@ public class LocalAccount {
                 addToWallet(new Currency(balance.getAsset()), Double.parseDouble(balance.getFree()));
             }
             //TODO: Finish live account init for trades loading
+            //TODO: Print basic account info from server
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }
