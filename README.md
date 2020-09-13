@@ -4,6 +4,10 @@ and a strategy based on a couple of 5 minute chart indicators
 (RSI, MACD, Bollinger Bands)
 (The bot only trades USDT fiat pairs)
 
+## How?
+- The bot uses 5 different indicators: DBB, EMA, MACD, RSI, SMA. Each indicator will fire off a buy signal when a certain state has been achieved. 
+- When the bot has collected enough signals, an order will be placed on the market.
+- Vice versa, if enough sell signals are signals are fired, a sell order will be placed.
 
 Download [TradeBot.zip](https://github.com/markusaksli/TradeBot/raw/master/TradeBot.zip) if you just want to use the jar from command line. The zip comes included with a simple .bat script to run the bot. Keep in mind that this project was compiled with [JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html). This means you will need [JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) or higher in your PATH to run it.
 The config for the bot can be changed using the config.txt file
