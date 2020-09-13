@@ -1,25 +1,18 @@
 package trading;
 
-import ch.qos.logback.classic.sift.AppenderFactoryUsingJoran;
-import collection.PriceBean;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.concurrent.TimeUnit;
 
 public class Formatter {
     private static final SimpleDateFormat SIMPLE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -44,6 +37,7 @@ public class Formatter {
     }
 
     public static String formatDecimal(double decimal) {
+        if ((decimal == Math.floor(decimal)) && Double.isFinite(decimal)) return String.valueOf((long) decimal);
         int zeroes = 0;
         String s = String.format("%.12f", decimal).replaceAll("[,.]", "");
         for (char c : s.toCharArray()) {
@@ -57,8 +51,28 @@ public class Formatter {
         return decimalFormat.format(decimal);
     }
 
+    public static String formatLarge(long large) {
+        String s = String.valueOf(large);
+        StringBuilder builder = new StringBuilder();
+        int count = 0;
+        char[] chars = s.toCharArray();
+        for (int i = chars.length - 1; i >= 0; i--) {
+            builder.append(chars[i]);
+            count++;
+            if (count == 3 && i != 0) {
+                count = 0;
+                builder.append(",");
+            }
+        }
+        return builder.reverse().toString();
+    }
+
     public static SimpleDateFormat getSimpleFormatter() {
         return SIMPLE_FORMATTER;
+    }
+
+    public static String formatDuration(long duration) {
+        return formatDuration(Duration.of(duration, ChronoUnit.MILLIS));
     }
 
     public static String formatDuration(Duration duration) {
@@ -72,20 +86,8 @@ public class Formatter {
         return seconds < 0 ? "-" + positive : positive;
     }
 
-    //Uses all the memory you have if you dont have a supercomputer. Moved this logic over to Currency constructor.
-    public static List<PriceBean> formatData(String path) throws IOException {
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-            String currentLine;
-            while ((currentLine = br.readLine()) != null) {
-                lines.add(currentLine);
-            }
-        }
-        return lines.stream().skip(1).map(PriceBean::of).collect(Collectors.toList());
-    }
-
     public static boolean isValidDateFormat(String format, String value) {
-        LocalDateTime ldt = null;
+        LocalDateTime ldt;
         DateTimeFormatter fomatter = DateTimeFormatter.ofPattern(format);
 
         try {

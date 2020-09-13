@@ -1,7 +1,7 @@
 package indicators;
 import java.util.List;
 
-public class BB implements Indicator{
+public class DBB implements Indicator {
     private double closingPrice;
     private double standardDeviation;
     private final int period;
@@ -13,7 +13,7 @@ public class BB implements Indicator{
     private String explanation;
     private SMA sma;
 
-    public BB(List<Double> closingPrices, int period) {
+    public DBB(List<Double> closingPrices, int period) {
         this.period = period;
         this.sma = new SMA(closingPrices, period);
         init(closingPrices);
@@ -21,7 +21,7 @@ public class BB implements Indicator{
 
     @Override
     public double get() {
-        if ((upperBand - lowerBand) / middleBand < 0.1) //Low volatility case
+        if ((upperBand - lowerBand) / middleBand < 0.05) //Low volatility case
             return 0;
         if (upperMidBand < closingPrice && closingPrice <= upperBand)
             return 1;
@@ -39,7 +39,7 @@ public class BB implements Indicator{
         double tempUpperMidBand = tempMidBand + tempStdev;
         double tempLowerMidBand = tempMidBand - tempStdev;
         double tempLowerBand = tempMidBand - tempStdev * 2;
-        if ((tempUpperBand - tempLowerBand) / tempMidBand < 0.1) //Low volatility case
+        if ((tempUpperBand - tempLowerBand) / tempMidBand < 0.05) //Low volatility case
             return 0;
         if (tempUpperMidBand < newPrice && newPrice <= tempUpperBand)
             return 1;
@@ -77,11 +77,11 @@ public class BB implements Indicator{
 
     @Override
     public int check(double newPrice) {
-        if (get() == 1 && getTemp(newPrice) == 1) {
+        if (getTemp(newPrice) == 1) {
             explanation = "Price in DBB buy zone";
             return 1;
         }
-        if (get() == -1 && getTemp(newPrice) == -1) {
+        if (getTemp(newPrice) == -1) {
             explanation = "Price in DBB sell zone";
             return -1;
         }

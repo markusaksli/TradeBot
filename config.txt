@@ -3,7 +3,9 @@ RSI positive side minimum:15
 RSI positive side maximum:30
 RSI negative side minimum:70
 RSI negative side maximum:80
-Collection mode chunk size(minutes):30
-Simulation mode starting value:1000
+Collection mode chunk size(minutes):3
+Simulation mode starting value:10000
 Percentage of money per trade:0.10
+Trailing SL:0.1
+Take profit:0.15
 Simulation mode currencies:BTC, ETH, LINK, BNB, BCH, XRP, LTC, EOS, XTZ, DASH, ETC, TRX, XLM, ADA, ZEC

@@ -1,18 +1,18 @@
 package modes;
 
-import com.webcerebrium.binance.api.BinanceApiException;
-import trading.Account;
+import trading.LocalAccount;
 import trading.BuySell;
 import trading.Currency;
 
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO: Clean up Simulation class
 public final class Simulation {
     private static double startingValue;
     private static String[] currencyArr;
-    private static List<Currency> currencies = new ArrayList<>();
-    private static Account account;
+    private static final List<Currency> currencies = new ArrayList<>();
+    private static LocalAccount localAccount;
 
     public Simulation() {
         init();
@@ -30,22 +30,17 @@ public final class Simulation {
         return currencies;
     }
 
-    public static Account getAccount() {
-        return account;
+    public static LocalAccount getAccount() {
+        return localAccount;
     }
 
     private static void init() {
-        account = new Account("Investor Toomas", startingValue);
-        BuySell.setAccount(account);
-        long startTime = System.nanoTime();
+        localAccount = new LocalAccount("Investor Toomas", startingValue);
+        BuySell.setAccount(localAccount);
 
         for (String arg : currencyArr) {
             //The currency class contains all of the method calls that drive the activity of our bot
-            try {
-                currencies.add(new Currency(arg));
-            } catch (BinanceApiException e) {
-                e.printStackTrace();
-            }
+            currencies.add(new Currency(arg));
         }
     }
 }

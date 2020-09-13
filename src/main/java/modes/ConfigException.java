@@ -1,4 +1,4 @@
-package collection;
+package modes;
 
 public class ConfigException extends Exception {
     public ConfigException(String message) {

@@ -1,20 +1,27 @@
 package trading;
 
-import com.webcerebrium.binance.api.BinanceApi;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.*;
-import java.math.BigDecimal;
+
+import com.binance.api.client.BinanceApiRestClient;
+import com.binance.api.client.domain.account.NewOrderResponse;
+import com.binance.api.client.domain.account.NewOrderResponseType;
+import com.binance.api.client.exception.BinanceApiException;
+
+import java.util.List;
+
+import static com.binance.api.client.domain.account.NewOrder.marketBuy;
+import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
 public class BuySell {
 
-    private static Account account;
+    private static LocalAccount localAccount;
     private static double moneyPerTrade;
-    public static void setAccount(Account account) {
-        BuySell.account = account;
+
+    public static void setAccount(LocalAccount localAccount) {
+        BuySell.localAccount = localAccount;
     }
 
-    public static Account getAccount() {
-        return account;
+    public static LocalAccount getAccount() {
+        return localAccount;
     }
 
     //Used by strategy
@@ -30,21 +37,20 @@ public class BuySell {
         currency.setActiveTrade(trade);
 
         //Converting fiat value to coin value
-        account.addToFiat(-fiatCost);
-        account.addToWallet(currency, amount);
-        account.openTrade(trade);
+        localAccount.addToFiat(-fiatCost);
+        localAccount.addToWallet(currency, amount);
+        localAccount.openTrade(trade);
         if (Mode.get().equals(Mode.LIVE)) {
             try {
-                placeBuyOrder(currency.getSymbol().toString(), amount);
+                placeOrder(currency.getPair(), amount, true);
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
         }
 
         String message = "---" + Formatter.formatDate(trade.getOpenTime())
-                + " opened trade (" + amount + " "
-                + currency.getCoin() + "), at " + currency.getPrice()
-                + "\n------" + explanation;
+                + " opened trade (" + Formatter.formatDecimal(amount) + " "
+                + currency.getPair() + "), at " + currency.getPrice();
         System.out.println(message);
         if (Mode.get().equals(Mode.BACKTESTING)) currency.appendLogLine(message);
     }
@@ -58,48 +64,42 @@ public class BuySell {
         //Converting coin value back to fiat
         trade.setClosePrice(trade.getCurrency().getPrice());
         trade.setCloseTime(trade.getCurrency().getCurrentTime());
-        account.closeTrade(trade);
-        account.removeFromWallet(trade.getCurrency(), trade.getAmount());
-        account.addToFiat(trade.getAmount() * trade.getClosePrice());
+        localAccount.closeTrade(trade);
+        localAccount.removeFromWallet(trade.getCurrency(), trade.getAmount());
+        localAccount.addToFiat(trade.getAmount() * trade.getClosePrice());
         trade.getCurrency().setActiveTrade(null);
 
         if (Mode.get().equals(Mode.LIVE)) {
             try {
-                placeSellOrder(trade.getCurrency().getSymbol().toString(), trade.getAmount());
+                placeOrder(trade.getCurrency().getPair(), trade.getAmount(), false);
             } catch (BinanceApiException e) {
                 e.printStackTrace();
             }
         }
 
         String message = "---" + (Formatter.formatDate(trade.getCloseTime())) + " closed trade ("
-                + trade.getAmount() + " " + trade.getCurrency().getCoin()
+                + Formatter.formatDecimal(trade.getAmount()) + " " + trade.getCurrency().getPair()
                 + "), at " + trade.getClosePrice()
-                + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit";
+                + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit"
+                + "\n------" + trade.getExplanation();
         System.out.println(message);
         if (Mode.get().equals(Mode.BACKTESTING)) trade.getCurrency().appendLogLine(message);
     }
 
     private static double nextAmount() {
-        return Math.min(account.getFiat(), account.getTotalValue() * moneyPerTrade);
+        if (Mode.get().equals(Mode.BACKTESTING)) return localAccount.getFiat();
+        return Math.min(localAccount.getFiat(), localAccount.getTotalValue() * moneyPerTrade);
     }
 
-    public static void placeBuyOrder(String currencySymbol, double quantity) throws BinanceApiException {
-        BinanceApi api = CurrentAPI.get();
-        BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
-        BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.BUY);
-        placement.setType(BinanceOrderType.MARKET);
-        placement.setQuantity(BigDecimal.valueOf(quantity));
-        BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
-        System.out.println(order.toString());
-    }
-
-    public static void placeSellOrder(String currencySymbol, double quantity) throws BinanceApiException {
-        BinanceApi api = CurrentAPI.get();
-        BinanceSymbol symbol = new BinanceSymbol(currencySymbol);
-        BinanceOrderPlacement placement = new BinanceOrderPlacement(symbol, BinanceOrderSide.SELL);
-        placement.setType(BinanceOrderType.MARKET);
-        placement.setQuantity(BigDecimal.valueOf(quantity));
-        BinanceOrder order = api.getOrderById(symbol, api.createOrder(placement).get("orderId").getAsLong());
-        System.out.println(order.toString());
+    //TODO: Check buy/sell with live account
+    //TODO: Implement limit ordering
+    public static void placeOrder(String currencySymbol, double quantity, boolean buy) throws BinanceApiException {
+        BinanceApiRestClient client = CurrentAPI.get();
+        NewOrderResponse newOrderResponse = client.newOrder(
+                buy ?
+                        marketBuy(currencySymbol, String.valueOf(quantity)).newOrderRespType(NewOrderResponseType.FULL) :
+                        marketSell(currencySymbol, String.valueOf(quantity)).newOrderRespType(NewOrderResponseType.FULL));
+        List<com.binance.api.client.domain.account.Trade> fills = newOrderResponse.getFills();
+        System.out.println("Placed" + (buy ? "buy" : "sell") + " order with id " + newOrderResponse.getClientOrderId());
     }
 }
