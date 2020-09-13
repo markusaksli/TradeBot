@@ -34,49 +34,41 @@ public class ConfigSetup {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] linepieces = line.strip().split(":");
+                items++;
                 switch (linepieces[0]) {
                     case "MACD change indicator":
                         MACDChange = Double.parseDouble(linepieces[1]);
-                        items++;
                         break;
                     case "RSI positive side minimum":
                         RSIPosMin = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "RSI positive side maximum":
                         RSIPosMax = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "RSI negative side minimum":
                         RSINegMin = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "RSI negative side maximum":
                         RSINegMax = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "Collection mode chunk size(minutes)":
                         minutesForCollection = Long.parseLong(linepieces[1]);
-                        items++;
                         break;
                     case "Simulation mode starting value":
                         startingValue = Integer.parseInt(linepieces[1]);
-                        items++;
                         break;
                     case "Simulation mode currencies":
                         currencies = linepieces[1].split(", ");
-                        items++;
                         break;
                     case "Percentage of money per trade":
                         moneyPerTrade = Double.parseDouble(linepieces[1]);
-                        items++;
                         break;
                 }
             }
             if (items < 9) { //9 is the number of configuration elements in the file.
-                throw new ConfigException("Config file has some missing elements.");
+                throw new ConfigException("Config file has some missing elements. Fix the file and run the program again.");
             } else if (items > 9) {
-                throw new ConfigException("Config file has too many elements.");
+                throw new ConfigException("Config file has too many elements. Fix the file and run the program again.");
             }
 
         } catch (IOException e) {

@@ -53,7 +53,6 @@ public final class Backtesting {
                 }
                 List<Trade> tradeHistory = new ArrayList<>(account.getTradeHistory());
                 tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
-                System.out.println(tradeHistory);
                 double maxLoss = tradeHistory.get(0).getProfit();
                 double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
                 int lossTrades = 0;
