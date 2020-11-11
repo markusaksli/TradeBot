@@ -14,8 +14,8 @@ public final class Simulation {
     private static final List<Currency> currencies = new ArrayList<>();
     private static LocalAccount localAccount;
 
-    public Simulation() {
-        init();
+    private Simulation() {
+        throw new IllegalStateException("Utility class");
     }
 
     public static void setCurrencyArr(String[] currencyArr) {
@@ -34,7 +34,7 @@ public final class Simulation {
         return localAccount;
     }
 
-    private static void init() {
+    public static void init() {
         localAccount = new LocalAccount("Investor Toomas", startingValue);
         BuySell.setAccount(localAccount);
 

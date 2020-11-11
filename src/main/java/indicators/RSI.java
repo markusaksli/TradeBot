@@ -1,6 +1,6 @@
 package indicators;
 
-import trading.Formatter;
+import system.Formatter;
 
 import java.util.List;
 

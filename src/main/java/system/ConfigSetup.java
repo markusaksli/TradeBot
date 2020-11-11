@@ -1,16 +1,22 @@
-package modes;
+package system;
 
 import com.binance.api.client.domain.general.RateLimit;
 import com.binance.api.client.domain.general.RateLimitType;
 import indicators.MACD;
 import indicators.RSI;
+import modes.Backtesting;
+import modes.Live;
+import modes.Simulation;
 import trading.BuySell;
 import trading.CurrentAPI;
-import trading.Formatter;
 import trading.Trade;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 //TODO: Remove boilerplate from ConfigSetup
@@ -103,13 +109,6 @@ public class ConfigSetup {
             System.exit(0);
         }
 
-
-        //TODO: Remove minutesForCollection from setup
-        //COLLECTION MODE
-        //When entering collection mode, how big chuncks do you
-        //want to create
-        //Collection.setMinutesForCollection(getMinutesForCollection());
-
         //LIVE
         Live.setCurrencyArr(getCurrencies());
 
@@ -147,10 +146,6 @@ public class ConfigSetup {
 
     public double getMoneyPerTrade() {
         return moneyPerTrade;
-    }
-
-    public long getMinutesForCollection() {
-        return minutesForCollection;
     }
 
     public double getStartingValue() {

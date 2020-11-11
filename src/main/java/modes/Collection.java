@@ -9,11 +9,15 @@ import com.binance.api.client.exception.BinanceApiException;
 import data.PriceBean;
 import data.PriceReader;
 import data.PriceWriter;
+import org.apache.commons.io.FileUtils;
+import system.ConfigSetup;
 import trading.CurrentAPI;
-import trading.Formatter;
+import system.Formatter;
 
 import java.io.*;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,16 +26,22 @@ import java.util.concurrent.Semaphore;
 
 //TODO: Identify cause and fix occasional date regression (maybe related to resending?)
 public final class Collection {
-    private static int chunks;
     private static String symbol;
     private static String lastMessage = "Sending requests...";
-    private final static Semaphore blocker = new Semaphore(0);
-    private final static Semaphore requestTracker = new Semaphore(0);
-    private final static BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
     private static boolean braked = false;
     private static boolean createdBrakeTimer = false;
     private static int brakeSeconds = 1;
+    private static int chunks;
     private static long initTime;
+
+    public static final String INTERRUPT_MESSAGE = "Thread interrupted while waiting for request permission";
+    private static final Semaphore blocker = new Semaphore(0);
+    private static final Semaphore requestTracker = new Semaphore(0);
+    private static final BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
+
+    private Collection() {
+        throw new IllegalStateException("Utility class");
+    }
 
     public static void setBrakeSeconds(int brakeSeconds) {
         Collection.brakeSeconds = brakeSeconds;
@@ -70,11 +80,7 @@ public final class Collection {
         printProgress();
     }
 
-    public Collection() {
-        init();
-    }
-
-    private static void init() {
+    public static void startCollection() {
         Scanner sc = new Scanner(System.in);
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
         while (true) {
@@ -102,7 +108,7 @@ public final class Collection {
             String finish = sc.nextLine();
             try {
                 startDate = dateFormat.parse(begin);
-                if (finish.toLowerCase().equals("now")) {
+                if (finish.equalsIgnoreCase("now")) {
                     stopDate = new Date(System.currentTimeMillis());
                 } else {
                     stopDate = dateFormat.parse(finish);
@@ -123,16 +129,10 @@ public final class Collection {
 
         System.out.println("\n---Setting up...");
         String filename = Path.of("backtesting", symbol + "_" + Formatter.formatOnlyDate(start) + "-" + Formatter.formatOnlyDate(end) + ".dat").toString();
-        File backtestingFolder = new File("backtesting");
-        backtestingFolder.mkdir();
-        try {
-            Files.deleteIfExists(Path.of("temp"));
-        } catch (IOException e) {
-            System.out.println(Path.of("temp"));
-            e.printStackTrace();
-        }
-        File tempFolder = new File("temp");
-        tempFolder.mkdir();
+
+        deleteTemp();
+        new File("temp").mkdir();
+        new File("backtesting").mkdir();
 
         System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
         int requestDelay = 60000 / ConfigSetup.getRequestLimit();
@@ -150,6 +150,7 @@ public final class Collection {
                         public void run() {
                             setLastMessage("Removing request brake");
                             setBraked(false);
+                            createdBrakeTimer = false;
                         }
                     }, brakeSeconds);
                     setLastMessage("Braked requests for " + brakeSeconds + " seconds");
@@ -164,7 +165,8 @@ public final class Collection {
             try {
                 requestTracker.acquire();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                setLastMessage(INTERRUPT_MESSAGE);
+                Thread.currentThread().interrupt();
             }
             id++;
             long requestStart = diff < 3600000L ? start : end - 3600000L;
@@ -175,12 +177,63 @@ public final class Collection {
         try {
             blocker.acquire(chunks);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            setLastMessage(INTERRUPT_MESSAGE);
+            Thread.currentThread().interrupt();
         }
         timer.cancel();
+        timer.purge();
         System.out.print("\r(" + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ") (" + Formatter.formatPercent(1.0) + ") Data collected in temp files");
 
+        compileBackTestingData(start, filename);
+
+        long count = checkBacktestingData(filename);
+
+        System.out.println("\n---Collection completed in "
+                + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ", result in "
+                + filename
+                + " (" + Formatter.formatLarge(count) + " entries, " + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
+        System.out.println("---Files may only appear after quitting");
+
+        while (true) {
+            System.out.println("Type \"quit\" to quit, type \"csv\" to create .csv file with price data");
+            String s = sc.nextLine();
+            if (s.equalsIgnoreCase("quit")) {
+                System.exit(0);
+                break;
+            } else if (s.equalsIgnoreCase("csv")) {
+                dataToCsv(filename);
+            }
+        }
+        System.exit(0);
+    }
+
+    public static void dataToCsv(String filename) {
+        System.out.println("Writing .csv file...");
+        final String csv = filename.replace(".dat", "").concat(".csv");
+        try (PriceReader reader = new PriceReader(filename); PrintWriter writer = new PrintWriter(csv)) {
+            writer.write("timestamp,price,is5minClosing\n");
+            PriceBean bean = reader.readPrice();
+            while (bean != null) {
+                writer.write(bean.toCsvString() + "\n");
+                bean = reader.readPrice();
+            }
+            System.out.println("Result of collection written to " + csv);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean compileBackTestingData(long start, String filename) {
         System.out.println("\n---Writing data from temp files to main file");
+        try {
+            Files.deleteIfExists(Path.of(filename));
+        } catch (IOException e) {
+            System.out.println("---Could not automatically delete previous file at " + filename);
+            return false;
+        }
+        if (symbol == null) {
+            symbol = filename.split("_")[0];
+        }
         try (PriceWriter writer = new PriceWriter(filename)) {
             List<Candlestick> candlesticks = CurrentAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
             for (int i = 0; i < candlesticks.size() - 1; i++) {
@@ -197,7 +250,7 @@ public final class Collection {
             boolean first = true;
             for (int i = chunks; i >= 1; i--) {
                 System.out.print("\r(" + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ") (" + Formatter.formatPercent(1 - (double) i / (double) chunks) + ") /temp/" + i + ".dat");
-                File tempFile = new File("/temp/" + i + ".dat");
+                File tempFile = new File("temp/" + i + ".dat");
                 try (PriceReader reader = new PriceReader(tempFile.getPath())) {
                     if (first) {
                         lastBean = reader.readPrice();
@@ -213,20 +266,39 @@ public final class Collection {
                         lastBean = bean;
                         bean = reader.readPrice();
                     }
-                    reader.close();
-                    tempFile.delete();
-                } catch (IOException ignored) {
+                } catch (FileNotFoundException ignored) {
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+                deleteTempFile(tempFile);
             }
-            Files.deleteIfExists(Path.of("temp"));
             assert lastBean != null;
             writer.writeBean(lastBean);
         } catch (IOException e) {
+            System.out.println();
             e.printStackTrace();
-            System.exit(-1);
+            System.out.println("\n---Could not compile backtesting data into main file from temp files!");
+            return false;
         }
+        deleteTemp();
         System.out.print("\r(" + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ") (" + Formatter.formatPercent(1.0) + ") Temp files processed");
+            return true;
+    }
 
+    private static void deleteTempFile(File tempFile) {
+        try {
+            Files.delete(tempFile.toPath());
+        } catch (NoSuchFileException ignored) {
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static long checkBacktestingData(String filename) {
+        if (!Files.exists(Path.of(filename))) {
+            System.out.println("\n---File at " + filename + " does not exist!");
+            return 0;
+        }
         System.out.println("\n\n---Checking data for consistency");
         long count = 0;
         boolean firstGap = true;
@@ -258,34 +330,15 @@ public final class Collection {
         }
 
         System.out.print(firstGap && firstReg ? "---Data is completely consistent" : "");
+        return count;
+    }
 
-        System.out.println("\n---Collection completed in "
-                + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ", result in "
-                + filename
-                + " (" + Formatter.formatLarge(count) + " entries, " + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
-        System.out.println("---Files may only appear after quitting");
-
-        while (true) {
-            System.out.println("Type \"quit\" to quit, type \"result\" to create text file with price data");
-            String s = sc.nextLine();
-            if (s.toLowerCase().equals("quit")) {
-                System.exit(0);
-                break;
-            } else if (s.toLowerCase().equals("result")) {
-                System.out.println("Writing...");
-                try (PriceReader reader = new PriceReader(filename); PrintWriter writer = new PrintWriter("result.txt")) {
-                    PriceBean bean = reader.readPrice();
-                    while (bean != null) {
-                        writer.write(bean.toString() + "\n");
-                        bean = reader.readPrice();
-                    }
-                    System.out.println("Result of collection written to result.txt");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+    private static void deleteTemp() {
+        try {
+            FileUtils.deleteDirectory(new File("temp"));
+        } catch (IOException e) {
+            System.out.println("---Could not automatically delete temp folder!");
         }
-        System.exit(0);
     }
 }
 
@@ -305,21 +358,22 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
         try {
             Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
             if (cause.getMessage().toLowerCase().contains("weight")) {
-                Collection.setBrakeSeconds(cause.getMessage().toLowerCase().contains("banned") ? 60 : 1);
+                Collection.setBrakeSeconds(cause.getMessage().toLowerCase().contains("banned") ? 61 : 1);
                 Collection.setBraked(true);
             }
             Collection.getRequestTracker().acquire();
             Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end));
             Collection.setLastMessage("Resent request " + id);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Collection.setLastMessage(Collection.INTERRUPT_MESSAGE);
+            Thread.currentThread().interrupt();
         }
     }
 
     @Override
     public void onResponse(List<AggTrade> response) {
         if (!response.isEmpty()) {
-            try (PriceWriter writer = new PriceWriter("/temp/" + id + ".dat")) {
+            try (PriceWriter writer = new PriceWriter("temp/" + id + ".dat")) {
                 double lastPrice = Double.parseDouble(response.get(0).getPrice());
                 for (int i = 1; i < response.size(); i++) {
                     AggTrade trade = response.get(i);

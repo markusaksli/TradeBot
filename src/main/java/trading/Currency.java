@@ -10,7 +10,9 @@ import indicators.DBB;
 import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
-import modes.ConfigSetup;
+import system.ConfigSetup;
+import system.Formatter;
+import system.Mode;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -63,7 +65,7 @@ public class Currency {
             long newTime = response.getEventTime();
 
             //We want to toss messages that provide no new information
-            if (currentPrice == newPrice && !(newTime > candleTime)) {
+            if (currentPrice == newPrice && newTime <= candleTime) {
                 return;
             }
 
@@ -89,7 +91,7 @@ public class Currency {
                 closingPrices.add(bean.getPrice());
                 bean = reader.readPrice();
             }
-            //TODO: Fix slight mismatch between indicator values and server values during backtesting (gets closer towards the end of backtesting data).
+            //TODO: Fix slight mismatch between MACD backtesting and server values.
             indicators.add(new RSI(closingPrices, 14));
             indicators.add(new MACD(closingPrices, 12, 26, 9));
             indicators.add(new DBB(closingPrices, 20));
@@ -117,7 +119,7 @@ public class Currency {
         if (bean.isClosing()) {
             indicators.forEach(indicator -> indicator.update(bean.getPrice()));
             if (Mode.get().equals(Mode.BACKTESTING)) {
-                appendLogLine(Formatter.formatDate(currentTime) + "  " + toString());
+                appendLogLine(system.Formatter.formatDate(currentTime) + "  " + toString());
             }
         }
 
@@ -170,44 +172,53 @@ public class Currency {
 
     public void log(String path) {
         List<Trade> tradeHistory = new ArrayList<>(BuySell.getAccount().getTradeHistory());
-        tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
-        double maxLoss = tradeHistory.get(0).getProfit();
-        double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
-        int lossTrades = 0;
-        double lossSum = 0;
-        int gainTrades = 0;
-        double gainSum = 0;
-        long tradeDurs = 0;
-        for (Trade trade : tradeHistory) {
-            double profit = trade.getProfit();
-            if (profit < 0) {
-                lossTrades += 1;
-                lossSum += profit;
-            } else if (profit > 0) {
-                gainTrades += 1;
-                gainSum += profit;
-            }
-            tradeDurs += trade.getDuration();
-        }
-
-        double tradePerWeek = 604800000.0 / (double) ((currentTime - firstBean.getTimestamp()) / tradeHistory.size());
-
         try (FileWriter writer = new FileWriter(path)) {
-            writer.write("Test ended " + Formatter.formatDate(LocalDateTime.now()) + " \n");
+            writer.write("Test ended " + system.Formatter.formatDate(LocalDateTime.now()) + " \n");
             writer.write("\n\nCONFIG:\n");
             writer.write(ConfigSetup.getSetup());
-            writer.write("\n\nMarket performance: " + Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
-            writer.write("\nBot performance: " + Formatter.formatPercent(BuySell.getAccount().getProfit()) + "\n\n");
-            writer.write(BuySell.getAccount().getTradeHistory().size() + " closed trades"
-                    + " (" + Formatter.formatDecimal(tradePerWeek) + " trades per week) with an average holding length of "
-                    + Formatter.formatDuration(Duration.of(tradeDurs / tradeHistory.size(), ChronoUnit.MILLIS)) + " hours");
-            writer.write("\nLoss trades:\n");
-            writer.write(lossTrades + " trades, " + Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + Formatter.formatPercent(maxLoss) + " max");
-            writer.write("\nProfitable trades:\n");
-            writer.write(gainTrades + " trades, " + Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + Formatter.formatPercent(maxGain) + " max");
-            writer.write("\n\nClosed trades (least to most profitable):\n");
-            for (Trade trade : tradeHistory) {
-                writer.write(trade.toString() + "\n");
+            writer.write("\n\nMarket performance: " + system.Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
+            if (!tradeHistory.isEmpty()) {
+                tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
+                double maxLoss = tradeHistory.get(0).getProfit();
+                double maxGain = tradeHistory.get(tradeHistory.size() - 1).getProfit();
+                int lossTrades = 0;
+                double lossSum = 0;
+                int gainTrades = 0;
+                double gainSum = 0;
+                long tradeDurs = 0;
+                for (Trade trade : tradeHistory) {
+                    double profit = trade.getProfit();
+                    if (profit < 0) {
+                        lossTrades += 1;
+                        lossSum += profit;
+                    } else if (profit > 0) {
+                        gainTrades += 1;
+                        gainSum += profit;
+                    }
+                    tradeDurs += trade.getDuration();
+                }
+
+                double tradePerWeek = 604800000.0 / (((double) currentTime - firstBean.getTimestamp()) / tradeHistory.size());
+
+                writer.write("\nBot performance: " + system.Formatter.formatPercent(BuySell.getAccount().getProfit()) + "\n\n");
+                writer.write(BuySell.getAccount().getTradeHistory().size() + " closed trades"
+                        + " (" + system.Formatter.formatDecimal(tradePerWeek) + " trades per week) with an average holding length of "
+                        + system.Formatter.formatDuration(Duration.of(tradeDurs / tradeHistory.size(), ChronoUnit.MILLIS)) + " hours");
+                if (lossTrades != 0) {
+                    writer.write("\nLoss trades:\n");
+                    writer.write(lossTrades + " trades, " + system.Formatter.formatPercent(lossSum / (double) lossTrades) + " average, " + system.Formatter.formatPercent(maxLoss) + " max");
+                }
+                if (gainTrades != 0) {
+                    writer.write("\nProfitable trades:\n");
+                    writer.write(gainTrades + " trades, " + system.Formatter.formatPercent(gainSum / (double) gainTrades) + " average, " + system.Formatter.formatPercent(maxGain) + " max");
+                }
+                writer.write("\n\nClosed trades (least to most profitable):\n");
+                for (Trade trade : tradeHistory) {
+                    writer.write(trade.toString() + "\n");
+                }
+            } else {
+                writer.write("\n(Not trades made)\n");
+                System.out.println("---No trades made in the time period!");
             }
             writer.write("\n\nFULL LOG:\n\n");
             writer.write(log.toString());
@@ -221,7 +232,7 @@ public class Currency {
     public String toString() {
         StringBuilder s = new StringBuilder(pair + " price: " + currentPrice);
         if (currentTime == candleTime)
-            indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.get())));
+            indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(system.Formatter.formatDecimal(indicator.get())));
         else
             indicators.forEach(indicator -> s.append(", ").append(indicator.getClass().getSimpleName()).append(": ").append(Formatter.formatDecimal(indicator.getTemp(currentPrice))));
         s.append(", hasActive: ").append(hasActiveTrade()).append(")");
@@ -231,5 +242,12 @@ public class Currency {
     @Override
     public int hashCode() {
         return pair.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) return false;
+        if (obj.getClass() != Currency.class) return false;
+        return pair.equals(((Currency) obj).pair);
     }
 }

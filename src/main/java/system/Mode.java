@@ -1,4 +1,4 @@
-package trading;
+package system;
 
 public enum Mode {
     LIVE,
@@ -12,7 +12,7 @@ public enum Mode {
         return state;
     }
 
-    public static void set(Mode state) {
+    static void set(Mode state) {
         Mode.state = state;
     }
 }

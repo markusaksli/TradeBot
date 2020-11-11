@@ -1,11 +1,12 @@
 package data;
 
-import trading.Formatter;
+import system.Formatter;
 
 public class PriceBean {
     private final double price;
     private final long timestamp;
     private boolean closing;
+
 
     public PriceBean(long timestamp, double price) {
         this.price = price;
@@ -42,5 +43,9 @@ public class PriceBean {
     @Override
     public String toString() {
         return Formatter.formatDate(timestamp) + " " + price + (closing ? " is closing" : "");
+    }
+
+    public String toCsvString(){
+        return String.format("%d,%s,%d", timestamp, price, closing ? 1 : 0);
     }
 }

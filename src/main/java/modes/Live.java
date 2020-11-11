@@ -14,8 +14,8 @@ public final class Live {
     private static final List<Currency> currencies = new ArrayList<>();
     private static String[] currencyArr;
 
-    public Live() {
-        init();
+    private Live() {
+        throw new IllegalStateException("Utility class");
     }
 
     public static LocalAccount getAccount() {
@@ -30,7 +30,7 @@ public final class Live {
         return currencies;
     }
 
-    private static void init() {
+    public static void init() {
         Scanner sc = new Scanner(System.in);
         String apiKey;
         String apiSecret;

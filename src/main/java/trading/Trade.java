@@ -1,5 +1,7 @@
 package trading;
 
+import system.Formatter;
+
 public class Trade {
 
     private double high; //Set the highest price

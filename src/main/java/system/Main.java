@@ -1,15 +1,12 @@
-import com.binance.api.client.BinanceApiClientFactory;
-import com.binance.api.client.domain.general.RateLimit;
-import com.binance.api.client.domain.market.AggTrade;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.CandlestickInterval;
+package system;
+
 import modes.*;
+import modes.Collection;
 import trading.*;
+import trading.Currency;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 
 public class Main {
@@ -18,7 +15,6 @@ public class Main {
     public static void main(String[] args) {
         //Program config.
         new ConfigSetup();
-
         System.out.println("Welcome to TradeBot\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
@@ -61,24 +57,24 @@ public class Main {
 
 
         if (Mode.get() == Mode.COLLECTION) {
-            new Collection(); //Init collection mode.
+            Collection.startCollection(); //Init collection mode.
 
         } else {
             LocalAccount localAccount = null;
             long startTime = System.nanoTime();
             switch (Mode.get()) {
                 case LIVE:
-                    new Live(); //Init live mode.
+                    Live.init(); //Init live mode.
                     localAccount = Live.getAccount();
                     currencies = Live.getCurrencies();
                     break;
                 case SIMULATION:
-                    new Simulation(); //Init simulation mode.
+                    Simulation.init(); //Init simulation mode.
                     currencies = Simulation.getCurrencies();
                     localAccount = Simulation.getAccount();
                     break;
                 case BACKTESTING:
-                    new Backtesting(); //Init Backtesting mode.
+                    Backtesting.startBacktesting(); //Init Backtesting mode.
                     currencies = Backtesting.getCurrencies();
                     localAccount = Backtesting.getAccount();
                     break;
@@ -90,7 +86,7 @@ public class Main {
             while (Mode.get().equals(Mode.BACKTESTING)) {
                 System.out.println("Type quit to quit");
                 String s = sc.nextLine();
-                if (s.toLowerCase().equals("quit")) {
+                if (s.equalsIgnoreCase("quit")) {
                     System.exit(0);
                     break;
                 } else {
@@ -101,6 +97,8 @@ public class Main {
             assert localAccount != null;
             //From this point we only use the main thread to check how the bot is doing
             System.out.println("Commands: profit, active, history, wallet, currencies, open, close, close all, quit");
+            Timer timer = new Timer();
+            boolean printing = false;
             while (true) {
                 String in = sc.nextLine();
                 switch (in) {
@@ -115,13 +113,18 @@ public class Main {
                         System.out.println(" ");
                         break;
                     case "secret":
-                        for (int i = 0; i < 10000; i++) {
-                            System.out.println(currencies.get(0));
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                        if (!printing) {
+                            timer.scheduleAtFixedRate(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    System.out.println(currencies.get(0));
+                                }
+                            }, 0, 100);
+                            printing = true;
+                        } else{
+                            timer.cancel();
+                            timer.purge();
+                            printing = false;
                         }
                         break;
                     case "history":

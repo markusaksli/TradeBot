@@ -13,8 +13,8 @@ public final class Backtesting {
     private static final List<Currency> currencies = new ArrayList<>();
     private static LocalAccount localAccount;
 
-    public Backtesting() {
-        init();
+    private Backtesting() {
+        throw new IllegalStateException("Utility class");
     }
 
     public static void setStartingValue(double startingValue) {
@@ -29,7 +29,7 @@ public final class Backtesting {
         return localAccount;
     }
 
-    private static void init() {
+    public static void startBacktesting() {
         localAccount = new LocalAccount("Investor Toomas", startingValue);
         BuySell.setAccount(localAccount);
         Scanner sc = new Scanner(System.in);
