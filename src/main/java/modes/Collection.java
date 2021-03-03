@@ -81,7 +81,7 @@ public final class Collection {
         printProgress();
     }
 
-    public static void collectionInterface() {
+    private static void collectionInterface() {
         if (backtestingFolder.exists() && backtestingFolder.isDirectory()) {
             String[] backtestingFiles = getDataFiles();
             if (backtestingFiles.length == 0) {
@@ -231,7 +231,7 @@ public final class Collection {
 
         System.out.println("\n---Collection completed in "
                 + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ", result in "
-                + filename);
+                + new File(filename).getAbsolutePath());
         System.out.println("---Files may only appear after quitting");
 
         describe(filename);
@@ -250,7 +250,7 @@ public final class Collection {
                 writer.write(bean.toCsvString() + "\n");
                 bean = reader.readPrice();
             }
-            System.out.println("Result of collection written to " + csv);
+            System.out.println("Result of collection written to " + new File(csv).getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -399,13 +399,13 @@ public final class Collection {
                 lastTime = bean.getTimestamp();
                 bean = reader.readPrice();
             }
-            System.out.println("File contains: " + Formatter.formatLarge(count) + " entries (average interval " + Formatter.formatDecimal((double) totalTimeDiff / count) + " ms)");
-            System.out.println("File size: " + Formatter.formatDecimal((double) new File(path).length() / 1048576.0) + " MB");
-            System.out.println("Covered time period: " + Formatter.formatDuration(totalTimeDiff));
-            System.out.println("Longest gap in consistent data: " + Formatter.formatDuration(max));
+            System.out.println("---File contains: " + Formatter.formatLarge(count) + " entries (average interval " + Formatter.formatDecimal((double) totalTimeDiff / count) + " ms)");
+            System.out.println("-Longest gap in consistent data: " + Formatter.formatDuration(max));
+            System.out.println("---Covered time period: " + Formatter.formatDuration(totalTimeDiff));
+            System.out.println("---File size: " + Formatter.formatDecimal((double) new File(path).length() / 1048576.0) + " MB");
 
             while (true) {
-                System.out.println("---Enter \"back\" to return, \"csv\" to create .csv file with price data");
+                System.out.println("\nEnter \"back\" to return, \"csv\" to create .csv file with price data");
                 String s = sc.nextLine();
                 //TODO: Method to get csv with indicators for ML (5min, interval, realtime)
                 //https://github.com/markrkalder/crypto-ds/blob/transformer/src/main/java/ml/DataCalculator.java

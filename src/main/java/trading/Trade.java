@@ -6,8 +6,10 @@ public class Trade {
 
     private double high; //Set the highest price
 
-    private static double TRAILING_SL; //It's in percentages, but using double for comfort.
-    private static double TAKE_PROFIT; //It's in percentages, but using double for comfort.
+    public static double TRAILING_SL; //It's in percentages, but using double for comfort.
+    public static double TAKE_PROFIT; //It's in percentages, but using double for comfort.
+    public static boolean CLOSE_USE_CONFLUENCE;
+    public static int CLOSE_CONFLUENCE;
 
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
@@ -111,7 +113,7 @@ public class Trade {
             return;
         }
 
-        if (confluence <= -2) {
+        if (CLOSE_USE_CONFLUENCE && confluence <= -CLOSE_CONFLUENCE) {
             explanation += "Closed due to: Indicator confluence of " + confluence;
             BuySell.close(this);
         }

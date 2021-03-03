@@ -14,6 +14,7 @@ import system.ConfigSetup;
 import system.Formatter;
 import system.Mode;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 public class Currency {
     private static final String FIAT = "USDT";
+    public static int CONFLUENCE;
 
     private final String pair;
     private Trade activeTrade;
@@ -129,7 +131,7 @@ public class Currency {
         if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
             activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
         } else {
-            if (confluence >= 2) {
+            if (confluence >= CONFLUENCE) {
                 StringJoiner joiner = new StringJoiner("", "Trade opened due to: ", "");
                 for (Indicator indicator : indicators) {
                     String explanation = indicator.getExplanation();
@@ -225,7 +227,7 @@ public class Currency {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("---Log file generated at " + path);
+        System.out.println("---Log file generated at " + new File(path).getAbsolutePath());
     }
 
     @Override

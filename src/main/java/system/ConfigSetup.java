@@ -8,6 +8,7 @@ import modes.Backtesting;
 import modes.Live;
 import modes.Simulation;
 import trading.BuySell;
+import trading.Currency;
 import trading.CurrentAPI;
 import trading.Trade;
 
@@ -19,11 +20,10 @@ import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-//TODO: Remove boilerplate from ConfigSetup
+//TODO: Remove boilerplate from ConfigSetup (See last examples in switch)
 //TODO: Create FIAT config option and replace "USDT" in code with it
 public class ConfigSetup {
     private double moneyPerTrade;
-    private long minutesForCollection;
     private double startingValue;
     private String[] currencies;
     private double MACDChange;
@@ -48,10 +48,12 @@ public class ConfigSetup {
     }
 
     public void readFile() {
-        //TODO: Move this somewhere else
         Formatter.getSimpleFormatter().setTimeZone(TimeZone.getDefault());
         int items = 0;
         File file = new File("config.txt");
+        if (!file.exists()) {
+            System.out.println();
+        }
         try (FileReader reader = new FileReader(file);
              BufferedReader br = new BufferedReader(reader)) {
             String line;
@@ -75,13 +77,10 @@ public class ConfigSetup {
                     case "RSI negative side maximum":
                         RSINegMax = Integer.parseInt(arr[1]);
                         break;
-                    case "Collection mode chunk size(minutes)":
-                        minutesForCollection = Long.parseLong(arr[1]);
-                        break;
                     case "Simulation mode starting value":
                         startingValue = Integer.parseInt(arr[1]);
                         break;
-                    case "Simulation mode currencies":
+                    case "Currencies to track":
                         currencies = arr[1].split(", ");
                         break;
                     case "Percentage of money per trade":
@@ -93,13 +92,21 @@ public class ConfigSetup {
                     case "Take profit":
                         takeP = Double.parseDouble(arr[1]);
                         break;
+                    case "Confluence":
+                        Currency.CONFLUENCE = Integer.parseInt(arr[1]);
+                        break;
+                    case "Close confluence":
+                        Trade.CLOSE_CONFLUENCE = Integer.parseInt(arr[1]);
+                        break;
+                    case "Use confluence to close":
+                        Trade.CLOSE_USE_CONFLUENCE = Boolean.parseBoolean(arr[1]);
+                        break;
                     default:
                         break;
                 }
             }
-            if (items < 11) { //12 is the number of configuration elements in the file.
+            if (items < 12) { //12 is the number of configuration elements in the file.
                 throw new ConfigException("Config file has some missing elements.");
-
             }
 
         } catch (IOException e) {
@@ -183,11 +190,13 @@ public class ConfigSetup {
                 "RSI positive side maximum:" + RSIPosMax + "\n" +
                 "RSI negative side minimum:" + RSINegMin + "\n" +
                 "RSI negative side maximum:" + RSINegMax + "\n" +
-                "Collection mode chunk size(minutes):" + minutesForCollection + "\n" +
                 "Simulation mode starting value:" + startingValue + "\n" +
                 "Percentage of money per trade:" + moneyPerTrade + "\n" +
                 "Trailing SL:" + trailingSL + "\n" +
                 "Take profit:" + takeP + "\n" +
+                "Confluence:" + Currency.CONFLUENCE + "\n" +
+                "Close confluence:" + Trade.CLOSE_CONFLUENCE + "\n" +
+                "Use confluence to close:true:" + Trade.CLOSE_USE_CONFLUENCE + "\n" +
                 "Simulation mode currencies:" + Arrays.stream(currencies).map(currency -> currency + " ").collect(Collectors.joining()) + "\n";
     }
 }

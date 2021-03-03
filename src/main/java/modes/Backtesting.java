@@ -43,7 +43,7 @@ public final class Backtesting {
             for (int i = 0; i < backtestingFiles.length; i++) {
                 System.out.println("[" + (i + 1) + "] " + backtestingFiles[i]);
             }
-            System.out.println("\nEnter a number to select the backtesting data file\n");
+            System.out.println("\nEnter a number to select the backtesting data file");
             String input = sc.nextLine();
             if (!input.matches("\\d+")) continue;
             int index = Integer.parseInt(input);
@@ -52,7 +52,7 @@ public final class Backtesting {
             }
             String path = "backtesting\\" + backtestingFiles[index - 1];
             try {
-                System.out.println("---Setting up...");
+                System.out.println("\n---Setting up...");
                 Currency currency = new Currency(new File(path).getName().split("_")[0], path);
                 currencies.add(currency);
 
