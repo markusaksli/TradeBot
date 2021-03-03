@@ -35,6 +35,7 @@ public class Formatter {
         return PERCENT_FORMAT.format(percentage);
     }
 
+    //TODO: This adds an "?" to the MACD value in simulation in the exe for some reason
     public static String formatDecimal(double decimal) {
         if ((decimal == Math.floor(decimal)) && Double.isFinite(decimal)) return String.valueOf((long) decimal);
         int zeroes = 0;
