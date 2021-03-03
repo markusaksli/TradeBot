@@ -29,11 +29,15 @@ public class BuySell {
         return localAccount;
     }
 
+    private BuySell() {
+        throw new IllegalStateException("Utility class");
+    }
+
     //Used by strategy
-    public static void open(Currency currency, String explanation, long timestamp) {
+    public static void open(Currency currency, String explanation) {
         double currentPrice = currency.getPrice(); //Current price of the currency
         double amount = nextAmount() / currency.getPrice();
-        
+
         // round amount
         int precision = CurrentAPI.get().getExchangeInfo().getSymbolInfo(currency.getPair()).getBaseAssetPrecision();
         BigDecimal bigDecimal = new BigDecimal(Double.toString(amount));
@@ -44,12 +48,16 @@ public class BuySell {
             System.out.println("---OUT OF FUNDS, CANT OPEN TRADE");
             return; //If no fiat is available, we cant trade
         }
-        // check LOT_SIZE
-        int minQty = CurrentAPI.get().getExchangeInfo().getSymbolInfo(currency.getPair()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map( f1 -> f1.getMinQty()).map(Integer::parseInt).get();
-        if (amount < minQty) {
-            System.out.println("---OUT OF LOT_SIZE, CANT OPEN TRADE. min LOT_SIZE=" + minQty);
-            return;
+
+        if (Mode.get() == Mode.LIVE) {
+            // check LOT_SIZE
+            int minQty = CurrentAPI.get().getExchangeInfo().getSymbolInfo(currency.getPair()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty()).map(Integer::parseInt).get();
+            if (amount < minQty) {
+                System.out.println("---OUT OF LOT_SIZE, CANT OPEN TRADE. min LOT_SIZE=" + minQty);
+                return;
+            }
         }
+
         double fiatCost = currentPrice * amount;
         Trade trade = new Trade(currency, currentPrice, amount, explanation);
         currency.setActiveTrade(trade);

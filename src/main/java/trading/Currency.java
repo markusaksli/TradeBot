@@ -135,7 +135,7 @@ public class Currency {
                     String explanation = indicator.getExplanation();
                     joiner.add(explanation.equals("") ? "" : explanation + "\t");
                 }
-                BuySell.open(Currency.this, joiner.toString(), bean.getTimestamp());
+                BuySell.open(Currency.this, joiner.toString());
             }
         }
 

@@ -150,7 +150,7 @@ public class Main {
                         break;
                     case "open":
                         System.out.println("Enter ID of currency");
-                        BuySell.open(currencies.get(Integer.parseInt(sc.nextLine()) - 1), "Manually opened", Instant.now().getEpochSecond() * 1000);
+                        BuySell.open(currencies.get(Integer.parseInt(sc.nextLine()) - 1), "Manually opened");
                         break;
                     case "close":
                         System.out.println("Enter ID of active trade");

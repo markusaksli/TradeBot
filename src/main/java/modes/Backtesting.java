@@ -30,12 +30,27 @@ public final class Backtesting {
     }
 
     public static void startBacktesting() {
+        final String[] backtestingFiles = Collection.getDataFiles();
+        if (backtestingFiles.length == 0) {
+            System.out.println("No backtesting files detected!");
+            System.exit(0);
+        }
         localAccount = new LocalAccount("Investor Toomas", startingValue);
         BuySell.setAccount(localAccount);
         Scanner sc = new Scanner(System.in);
-        System.out.println("Enter backtesting data file path (absolute or relative)");
         while (true) {
-            String path = sc.nextLine();
+            System.out.println("\nBacktesting data files:\n");
+            for (int i = 0; i < backtestingFiles.length; i++) {
+                System.out.println("[" + (i + 1) + "] " + backtestingFiles[i]);
+            }
+            System.out.println("\nEnter a number to select the backtesting data file\n");
+            String input = sc.nextLine();
+            if (!input.matches("\\d+")) continue;
+            int index = Integer.parseInt(input);
+            if (index > backtestingFiles.length) {
+                continue;
+            }
+            String path = "backtesting\\" + backtestingFiles[index - 1];
             try {
                 System.out.println("---Setting up...");
                 Currency currency = new Currency(new File(path).getName().split("_")[0], path);
@@ -52,6 +67,8 @@ public final class Backtesting {
                     i++;
                     resultPath = path.replace(".dat", "_run_" + i + ".txt");
                 }
+                resultPath = resultPath.replace("backtesting", "log");
+                new File("log").mkdir();
 
                 currency.log(resultPath);
                 break;

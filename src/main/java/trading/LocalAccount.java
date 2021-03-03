@@ -137,7 +137,6 @@ public class LocalAccount {
      * Everything connected to live trading in account.
      */
     private void initLive() {
-        List<String> currencies = new ArrayList<>();
         try {
             this.realAccount = CurrentAPI.get().getAccount();
             makerComission = realAccount.getMakerCommission(); //Maker fees are
@@ -161,6 +160,7 @@ public class LocalAccount {
             for (AssetBalance balance : realAccount.getBalances()) {
                 addToWallet(new Currency(balance.getAsset()), Double.parseDouble(balance.getFree()));
             }
+
             //TODO: Finish live account init for trades loading
             //TODO: Print basic account info from server
         } catch (BinanceApiException e) {

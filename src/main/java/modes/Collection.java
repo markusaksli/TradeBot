@@ -15,7 +15,6 @@ import trading.CurrentAPI;
 import system.Formatter;
 
 import java.io.*;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -33,6 +32,8 @@ public final class Collection {
     private static int brakeSeconds = 1;
     private static int chunks;
     private static long initTime;
+    private static final Scanner sc = new Scanner(System.in);
+    private static final File backtestingFolder = new File("backtesting");
 
     public static final String INTERRUPT_MESSAGE = "Thread interrupted while waiting for request permission";
     private static final Semaphore blocker = new Semaphore(0);
@@ -80,8 +81,48 @@ public final class Collection {
         printProgress();
     }
 
+    public static void collectionInterface() {
+        if (backtestingFolder.exists() && backtestingFolder.isDirectory()) {
+            String[] backtestingFiles = getDataFiles();
+            if (backtestingFiles.length == 0) {
+                System.out.println("---No backtesting files detected");
+                return;
+            }
+
+            String input = "";
+            while (!input.equalsIgnoreCase("new")) {
+                if (input.equalsIgnoreCase("quit")) {
+                    System.exit(0);
+                }
+                if (input.matches("\\d+")) {
+                    int index = Integer.parseInt(input);
+                    if (index <= backtestingFiles.length) {
+                        describe("backtesting\\" + backtestingFiles[index - 1]);
+                    }
+                }
+                System.out.println("\nEnter a number to describe the backtesting data file\n");
+                for (int i = 0; i < backtestingFiles.length; i++) {
+                    System.out.println("[" + (i + 1) + "] " + backtestingFiles[i]);
+                }
+                System.out.println("\nEnter \"new\" to start collecting a new data file");
+                System.out.println("Enter \"quit\" to exit the program\n");
+                input = sc.nextLine();
+            }
+        } else {
+            System.out.println("---No backtesting files detected");
+        }
+    }
+
+    public static String[] getDataFiles() {
+        String[] backtestingFiles = backtestingFolder.list();
+        if (backtestingFiles == null) {
+            return new String[0];
+        }
+        return backtestingFiles;
+    }
+
     public static void startCollection() {
-        Scanner sc = new Scanner(System.in);
+        collectionInterface();
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
         while (true) {
             try {
@@ -132,7 +173,7 @@ public final class Collection {
 
         deleteTemp();
         new File("temp").mkdir();
-        new File("backtesting").mkdir();
+        if (!(backtestingFolder.exists() && backtestingFolder.isDirectory())) backtestingFolder.mkdir();
 
         System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
         int requestDelay = 60000 / ConfigSetup.getRequestLimit();
@@ -186,30 +227,22 @@ public final class Collection {
 
         compileBackTestingData(start, filename);
 
-        long count = checkBacktestingData(filename);
+        checkBacktestingData(filename);
 
         System.out.println("\n---Collection completed in "
                 + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ", result in "
-                + filename
-                + " (" + Formatter.formatLarge(count) + " entries, " + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB)");
+                + filename);
         System.out.println("---Files may only appear after quitting");
 
-        while (true) {
-            System.out.println("Type \"quit\" to quit, type \"csv\" to create .csv file with price data");
-            String s = sc.nextLine();
-            if (s.equalsIgnoreCase("quit")) {
-                System.exit(0);
-                break;
-            } else if (s.equalsIgnoreCase("csv")) {
-                dataToCsv(filename);
-            }
-        }
-        System.exit(0);
+        describe(filename);
+
+        startCollection();
     }
 
     public static void dataToCsv(String filename) {
         System.out.println("Writing .csv file...");
-        final String csv = filename.replace(".dat", "").concat(".csv");
+        final String csv = filename.replace(".dat", ".csv").replace("backtesting", "csv");
+        new File("csv").mkdir();
         try (PriceReader reader = new PriceReader(filename); PrintWriter writer = new PrintWriter(csv)) {
             writer.write("timestamp,price,is5minClosing\n");
             PriceBean bean = reader.readPrice();
@@ -282,7 +315,7 @@ public final class Collection {
         }
         deleteTemp();
         System.out.print("\r(" + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ") (" + Formatter.formatPercent(1.0) + ") Temp files processed");
-            return true;
+        return true;
     }
 
     private static void deleteTempFile(File tempFile) {
@@ -294,20 +327,18 @@ public final class Collection {
         }
     }
 
-    public static long checkBacktestingData(String filename) {
+    public static void checkBacktestingData(String filename) {
         if (!Files.exists(Path.of(filename))) {
             System.out.println("\n---File at " + filename + " does not exist!");
-            return 0;
+            return;
         }
         System.out.println("\n\n---Checking data for consistency");
-        long count = 0;
         boolean firstGap = true;
         boolean firstReg = true;
         try (PriceReader reader = new PriceReader(filename)) {
             PriceBean bean = reader.readPrice();
             long last = Long.MIN_VALUE;
             while (bean != null) {
-                count++;
                 if (bean.getTimestamp() < last) {
                     System.out.println("!-----Date regression from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()) + "------!");
                     if (firstReg) {
@@ -330,7 +361,7 @@ public final class Collection {
         }
 
         System.out.print(firstGap && firstReg ? "---Data is completely consistent" : "");
-        return count;
+        return;
     }
 
     private static void deleteTemp() {
@@ -338,6 +369,54 @@ public final class Collection {
             FileUtils.deleteDirectory(new File("temp"));
         } catch (IOException e) {
             System.out.println("---Could not automatically delete temp folder!");
+        }
+    }
+
+    public static void describe(String path) {
+        try (PriceReader reader = new PriceReader(path)) {
+            long count = 0;
+            long totalTimeDiff = 0;
+            long max = Integer.MIN_VALUE;
+            PriceBean bean = reader.readPrice();
+            long lastTime = bean.getTimestamp();
+            bean = reader.readPrice();
+            while (bean.getTimestamp() - lastTime > 290000L) {
+                lastTime = bean.getTimestamp();
+                bean = reader.readPrice();
+            }
+            while (bean != null) {
+                final long timeDiff = bean.getTimestamp() - lastTime;
+                if (timeDiff >= 300000L) {
+                    lastTime = bean.getTimestamp();
+                    bean = reader.readPrice();
+                    continue;
+                }
+                count++;
+                totalTimeDiff += timeDiff;
+                if (timeDiff > max) {
+                    max = timeDiff;
+                }
+                lastTime = bean.getTimestamp();
+                bean = reader.readPrice();
+            }
+            System.out.println("File contains: " + Formatter.formatLarge(count) + " entries (average interval " + Formatter.formatDecimal((double) totalTimeDiff / count) + " ms)");
+            System.out.println("File size: " + Formatter.formatDecimal((double) new File(path).length() / 1048576.0) + " MB");
+            System.out.println("Covered time period: " + Formatter.formatDuration(totalTimeDiff));
+            System.out.println("Longest gap in consistent data: " + Formatter.formatDuration(max));
+
+            while (true) {
+                System.out.println("---Enter \"back\" to return, \"csv\" to create .csv file with price data");
+                String s = sc.nextLine();
+                //TODO: Method to get csv with indicators for ML (5min, interval, realtime)
+                //https://github.com/markrkalder/crypto-ds/blob/transformer/src/main/java/ml/DataCalculator.java
+                if (s.equalsIgnoreCase("back")) {
+                    return;
+                } else if (s.equalsIgnoreCase("csv")) {
+                    dataToCsv(path);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

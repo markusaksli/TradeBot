@@ -60,7 +60,7 @@ public class Formatter {
             count++;
             if (count == 3 && i != 0) {
                 count = 0;
-                builder.append(",");
+                builder.append(" ");
             }
         }
         return builder.reverse().toString();
@@ -68,6 +68,12 @@ public class Formatter {
 
 
     public static String formatDuration(long duration) {
+        if (duration < 1000) {
+            return duration + " ms";
+        }
+        if (duration > 86400000L) {
+            return formatDecimal(duration / 86400000.0) + " days";
+        }
         return formatDuration(Duration.of(duration, ChronoUnit.MILLIS));
     }
 

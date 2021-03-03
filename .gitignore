@@ -3,6 +3,8 @@
 
 /.idea/
 /backtesting/
+/csv/
+/log/
 
 # User-specific stuff
 .idea/**/workspace.xml
