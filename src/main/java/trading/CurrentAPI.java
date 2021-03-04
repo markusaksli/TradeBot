@@ -6,7 +6,7 @@ import com.binance.api.client.BinanceApiRestClient;
 public final class CurrentAPI {
     private static BinanceApiClientFactory factory;
 
-    public static void setRealFactory(String apiKey, String secretKey) {
+    public static void login(String apiKey, String secretKey) {
         factory = BinanceApiClientFactory.newInstance(apiKey, secretKey);
     }
 

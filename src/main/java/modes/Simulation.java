@@ -1,5 +1,7 @@
 package modes;
 
+import com.binance.api.client.exception.BinanceApiException;
+import system.ConfigSetup;
 import trading.LocalAccount;
 import trading.BuySell;
 import trading.Currency;
@@ -7,23 +9,13 @@ import trading.Currency;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: Clean up Simulation class
 public final class Simulation {
-    private static double startingValue;
-    private static String[] currencyArr;
+    public static double STARTING_VALUE;
     private static final List<Currency> currencies = new ArrayList<>();
     private static LocalAccount localAccount;
 
     private Simulation() {
         throw new IllegalStateException("Utility class");
-    }
-
-    public static void setCurrencyArr(String[] currencyArr) {
-        Simulation.currencyArr = currencyArr;
-    }
-
-    public static void setStartingValue(double startingValue) {
-        Simulation.startingValue = startingValue;
     }
 
     public static List<Currency> getCurrencies() {
@@ -35,12 +27,17 @@ public final class Simulation {
     }
 
     public static void init() {
-        localAccount = new LocalAccount("Investor Toomas", startingValue);
+        localAccount = new LocalAccount("Investor Toomas", STARTING_VALUE);
         BuySell.setAccount(localAccount);
 
-        for (String arg : currencyArr) {
+        for (String arg : ConfigSetup.getCurrencies()) {
             //The currency class contains all of the method calls that drive the activity of our bot
-            currencies.add(new Currency(arg));
+            try {
+                currencies.add(new Currency(arg));
+            } catch (BinanceApiException e) {
+                System.out.println("---Could not add " + arg + ConfigSetup.getFiat());
+                System.out.println(e.getMessage());
+            }
         }
     }
 }

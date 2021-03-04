@@ -14,7 +14,7 @@ public class Trade {
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
     private final Currency currency; //What cryptocurrency is used.
-    private final double amount; //How much are you buying or selling. I.E 6 bitcoins or smth.
+    private double amount; //How much are you buying or selling. I.E 6 bitcoins or smth.
     private double closePrice;
     private long closeTime;
     private String explanation;
@@ -60,6 +60,10 @@ public class Trade {
         return amount;
     }
 
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
     public void setCloseTime(long closeTime) {
         this.closeTime = closeTime;
     }
@@ -74,14 +78,6 @@ public class Trade {
 
     public boolean isClosed() {
         return closePrice != -1;
-    }
-
-    public static void setTrailingSl(double trailingSl) {
-        TRAILING_SL = trailingSl;
-    }
-
-    public static void setTakeProfit(double takeProfit) {
-        TAKE_PROFIT = takeProfit;
     }
 
     //Allows user to get the profit percentages on one specific trade.
@@ -125,7 +121,7 @@ public class Trade {
                 + currency.getPair() + " " + Formatter.formatDecimal(amount) + "\n"
                 + "open: " + Formatter.formatDate(openTime) + " at " + entryPrice + "\n"
                 + (isClosed() ? "close: " + Formatter.formatDate(closeTime) + " at " + closePrice : "current price: " + currency.getPrice()) + "\n"
-                + "high: " + high + ", profit: " + Formatter.formatPercent(getProfit())
-                + (isClosed() ? "\n" + explanation : "") + "\n";
+                + "high: " + high + ", profit: " + Formatter.formatPercent(getProfit()) + "\n"
+                + explanation + "\n";
     }
 }

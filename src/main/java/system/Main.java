@@ -13,14 +13,13 @@ public class Main {
 
     public static void main(String[] args) {
         //Program config.
-        new ConfigSetup();
+        ConfigSetup.readConfig();
         System.out.println("Welcome to TradeBot\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
                 "This is a cryptocurrency trading bot that uses the Binance API,\n" +
                 "and a strategy based on a couple of 5 minute chart indicators\n" +
                 "(RSI, MACD, Bollinger Bands)\n" +
-                "(The bot only trades USDT fiat pairs)\n" +
                 "\n" +
                 "The bot has the following modes of operation:\n" +
                 "---LIVE\n" +
@@ -133,17 +132,18 @@ public class Main {
                         }
                         break;
                     case "wallet":
-                        System.out.println("\nTotal wallet value: " + Formatter.formatDecimal(localAccount.getTotalValue()) + " USDT");
-                        System.out.println(localAccount.getFiat() + " USDT");
+                        System.out.println("\nTotal wallet value: " + Formatter.formatDecimal(localAccount.getTotalValue()) + " " + ConfigSetup.getFiat());
+                        System.out.println(Formatter.formatDecimal(localAccount.getFiat()) + " " + ConfigSetup.getFiat());
                         for (Map.Entry<Currency, Double> entry : localAccount.getWallet().entrySet()) {
                             if (entry.getValue() != 0) {
-                                System.out.println(entry.getValue() + " " + entry.getKey().getPair() + " (" + entry.getKey().getPrice() * entry.getValue() + " USDT)");
+                                System.out.println(Formatter.formatDecimal(entry.getValue()) + " " + entry.getKey().getPair()
+                                        + " (" + Formatter.formatDecimal(entry.getKey().getPrice() * entry.getValue()) + " " + ConfigSetup.getFiat() + ")");
                             }
                         }
                         break;
                     case "currencies":
-                        for (Currency currency : Simulation.getCurrencies()) {
-                            System.out.println((Simulation.getCurrencies().indexOf(currency) + 1) + "   " + currency);
+                        for (Currency currency : currencies) {
+                            System.out.println((currencies.indexOf(currency) + 1) + "   " + currency);
                         }
                         System.out.println(" ");
                         break;
@@ -159,7 +159,7 @@ public class Main {
                             System.out.println("\nID out of range, use \"currencies\" to see valid IDs!");
                             continue;
                         }
-                        BuySell.open(currencies.get(openIndex - 1), "Manually opened");
+                        BuySell.open(currencies.get(openIndex - 1), "Trade opened due to: Manually opened\t");
                         break;
                     case "close":
                         System.out.println("Enter ID of active trade");
@@ -177,6 +177,14 @@ public class Main {
                         break;
                     case "close all":
                         localAccount.getActiveTrades().forEach(BuySell::close);
+                        break;
+                    case "refresh":
+                        if (Mode.get().equals(Mode.LIVE)) {
+                            Live.refreshWalletAndTrades();
+                            System.out.println("---Refreshed wallet and trades");
+                        } else {
+                            System.out.println("---Can only refresh wallet and trades in live mode!");
+                        }
                         break;
                     case "quit":
                         System.exit(0);

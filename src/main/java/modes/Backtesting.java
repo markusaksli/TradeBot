@@ -9,16 +9,11 @@ import java.util.Scanner;
 
 //TODO: Clean up Backtesting class.
 public final class Backtesting {
-    private static double startingValue;
     private static final List<Currency> currencies = new ArrayList<>();
     private static LocalAccount localAccount;
 
     private Backtesting() {
         throw new IllegalStateException("Utility class");
-    }
-
-    public static void setStartingValue(double startingValue) {
-        Backtesting.startingValue = startingValue;
     }
 
     public static List<Currency> getCurrencies() {
@@ -35,7 +30,7 @@ public final class Backtesting {
             System.out.println("No backtesting files detected!");
             System.exit(0);
         }
-        localAccount = new LocalAccount("Investor Toomas", startingValue);
+        localAccount = new LocalAccount("Investor Toomas", Simulation.STARTING_VALUE);
         BuySell.setAccount(localAccount);
         Scanner sc = new Scanner(System.in);
         while (true) {

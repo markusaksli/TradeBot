@@ -5,7 +5,6 @@ import data.PriceReader;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
-import com.binance.api.client.exception.BinanceApiException;
 import indicators.DBB;
 import indicators.Indicator;
 import indicators.MACD;
@@ -25,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class Currency {
-    private static final String FIAT = "USDT";
     public static int CONFLUENCE;
 
     private final String pair;
@@ -43,8 +41,8 @@ public class Currency {
 
 
     //Used for SIMULATION and LIVE
-    public Currency(String coin) throws BinanceApiException {
-        this.pair = coin + FIAT;
+    public Currency(String coin) {
+        this.pair = coin + ConfigSetup.getFiat();
 
         //Every currency needs to contain and update our indicators
         List<Candlestick> history = CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES);
@@ -82,7 +80,7 @@ public class Currency {
     }
 
     //Used for BACKTESTING
-    public Currency(String pair, String filePath) throws BinanceApiException {
+    public Currency(String pair, String filePath) {
         this.pair = pair;
         try (PriceReader reader = new PriceReader(filePath)) {
             PriceBean bean = reader.readPrice();
@@ -105,7 +103,6 @@ public class Currency {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private void accept(PriceBean bean) {
@@ -113,7 +110,6 @@ public class Currency {
         if (currentlyCalculating.get()) {
             System.out.println("------------WARNING, NEW THREAD STARTED ON " + pair + " MESSAGE DURING UNFINISHED PREVIOUS MESSAGE CALCULATIONS");
         }
-        currentlyCalculating.set(true);
 
         currentPrice = bean.getPrice();
         currentTime = bean.getTimestamp();
@@ -125,27 +121,33 @@ public class Currency {
             }
         }
 
-
-        //We can disable the strategy and trading logic to only check indicator and price accuracy
-        int confluence = check();
-        if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
-            activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-        } else {
-            if (confluence >= CONFLUENCE) {
-                StringJoiner joiner = new StringJoiner("", "Trade opened due to: ", "");
-                for (Indicator indicator : indicators) {
-                    String explanation = indicator.getExplanation();
-                    joiner.add(explanation.equals("") ? "" : explanation + "\t");
+        if (!currentlyCalculating.get()) {
+            currentlyCalculating.set(true);
+            //We can disable the strategy and trading logic to only check indicator and price accuracy
+            int confluence = check();
+            if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
+                activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
+            } else {
+                if (confluence >= CONFLUENCE) {
+                    BuySell.open(Currency.this, "Trade opened due to: " + getExplanations());
                 }
-                BuySell.open(Currency.this, joiner.toString());
             }
+            currentlyCalculating.set(false);
         }
-
-        currentlyCalculating.set(false);
     }
 
     public int check() {
         return indicators.stream().mapToInt(indicator -> indicator.check(currentPrice)).sum();
+    }
+
+    public String getExplanations() {
+        StringBuilder builder = new StringBuilder();
+        for (Indicator indicator : indicators) {
+            String explanation = indicator.getExplanation();
+            if (explanation == null) explanation = "";
+            builder.append(explanation.equals("") ? "" : explanation + "\t");
+        }
+        return builder.toString();
     }
 
     public String getPair() {
@@ -166,6 +168,10 @@ public class Currency {
 
     public void setActiveTrade(Trade activeTrade) {
         this.activeTrade = activeTrade;
+    }
+
+    public Trade getActiveTrade() {
+        return activeTrade;
     }
 
     public void appendLogLine(String s) {

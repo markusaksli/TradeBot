@@ -1,8 +1,9 @@
 package trading;
 
 import com.binance.api.client.domain.account.Account;
-import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.exception.BinanceApiException;
+import system.ConfigSetup;
+import system.Formatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,13 +39,37 @@ public class LocalAccount {
     }
 
     public LocalAccount(String apiKey, String secretApiKey) {
-        CurrentAPI.setRealFactory(apiKey, secretApiKey);
-        this.startingValue = 0;
+        CurrentAPI.login(apiKey, secretApiKey);
         username = "";
         wallet = new ConcurrentHashMap<>();
         tradeHistory = new ArrayList<>();
         activeTrades = new CopyOnWriteArrayList<>();
-        initLive();
+        try {
+            realAccount = CurrentAPI.get().getAccount();
+            if (!realAccount.isCanTrade()) {
+                System.out.println("Can't trade!");
+            }
+            makerComission = realAccount.getMakerCommission(); //Maker fees are
+            // paid when you add liquidity to our order book
+            // by placing a limit order below the ticker price for buy, and above the ticker price for sell.
+            takerComission = realAccount.getTakerCommission();//Taker fees are paid when you remove
+            // liquidity from our order book by placing any order that is executed against an order on the order book.
+            buyerComission = realAccount.getBuyerCommission();
+
+            //Example: If the current market/ticker price is $2000 for 1 BTC and you market buy bitcoins starting at the market price of $2000, then you will pay the taker fee. In this instance, you have taken liquidity/coins from the order book.
+            //
+            //If the current market/ticker price is $2000 for 1 BTC and you
+            //place a limit buy for bitcoins at $1995, then
+            //you will pay the maker fee IF the market/ticker price moves into your limit order at $1995.
+            fiatValue = Double.parseDouble(realAccount.getAssetBalance(ConfigSetup.getFiat()).getFree());
+            System.out.println("---Starting FIAT: " + Formatter.formatDecimal(fiatValue) + " " + ConfigSetup.getFiat());
+        } catch (BinanceApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Account getRealAccount() {
+        return realAccount;
     }
 
     //All backend.Trade methods
@@ -56,6 +81,10 @@ public class LocalAccount {
         return tradeHistory;
     }
 
+    public void setStartingValue(double startingValue) {
+        this.startingValue = startingValue;
+    }
+
     public void openTrade(Trade trade) {
         activeTrades.add(trade);
     }
@@ -65,7 +94,6 @@ public class LocalAccount {
         tradeHistory.add(trade);
     }
 
-
     //All the get methods.
     public String getUsername() {
         return username;
@@ -73,6 +101,10 @@ public class LocalAccount {
 
     public double getFiat() {
         return fiatValue;
+    }
+
+    public void setFiat(double fiatValue) {
+        this.fiatValue = fiatValue;
     }
 
     public double getTotalValue() {
@@ -131,41 +163,6 @@ public class LocalAccount {
      **/
     public void removeFromWallet(Currency key, double value) {
         wallet.put(key, wallet.get(key) - value);
-    }
-
-    /**
-     * Everything connected to live trading in account.
-     */
-    private void initLive() {
-        try {
-            this.realAccount = CurrentAPI.get().getAccount();
-            makerComission = realAccount.getMakerCommission(); //Maker fees are
-            // paid when you add liquidity to our order book
-            // by placing a limit order below the ticker price for buy, and above the ticker price for sell.
-            takerComission = realAccount.getTakerCommission();//Taker fees are paid when you remove
-            // liquidity from our order book by placing any order that is executed against an order on the order book.
-            buyerComission = realAccount.getBuyerCommission();
-
-            //Example: If the current market/ticker price is $2000 for 1 BTC and you market buy bitcoins starting at the market price of $2000, then you will pay the taker fee. In this instance, you have taken liquidity/coins from the order book.
-            //
-            //If the current market/ticker price is $2000 for 1 BTC and you
-            //place a limit buy for bitcoins at $1995, then
-            //you will pay the maker fee IF the market/ticker price moves into your limit order at $1995.
-
-            if (realAccount.getBalances().isEmpty()) {
-                startingValue = 0;
-            } else {
-                startingValue = Double.parseDouble(realAccount.getAssetBalance("USDT").getFree());
-            }
-            for (AssetBalance balance : realAccount.getBalances()) {
-                addToWallet(new Currency(balance.getAsset()), Double.parseDouble(balance.getFree()));
-            }
-
-            //TODO: Finish live account init for trades loading
-            //TODO: Print basic account info from server
-        } catch (BinanceApiException e) {
-            e.printStackTrace();
-        }
     }
 
     public double getMakerComission() {

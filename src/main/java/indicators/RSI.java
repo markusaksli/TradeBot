@@ -11,10 +11,10 @@ public class RSI implements Indicator {
     private double prevClose;
     private final int period;
     private String explanation;
-    private static int positiveMin;
-    private static int positivseMax;
-    private static int negativeMin;
-    private static int negativeMax;
+    public static int POSITIVE_MIN;
+    public static int POSITIVE_MAX;
+    public static int NEGATIVE_MIN;
+    public static int NEGATIVE_MAX;
 
     public RSI(List<Double> closingPrice, int period) {
         avgUp = 0;
@@ -22,22 +22,6 @@ public class RSI implements Indicator {
         this.period = period;
         explanation = "";
         init(closingPrice);
-    }
-
-    public static void setPositiveMin(int positiveMin) {
-        RSI.positiveMin = positiveMin;
-    }
-
-    public static void setPositivseMax(int positivseMax) {
-        RSI.positivseMax = positivseMax;
-    }
-
-    public static void setNegativeMin(int negativeMin) {
-        RSI.negativeMin = negativeMin;
-    }
-
-    public static void setNegativeMax(int negativeMax) {
-        RSI.negativeMax = negativeMax;
     }
 
     @Override
@@ -98,19 +82,19 @@ public class RSI implements Indicator {
     @Override
     public int check(double newPrice) {
         double temp = getTemp(newPrice);
-        if (temp < positiveMin) {
+        if (temp < POSITIVE_MIN) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
             return 2;
         }
-        if (temp < positivseMax) {
+        if (temp < POSITIVE_MAX) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
             return 1;
         }
-        if (temp > negativeMin) {
+        if (temp > NEGATIVE_MIN) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
             return -1;
         }
-        if (temp > negativeMax) {
+        if (temp > NEGATIVE_MAX) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
             return -2;
         }

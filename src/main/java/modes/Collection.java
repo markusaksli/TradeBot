@@ -126,7 +126,7 @@ public final class Collection {
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
         while (true) {
             try {
-                symbol = sc.nextLine().toUpperCase() + "USDT";
+                symbol = sc.nextLine().toUpperCase() + ConfigSetup.getFiat();
                 CurrentAPI.get().getPrice(symbol);
                 break;
             } catch (BinanceApiException e) {
@@ -348,7 +348,7 @@ public final class Collection {
                 }
                 if (bean.getTimestamp() - last > 1800000L && !bean.isClosing()) {
                     if (firstGap) {
-                        System.out.println("-Gaps (checking for 30min+) usually point to exchange maintenance times, check https://www.binance.com/en/trade/pro/" + symbol.replace("USDT", "") + "_USDT if suspicious");
+                        System.out.println("-Gaps (checking for 30min+) usually point to exchange maintenance times, check https://www.binance.com/en/trade/pro/" + symbol.replace(ConfigSetup.getFiat(), "_" + ConfigSetup.getFiat()) + " if suspicious");
                         firstGap = false;
                     }
                     System.out.println("Gap from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));
@@ -372,8 +372,8 @@ public final class Collection {
         }
     }
 
-    public static void describe(String path) {
-        try (PriceReader reader = new PriceReader(path)) {
+    public static void describe(String filename) {
+        try (PriceReader reader = new PriceReader(filename)) {
             long count = 0;
             long totalTimeDiff = 0;
             long max = Integer.MIN_VALUE;
@@ -402,17 +402,19 @@ public final class Collection {
             System.out.println("---File contains: " + Formatter.formatLarge(count) + " entries (average interval " + Formatter.formatDecimal((double) totalTimeDiff / count) + " ms)");
             System.out.println("-Longest gap in consistent data: " + Formatter.formatDuration(max));
             System.out.println("---Covered time period: " + Formatter.formatDuration(totalTimeDiff));
-            System.out.println("---File size: " + Formatter.formatDecimal((double) new File(path).length() / 1048576.0) + " MB");
+            System.out.println("---File size: " + Formatter.formatDecimal((double) new File(filename).length() / 1048576.0) + " MB");
 
             while (true) {
-                System.out.println("\nEnter \"back\" to return, \"csv\" to create .csv file with price data");
+                System.out.println("\nEnter \"back\" to return, \"check\" to verify the data, and \"csv\" to create .csv file with price data");
                 String s = sc.nextLine();
                 //TODO: Method to get csv with indicators for ML (5min, interval, realtime)
                 //https://github.com/markrkalder/crypto-ds/blob/transformer/src/main/java/ml/DataCalculator.java
                 if (s.equalsIgnoreCase("back")) {
                     return;
                 } else if (s.equalsIgnoreCase("csv")) {
-                    dataToCsv(path);
+                    dataToCsv(filename);
+                } else if (s.equalsIgnoreCase("check")) {
+                    checkBacktestingData(filename);
                 }
             }
         } catch (IOException e) {
