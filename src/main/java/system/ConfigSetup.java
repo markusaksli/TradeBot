@@ -15,10 +15,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 
 public class ConfigSetup {
     private static final int REQUEST_LIMIT = CurrentAPI.get().getExchangeInfo().getRateLimits().stream()
@@ -54,13 +51,14 @@ public class ConfigSetup {
         int items = 0;
         File file = new File("config.txt");
         if (!file.exists()) {
-            System.out.println();
+            System.out.println("No config file detected!");
+            new Scanner(System.in).nextLine();
+            System.exit(1);
         }
         try (FileReader reader = new FileReader(file);
              BufferedReader br = new BufferedReader(reader)) {
             String line;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
                 if (!line.isBlank() && !line.isEmpty()) {
                     setup.append(line).append("\n");
                 } else {
