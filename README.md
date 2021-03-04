@@ -72,7 +72,7 @@ The config for the bot can be changed using the `config.txt` file
 - `RSI positive side maximum` - Buy signal if RSI is below this (integer)
 - `RSI negative side minimum` - Sell signal if RSI is above this (integer)
 - `RSI negative side maximum` - Strong sell signal (2) if RSI is above this (integer)
-- `Simulation mode starting value` - Amount of USDT to start with in Simulation (integer)
+- `Simulation mode starting value` - Amount of FIAT to start with in Simulation (integer)
 - `Percentage of money per trade` - How much of available fiat to put into each trade (decimal)
 - `Trailing SL` - Trailing Stop Loss (decimal)
 - `Take profit` - Profit to close trade at (decimal)
