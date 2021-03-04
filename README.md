@@ -84,6 +84,8 @@ The config for the bot can be changed using the `config.txt` file
 
 See the included config file for a ready to use example
 
+Setup the credentials.txt file to automatically log into live mode without having to enter your credentials
+
 # Issues, suggestions and contributing
 
 If you run into any issues while using the bot or if you want to request any changes or new features, open a new issue

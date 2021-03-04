@@ -37,6 +37,7 @@ public final class Live {
     public static void init() {
         boolean fileFailed = true;
         if (credentialsFile.exists()) {
+            //TODO: This try block doesn't work
             try {
                 final List<String> strings = Files.readAllLines(credentialsFile.toPath());
                 localAccount = new LocalAccount(strings.get(0), strings.get(1));
