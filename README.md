@@ -1,4 +1,4 @@
-# TradeBot
+![TradeBotWide](https://user-images.githubusercontent.com/54057327/110005245-f18e6a80-7d20-11eb-9798-c6bb1213c508.png)
 
 This is a cryptocurrency trading bot that uses the Binance API, and a strategy based on a couple of 5 minute chart
 indicators
