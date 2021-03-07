@@ -7,7 +7,7 @@ indicators
 
 [Download the latest release](https://github.com/markusaksli/TradeBot/releases/latest)
 
-## How?
+### How?
 
 - The bot uses 5 different indicators: DBB, EMA, MACD, RSI, SMA. The three main indicators will fire off a buy signal
   when a certain state has been achieved.
@@ -18,7 +18,7 @@ The config for the bot can be changed using the `config.txt` file
 
 # Modes
 
-## Live
+### Live
 
 - **This is not a financial service or investment advice!**
 
@@ -39,7 +39,7 @@ The config for the bot can be changed using the `config.txt` file
 
 - Currently only supports market orders, this will cause a slight efficiency loss.
 
-## Simulation
+### Simulation
 
 - Real-time trading simulation based on actual market data
 
@@ -47,7 +47,7 @@ The config for the bot can be changed using the `config.txt` file
 
 - No actual orders are made
 
-## Backtesting
+### Backtesting
 
 - Simulation based on historical data
 
@@ -55,7 +55,7 @@ The config for the bot can be changed using the `config.txt` file
 
 - Data needs to be loaded from a `.dat` file created with the `Collection` mode
 
-## Collection
+### Collection
 
 - Collects raw market price data (aggregated trades) from a specified time period
 
