@@ -73,7 +73,9 @@ public final class Collection {
     }
 
     public static void printProgress() {
-        System.out.print("\r(" + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ") (" + Formatter.formatPercent((double) blocker.availablePermits() / (double) chunks) + ") " + lastMessage);
+        double progress = (double) blocker.availablePermits() / (double) chunks;
+        long time = System.currentTimeMillis() - initTime;
+        System.out.print("\r(" + Formatter.formatDuration((long) Math.ceil((time / progress) - time)) + ") (" + Formatter.formatPercent(progress) + ") " + lastMessage);
     }
 
     public static void setLastMessage(String lastMessage) {
