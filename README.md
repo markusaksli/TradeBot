@@ -93,3 +93,5 @@ If you run into any issues while using the bot or if you want to request any cha
 to let us know.
 
 If you would like to contribute to the development and profitability of the bot, simply open a PR or let us know.
+
+There are some open issues that set a general direction for development once the current implementation of the bot works reliably in Live mode (modularize, separate backend, create GUI, communicate with GUI through API).
