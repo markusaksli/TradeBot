@@ -136,7 +136,7 @@ public class Main {
                         System.out.println(Formatter.formatDecimal(localAccount.getFiat()) + " " + ConfigSetup.getFiat());
                         for (Map.Entry<Currency, Double> entry : localAccount.getWallet().entrySet()) {
                             if (entry.getValue() != 0) {
-                                System.out.println(Formatter.formatDecimal(entry.getValue()) + " " + entry.getKey().getPair()
+                                System.out.println(Formatter.formatDecimal(entry.getValue()) + " " + entry.getKey().getPair().replace(ConfigSetup.getFiat(), "")
                                         + " (" + Formatter.formatDecimal(entry.getKey().getPrice() * entry.getValue()) + " " + ConfigSetup.getFiat() + ")");
                             }
                         }
