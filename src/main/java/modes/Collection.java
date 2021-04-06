@@ -90,7 +90,7 @@ public final class Collection {
     }
 
     public static void setLastMessage(String lastMessage) {
-        Collection.lastMessage = lastMessage;
+        Collection.lastMessage = lastMessage.replaceAll("\n", "   ");
         printProgress();
     }
 
@@ -135,6 +135,47 @@ public final class Collection {
     }
 
     public static void startCollection() {
+        File tempFolder = new File("temp");
+        if (tempFolder.exists() && tempFolder.isDirectory()) {
+            if (Objects.requireNonNull(tempFolder.list()).length > 0 && new File("temp/recovery").exists()) {
+                System.out.println("---Temp backtesting files detected");
+                System.out.println("Type \"compile\" to attempt to compile the downloaded data or \"delete\" to delete them");
+                String input = sc.nextLine();
+                if (input.equalsIgnoreCase("delete")) {
+                    deleteTemp();
+                }
+                if (input.equalsIgnoreCase("compile")) {
+                    Long start = null;
+                    String filename = null;
+                    try {
+                        final List<String> lines = Files.readAllLines(Path.of("temp/recovery"));
+                        filename = lines.get(0);
+                        start = Long.parseLong(lines.get(1));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    if (start != null && filename != null) {
+                        try {
+                            compileBackTestingData(start, filename);
+
+                            checkBacktestingData(filename);
+
+                            System.out.println("\n---Collection completed, result in "
+                                    + new File(filename).getAbsolutePath());
+                            System.out.println("---Files may only appear after quitting");
+
+                            describe(filename);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.out.println("---Recovery failed, removing temp files");
+                            deleteTemp();
+                        }
+                    }
+                }
+            } else {
+                deleteTemp();
+            }
+        }
         collectionInterface();
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
         while (true) {
@@ -188,6 +229,12 @@ public final class Collection {
         new File("temp").mkdir();
         if (!(backtestingFolder.exists() && backtestingFolder.isDirectory())) backtestingFolder.mkdir();
 
+        try (final FileWriter fos = new FileWriter("temp/recovery")) {
+            fos.write(filename + "\n" + start);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         int requestDelay = 60000 / ConfigSetup.getRequestLimit();
         System.out.println("---Request delay: " + requestDelay + " ms (" + ConfigSetup.getRequestLimit() + " per minute)");
         System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
@@ -226,7 +273,7 @@ public final class Collection {
             }
             id++;
             long requestStart = diff < 3600000L ? start : end - 3600000L;
-            client.getAggTrades(symbol, null, null, requestStart, end, new TradesCallback(id, requestStart, end));
+            client.getAggTrades(symbol, null, null, requestStart, end, new TradesCallback(id, requestStart, end, 0));
             if (diff < 3600000L) break;
             end -= 3600000L;
         }
@@ -279,9 +326,7 @@ public final class Collection {
             System.out.println("---Could not automatically delete previous file at " + filename);
             return false;
         }
-        if (symbol == null) {
-            symbol = filename.split("_")[0];
-        }
+        symbol = filename.split("[/\\\\]")[1].split("_")[0];
         try (PriceWriter writer = new PriceWriter(filename)) {
             List<Candlestick> candlesticks = CurrentAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
             for (int i = 0; i < candlesticks.size() - 1; i++) {
@@ -442,16 +487,19 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
     int id;
     long start;
     long end;
+    int retry;
 
-    public TradesCallback(int id, long start, long end) {
+    public TradesCallback(int id, long start, long end, int retry) {
         this.id = id;
         this.start = start;
         this.end = end;
+        this.retry = retry;
     }
 
     @Override
     public void onFailure(Throwable cause) {
         try {
+            int validRetry = 0;
             if (cause.getMessage().toLowerCase().contains("weight")) {
                 if (cause.getMessage().toLowerCase().contains("banned")) {
                     long bannedTime = Long.parseLong(cause.getMessage().split("until ")[1].split("\\.")[0]);
@@ -464,10 +512,16 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
                 }
                 Collection.setBraked(true);
             } else {
-                Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage().replaceAll("\n", "   ") + "\"");
+                validRetry = 1;
+                if (retry == 10) {
+                    Collection.downloadBlockerRelease();
+                    Collection.setLastMessage("Request " + id + " failed after 10 retry attempts due to " + cause.getMessage());
+                    return;
+                }
+                Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
             }
             Collection.getRequestTracker().acquire();
-            Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end));
+            Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end, retry + validRetry));
             Collection.setLastMessage("Resent request " + id);
         } catch (InterruptedException e) {
             Collection.setLastMessage(Collection.INTERRUPT_MESSAGE);
