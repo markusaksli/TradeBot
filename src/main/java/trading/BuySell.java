@@ -63,9 +63,10 @@ public class BuySell {
             }
             double fillsQty = 0;
             double fillsPrice = 0;
+
             for (com.binance.api.client.domain.account.Trade fill : order.getFills()) {
                 double qty = Double.parseDouble(fill.getQty());
-                fillsQty += qty;
+                fillsQty += qty - Double.parseDouble(fill.getCommission());
                 fillsPrice += qty * Double.parseDouble(fill.getPrice());
             }
             System.out.println("Got filled for " + BigDecimal.valueOf(fillsQty).toString()
@@ -107,8 +108,9 @@ public class BuySell {
             double fillsPrice = 0;
             for (com.binance.api.client.domain.account.Trade fill : order.getFills()) {
                 double qty = Double.parseDouble(fill.getQty());
+                System.out.println(fill.getCommission() + " " +fill.getSymbol());
                 fillsQty += qty;
-                fillsPrice += qty * Double.parseDouble(fill.getPrice());
+                fillsPrice += qty * Double.parseDouble(fill.getPrice()) - Double.parseDouble(fill.getCommission());
             }
             System.out.println("Got filled for " + BigDecimal.valueOf(fillsQty).toString()
                     + " at " + Formatter.formatDate(order.getTransactTime())
@@ -147,7 +149,6 @@ public class BuySell {
 
 
     //TODO: Implement limit ordering
-    //TODO: Fix local and server wallet mismatch that cant be refreshed
     public static NewOrderResponse placeOrder(Currency currency, double amount, boolean buy) {
         System.out.println("\n---Placing a " + (buy ? "buy" : "sell") + " market order for " + currency.getPair());
         BigDecimal originalDecimal = BigDecimal.valueOf(amount);
