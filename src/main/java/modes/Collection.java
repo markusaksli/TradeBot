@@ -22,21 +22,23 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 //TODO: Identify cause and fix occasional date regression (maybe related to resending?)
 public final class Collection {
     private static String symbol;
     private static String lastMessage = "Sending requests...";
-    private static boolean braked = false;
+    private static AtomicBoolean braked = new AtomicBoolean(false);
     private static boolean createdBrakeTimer = false;
-    private static int brakeSeconds = 1;
+    private static AtomicInteger brakeSeconds = new AtomicInteger(2);
     private static int chunks;
     private static long initTime;
     private static final Scanner sc = new Scanner(System.in);
     private static final File backtestingFolder = new File("backtesting");
 
     public static final String INTERRUPT_MESSAGE = "Thread interrupted while waiting for request permission";
-    private static final Semaphore blocker = new Semaphore(0);
+    private static final Semaphore downloadCompletionBlocker = new Semaphore(0);
     private static final Semaphore requestTracker = new Semaphore(0);
     private static final BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
 
@@ -45,23 +47,26 @@ public final class Collection {
     }
 
     public static void setBrakeSeconds(int brakeSeconds) {
-        Collection.brakeSeconds = brakeSeconds;
+        Collection.brakeSeconds.set(brakeSeconds);
     }
 
     public static boolean isBraked() {
-        return braked;
+        return Collection.braked.get();
     }
 
     public static void setBraked(boolean braked) {
-        Collection.braked = braked;
+        if (braked) {
+            requestTracker.drainPermits();
+        }
+        Collection.braked.set(braked);
     }
 
     public static Semaphore getRequestTracker() {
         return requestTracker;
     }
 
-    public static Semaphore getBlocker() {
-        return blocker;
+    public static void downloadBlockerRelease() {
+        downloadCompletionBlocker.release();
     }
 
     public static BinanceApiAsyncRestClient getClient() {
@@ -73,9 +78,15 @@ public final class Collection {
     }
 
     public static void printProgress() {
-        double progress = (double) blocker.availablePermits() / (double) chunks;
+        double progress = (double) downloadCompletionBlocker.availablePermits() / (double) chunks;
         long time = System.currentTimeMillis() - initTime;
-        System.out.print("\r(" + Formatter.formatDuration((long) Math.ceil((time / progress) - time)) + ") (" + Formatter.formatPercent(progress) + ") " + lastMessage);
+        System.out.print("\r"
+                + Formatter.formatDate(System.currentTimeMillis())
+                + " ("
+                + Formatter.formatPercent(progress)
+                + ") ("
+                + Formatter.formatDuration((long) Math.ceil((time / progress) - time))
+                + ") " + lastMessage);
     }
 
     public static void setLastMessage(String lastMessage) {
@@ -150,11 +161,11 @@ public final class Collection {
             System.out.println("Enter the date you want to finish with (type \"now\" for current time): ");
             String finish = sc.nextLine();
             try {
-                startDate = dateFormat.parse(begin);
+                startDate = dateFormat.parse(begin.replace("mn", "00:00:00"));
                 if (finish.equalsIgnoreCase("now")) {
                     stopDate = new Date(System.currentTimeMillis());
                 } else {
-                    stopDate = dateFormat.parse(finish);
+                    stopDate = dateFormat.parse(finish.replace("mn", "00:00:00"));
                 }
                 if (startDate.getTime() >= stopDate.getTime() || stopDate.getTime() > System.currentTimeMillis()) {
                     System.out.println("Start needs to be earlier in time than end and end cannot be greater than current time");
@@ -177,8 +188,9 @@ public final class Collection {
         new File("temp").mkdir();
         if (!(backtestingFolder.exists() && backtestingFolder.isDirectory())) backtestingFolder.mkdir();
 
-        System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
         int requestDelay = 60000 / ConfigSetup.getRequestLimit();
+        System.out.println("---Request delay: " + requestDelay + " ms (" + ConfigSetup.getRequestLimit() + " per minute)");
+        System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
         initTime = System.currentTimeMillis();
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -195,7 +207,8 @@ public final class Collection {
                             setBraked(false);
                             createdBrakeTimer = false;
                         }
-                    }, brakeSeconds);
+                    }, brakeSeconds.get());
+                    System.out.println("\n");
                     setLastMessage("Braked requests for " + brakeSeconds + " seconds");
                     createdBrakeTimer = true;
                 }
@@ -218,7 +231,7 @@ public final class Collection {
             end -= 3600000L;
         }
         try {
-            blocker.acquire(chunks);
+            downloadCompletionBlocker.acquire(chunks);
         } catch (InterruptedException e) {
             setLastMessage(INTERRUPT_MESSAGE);
             Thread.currentThread().interrupt();
@@ -439,10 +452,19 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
     @Override
     public void onFailure(Throwable cause) {
         try {
-            Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage() + "\"");
             if (cause.getMessage().toLowerCase().contains("weight")) {
-                Collection.setBrakeSeconds(cause.getMessage().toLowerCase().contains("banned") ? 61 : 1);
+                if (cause.getMessage().toLowerCase().contains("banned")) {
+                    long bannedTime = Long.parseLong(cause.getMessage().split("until ")[1].split("\\.")[0]);
+                    int waitTime = Math.toIntExact((bannedTime - System.currentTimeMillis()) / 1000) + 1;
+                    Collection.setLastMessage("Banned by Binance API until " + Formatter.formatDate(bannedTime) + " (" + Formatter.formatDuration(waitTime * 1000L) + ")");
+                    Collection.setBrakeSeconds(waitTime);
+                } else {
+                    Collection.setLastMessage("Got warned for sending too many requests");
+                    Collection.setBrakeSeconds(2);
+                }
                 Collection.setBraked(true);
+            } else {
+                Collection.setLastMessage("Request " + id + " failed due to: \"" + cause.getMessage().replaceAll("\n", "   ") + "\"");
             }
             Collection.getRequestTracker().acquire();
             Collection.getClient().getAggTrades(Collection.getSymbol(), null, null, start, end, new TradesCallback(id, start, end));
@@ -470,7 +492,7 @@ class TradesCallback implements BinanceApiCallback<List<AggTrade>> {
                 return;
             }
         }
-        Collection.getBlocker().release();
+        Collection.downloadBlockerRelease();
         Collection.printProgress();
     }
 }
