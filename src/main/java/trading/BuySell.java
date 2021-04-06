@@ -195,7 +195,7 @@ public class BuySell {
             }
             return order;
         } catch (BinanceApiException e) {
-            System.out.println("---Failed to buy " + convertedAmount + " " + currency.getPair());
+            System.out.println("---Failed " + (buy ? "buy" : "sell") + " " + convertedAmount + " " + currency.getPair());
             System.out.println(e.getMessage());
             return null;
         }

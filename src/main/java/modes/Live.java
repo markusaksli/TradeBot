@@ -47,6 +47,7 @@ public final class Live {
                     System.out.println("---credentials.txt has not been set up");
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 System.out.println("---Failed to use credentials in credentials.txt");
             }
         } else {
