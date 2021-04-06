@@ -8,7 +8,6 @@ import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.exception.BinanceApiException;
-import modes.Live;
 import system.ConfigSetup;
 import system.Formatter;
 import system.Mode;
@@ -108,7 +107,6 @@ public class BuySell {
             double fillsPrice = 0;
             for (com.binance.api.client.domain.account.Trade fill : order.getFills()) {
                 double qty = Double.parseDouble(fill.getQty());
-                System.out.println(fill.getCommission() + " " +fill.getSymbol());
                 fillsQty += qty;
                 fillsPrice += qty * Double.parseDouble(fill.getPrice()) - Double.parseDouble(fill.getCommission());
             }
