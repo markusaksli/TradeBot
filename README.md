@@ -30,8 +30,6 @@ The config for the bot can be changed using the `config.txt` file
 
 - **Backtest your config and make sure you are ready to use this mode at your own risk!**
 
-- **There are currently some inacuraccy issues with this mode where a slight mismatch between server and local wallet values is created**
-
 - This mode trades with real money on the Binance platform
 
 - API key and Secret key required
