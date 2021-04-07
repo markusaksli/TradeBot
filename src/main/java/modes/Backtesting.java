@@ -56,9 +56,10 @@ public final class Backtesting {
                     BuySell.close(trade);
                 }
 
+
                 int i = 1;
+                path = path.replace("backtesting", "log");
                 String resultPath = path.replace(".dat", "_run_" + i + ".txt");
-                resultPath = resultPath.replace("backtesting", "log");
                 while (new File(resultPath).exists()) {
                     i++;
                     resultPath = path.replace(".dat", "_run_" + i + ".txt");
