@@ -58,11 +58,11 @@ public final class Backtesting {
 
                 int i = 1;
                 String resultPath = path.replace(".dat", "_run_" + i + ".txt");
+                resultPath = resultPath.replace("backtesting", "log");
                 while (new File(resultPath).exists()) {
                     i++;
                     resultPath = path.replace(".dat", "_run_" + i + ".txt");
                 }
-                resultPath = resultPath.replace("backtesting", "log");
                 new File("log").mkdir();
 
                 currency.log(resultPath);
