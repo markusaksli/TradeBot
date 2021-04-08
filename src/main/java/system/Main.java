@@ -26,7 +26,7 @@ public class Main {
             new Scanner(System.in).next();
             System.exit(3);
         }
-        System.out.println("Welcome to TradeBot (v0.9.5)\n" +
+        System.out.println("Welcome to TradeBot (v0.9.6)\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
                 "This is a cryptocurrency trading bot that uses the Binance API,\n" +
