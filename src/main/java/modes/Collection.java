@@ -110,7 +110,7 @@ public final class Collection {
                 if (input.matches("\\d+")) {
                     int index = Integer.parseInt(input);
                     if (index <= backtestingFiles.length) {
-                        describe("backtesting\\" + backtestingFiles[index - 1]);
+                        describe("backtesting/" + backtestingFiles[index - 1]);
                     }
                 }
                 System.out.println("\nEnter a number to describe the backtesting data file\n");

@@ -45,7 +45,7 @@ public final class Backtesting {
             if (index > backtestingFiles.length) {
                 continue;
             }
-            String path = "backtesting\\" + backtestingFiles[index - 1];
+            String path = "backtesting/" + backtestingFiles[index - 1];
             try {
                 System.out.println("\n---Setting up...");
                 Currency currency = new Currency(new File(path).getName().split("_")[0], path);
