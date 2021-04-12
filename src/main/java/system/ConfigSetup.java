@@ -4,7 +4,6 @@ import com.binance.api.client.domain.general.RateLimit;
 import com.binance.api.client.domain.general.RateLimitType;
 import indicators.MACD;
 import indicators.RSI;
-import modes.Backtesting;
 import modes.Simulation;
 import trading.BuySell;
 import trading.Currency;
@@ -99,7 +98,7 @@ public class ConfigSetup {
                         Trade.TAKE_PROFIT = Double.parseDouble(arr[1]);
                         break;
                     case "Confluence":
-                        Currency.CONFLUENCE = Integer.parseInt(arr[1]);
+                        Currency.CONFLUENCE_TARGET = Integer.parseInt(arr[1]);
                         break;
                     case "Close confluence":
                         Trade.CLOSE_CONFLUENCE = Integer.parseInt(arr[1]);

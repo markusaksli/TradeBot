@@ -13,6 +13,7 @@ import system.ConfigSetup;
 import system.Formatter;
 import system.Mode;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,8 +24,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class Currency {
-    public static int CONFLUENCE;
+public class Currency implements Closeable {
+    public static int CONFLUENCE_TARGET;
 
     private final String pair;
     private Trade activeTrade;
@@ -39,6 +40,7 @@ public class Currency {
     private final StringBuilder log = new StringBuilder();
     private PriceBean firstBean;
 
+    private Closeable apiListener;
 
     //Used for SIMULATION and LIVE
     public Currency(String coin) {
@@ -58,7 +60,7 @@ public class Currency {
 
         BinanceApiWebSocketClient client = CurrentAPI.getFactory().newWebSocketClient();
         //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
-        client.onAggTradeEvent(pair.toLowerCase(), response -> {
+        apiListener = client.onAggTradeEvent(pair.toLowerCase(), response -> {
             //Every message and the resulting indicator and strategy calculations is handled concurrently
             //System.out.println(Thread.currentThread().getId());
             double newPrice = Double.parseDouble(response.getPrice());
@@ -117,20 +119,21 @@ public class Currency {
         if (bean.isClosing()) {
             indicators.forEach(indicator -> indicator.update(bean.getPrice()));
             if (Mode.get().equals(Mode.BACKTESTING)) {
-                appendLogLine(system.Formatter.formatDate(currentTime) + "  " + toString());
+                appendLogLine(system.Formatter.formatDate(currentTime) + "  ");
             }
         }
 
         if (!currentlyCalculating.get()) {
+            int confluence = 0; //0 Confluence should be reserved in the config for doing nothing
             currentlyCalculating.set(true);
             //We can disable the strategy and trading logic to only check indicator and price accuracy
-            int confluence = check();
+            if ((Trade.CLOSE_USE_CONFLUENCE && hasActiveTrade()) || BuySell.enoughFunds()) {
+                confluence = check();
+            }
             if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
                 activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-            } else {
-                if (confluence >= CONFLUENCE) {
-                    BuySell.open(Currency.this, "Trade opened due to: " + getExplanations());
-                }
+            } else if (confluence >= CONFLUENCE_TARGET && BuySell.enoughFunds()) {
+                BuySell.open(Currency.this, "Trade opened due to: " + getExplanations());
             }
             currentlyCalculating.set(false);
         }
@@ -257,5 +260,11 @@ public class Currency {
         if (obj == null) return false;
         if (obj.getClass() != Currency.class) return false;
         return pair.equals(((Currency) obj).pair);
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (Mode.get().equals(Mode.BACKTESTING) || Mode.get().equals(Mode.COLLECTION)) return;
+        apiListener.close();
     }
 }

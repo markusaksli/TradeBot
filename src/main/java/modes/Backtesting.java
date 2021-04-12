@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-//TODO: Clean up Backtesting class.
 public final class Backtesting {
     private static final List<Currency> currencies = new ArrayList<>();
     private static LocalAccount localAccount;

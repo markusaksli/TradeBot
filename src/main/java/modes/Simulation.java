@@ -6,6 +6,7 @@ import trading.LocalAccount;
 import trading.BuySell;
 import trading.Currency;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +25,16 @@ public final class Simulation {
 
     public static LocalAccount getAccount() {
         return localAccount;
+    }
+
+    public static void close() {
+        for (Currency currency : currencies) {
+            try {
+                currency.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void init() {

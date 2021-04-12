@@ -94,18 +94,20 @@ public final class Collection {
         printProgress();
     }
 
-    private static void collectionInterface() {
+    private static boolean collectionInterface() {
         if (backtestingFolder.exists() && backtestingFolder.isDirectory()) {
             String[] backtestingFiles = getDataFiles();
             if (backtestingFiles.length == 0) {
                 System.out.println("---No backtesting files detected");
-                return;
+                return true;
             }
 
             String input = "";
             while (!input.equalsIgnoreCase("new")) {
                 if (input.equalsIgnoreCase("quit")) {
                     System.exit(0);
+                } else if (input.equalsIgnoreCase("modes")) {
+                    return false;
                 }
                 if (input.matches("\\d+")) {
                     int index = Integer.parseInt(input);
@@ -118,12 +120,14 @@ public final class Collection {
                     System.out.println("[" + (i + 1) + "] " + backtestingFiles[i]);
                 }
                 System.out.println("\nEnter \"new\" to start collecting a new data file");
-                System.out.println("Enter \"quit\" to exit the program\n");
+                System.out.println("Enter \"quit\" to exit the program");
+                System.out.println("Enter \"modes\" to return to mode selection.\n");
                 input = sc.nextLine();
             }
         } else {
             System.out.println("---No backtesting files detected");
         }
+        return true;
     }
 
     public static String[] getDataFiles() {
@@ -162,13 +166,17 @@ public final class Collection {
 
                             System.out.println("\n---Collection completed, result in "
                                     + new File(filename).getAbsolutePath());
-                            System.out.println("---Files may only appear after quitting");
 
                             describe(filename);
                         } catch (Exception e) {
                             e.printStackTrace();
                             System.out.println("---Recovery failed, removing temp files");
                             deleteTemp();
+                            try {
+                                Files.deleteIfExists(Path.of(filename));
+                            } catch (IOException ioException) {
+                                ioException.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -176,7 +184,10 @@ public final class Collection {
                 deleteTemp();
             }
         }
-        collectionInterface();
+        boolean returnToModes = collectionInterface();
+        if (!returnToModes) {
+            return;
+        }
         System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
         while (true) {
             try {
@@ -261,6 +272,8 @@ public final class Collection {
                 }
             }
         }, requestDelay, requestDelay);
+
+        Collection.setLastMessage("Sending requests...");
         int id = 0;
         while (true) {
             long diff = end - start;
@@ -294,7 +307,6 @@ public final class Collection {
         System.out.println("\n---Collection completed in "
                 + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ", result in "
                 + new File(filename).getAbsolutePath());
-        System.out.println("---Files may only appear after quitting");
 
         describe(filename);
 

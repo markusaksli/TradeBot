@@ -3,7 +3,6 @@ package modes;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.exception.BinanceApiException;
 import system.ConfigSetup;
 import system.Formatter;
 import trading.*;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
-//TODO: Clean up Live class
+
 public final class Live {
     private static LocalAccount localAccount;
     private static final List<Currency> currencies = new ArrayList<>();
@@ -32,6 +31,16 @@ public final class Live {
 
     public static List<Currency> getCurrencies() {
         return currencies;
+    }
+
+    public static void close() {
+        for (Currency currency : currencies) {
+            try {
+                currency.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void init() {
