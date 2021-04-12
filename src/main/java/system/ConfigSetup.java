@@ -4,7 +4,6 @@ import com.binance.api.client.domain.general.RateLimit;
 import com.binance.api.client.domain.general.RateLimitType;
 import indicators.MACD;
 import indicators.RSI;
-import modes.Backtesting;
 import modes.Simulation;
 import trading.BuySell;
 import trading.Currency;

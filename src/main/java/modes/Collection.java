@@ -106,8 +106,7 @@ public final class Collection {
             while (!input.equalsIgnoreCase("new")) {
                 if (input.equalsIgnoreCase("quit")) {
                     System.exit(0);
-                }
-                else if (input.equalsIgnoreCase("modes")) {
+                } else if (input.equalsIgnoreCase("modes")) {
                     return false;
                 }
                 if (input.matches("\\d+")) {
@@ -174,6 +173,11 @@ public final class Collection {
                             e.printStackTrace();
                             System.out.println("---Recovery failed, removing temp files");
                             deleteTemp();
+                            try {
+                                Files.deleteIfExists(Path.of(filename));
+                            } catch (IOException ioException) {
+                                ioException.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -269,6 +273,8 @@ public final class Collection {
                 }
             }
         }, requestDelay, requestDelay);
+
+        Collection.setLastMessage("Sending requests...");
         int id = 0;
         while (true) {
             long diff = end - start;

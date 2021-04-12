@@ -1,6 +1,5 @@
 package trading;
 
-
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;

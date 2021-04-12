@@ -1,6 +1,5 @@
 package system;
 
-import com.binance.api.client.exception.BinanceApiException;
 import modes.*;
 import modes.Collection;
 import trading.*;
@@ -53,7 +52,7 @@ public class Main {
                 "Simulation and backtesting do not always reflect live performance\n" +
                 "Make sure you are ready to commit to a strategy before starting LIVE\n");
         boolean returnToModes = false;
-        while(true) {
+        while (true) {
             Scanner sc = new Scanner(System.in);
             while (true) {
                 try {
@@ -102,13 +101,12 @@ public class Main {
                     if (s.equalsIgnoreCase("quit")) {
                         System.exit(0);
                         break;
-                    }
-                    else if (s.equalsIgnoreCase("modes")) {
+                    } else if (s.equalsIgnoreCase("modes")) {
                         returnToModes = true;
                         break;
-                    }
-                    else {
+                    } else {
                         System.out.println("Type quit to quit");
+                        System.out.println("Type \"modes\" to got back to mode selection.");
                     }
                 }
 
@@ -216,6 +214,8 @@ public class Main {
                             break;
                     }
                 }
+                timer.cancel();
+                Mode.reset();
                 returnToModes = false;
             }
         }

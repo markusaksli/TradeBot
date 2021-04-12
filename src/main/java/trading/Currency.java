@@ -13,6 +13,7 @@ import system.ConfigSetup;
 import system.Formatter;
 import system.Mode;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class Currency {
+public class Currency implements Closeable {
     public static int CONFLUENCE;
 
     private final String pair;
@@ -39,6 +40,7 @@ public class Currency {
     private final StringBuilder log = new StringBuilder();
     private PriceBean firstBean;
 
+    private Closeable apiListener;
 
     //Used for SIMULATION and LIVE
     public Currency(String coin) {
@@ -58,7 +60,7 @@ public class Currency {
 
         BinanceApiWebSocketClient client = CurrentAPI.getFactory().newWebSocketClient();
         //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
-        client.onAggTradeEvent(pair.toLowerCase(), response -> {
+        apiListener = client.onAggTradeEvent(pair.toLowerCase(), response -> {
             //Every message and the resulting indicator and strategy calculations is handled concurrently
             //System.out.println(Thread.currentThread().getId());
             double newPrice = Double.parseDouble(response.getPrice());
@@ -117,7 +119,7 @@ public class Currency {
         if (bean.isClosing()) {
             indicators.forEach(indicator -> indicator.update(bean.getPrice()));
             if (Mode.get().equals(Mode.BACKTESTING)) {
-                appendLogLine(system.Formatter.formatDate(currentTime) + "  " + toString());
+                appendLogLine(system.Formatter.formatDate(currentTime) + "  ");
             }
         }
 
@@ -257,5 +259,11 @@ public class Currency {
         if (obj == null) return false;
         if (obj.getClass() != Currency.class) return false;
         return pair.equals(((Currency) obj).pair);
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (Mode.get().equals(Mode.BACKTESTING) || Mode.get().equals(Mode.COLLECTION)) return;
+        apiListener.close();
     }
 }
