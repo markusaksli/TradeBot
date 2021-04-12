@@ -35,23 +35,24 @@ public class BuySell {
         throw new IllegalStateException("Utility class");
     }
 
+    public static boolean enoughFunds() {
+        return nextAmount() != 0;
+    }
+
     //Used by strategy
     public static void open(Currency currency, String explanation) {
         if (currency.hasActiveTrade()) {
             System.out.println("---Cannot open trade since there already is an open trade for " + currency.getPair() + "!");
             return;
         }
-
-        double currentPrice = currency.getPrice(); //Current price of the currency
-        double fiatCost = nextAmount();
-        double amount = fiatCost / currency.getPrice();
-
-
-        if (amount == 0) {
+        if (!enoughFunds()) {
             System.out.println("---Out of funds, cannot open trade! (" + Formatter.formatDecimal(localAccount.getFiat()) + ")");
             return; //If no fiat is available, we cant trade
         }
 
+        double currentPrice = currency.getPrice(); //Current price of the currency
+        double fiatCost = nextAmount();
+        double amount = fiatCost / currency.getPrice();
 
         Trade trade;
         if (Mode.get().equals(Mode.LIVE)) {

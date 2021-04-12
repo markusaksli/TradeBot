@@ -98,7 +98,7 @@ public class ConfigSetup {
                         Trade.TAKE_PROFIT = Double.parseDouble(arr[1]);
                         break;
                     case "Confluence":
-                        Currency.CONFLUENCE = Integer.parseInt(arr[1]);
+                        Currency.CONFLUENCE_TARGET = Integer.parseInt(arr[1]);
                         break;
                     case "Close confluence":
                         Trade.CLOSE_CONFLUENCE = Integer.parseInt(arr[1]);

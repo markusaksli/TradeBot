@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class Currency implements Closeable {
-    public static int CONFLUENCE;
+    public static int CONFLUENCE_TARGET;
 
     private final String pair;
     private Trade activeTrade;
@@ -124,15 +124,16 @@ public class Currency implements Closeable {
         }
 
         if (!currentlyCalculating.get()) {
+            int confluence = 0; //0 Confluence should be reserved in the config for doing nothing
             currentlyCalculating.set(true);
             //We can disable the strategy and trading logic to only check indicator and price accuracy
-            int confluence = check();
+            if ((Trade.CLOSE_USE_CONFLUENCE && hasActiveTrade()) || BuySell.enoughFunds()) {
+                confluence = check();
+            }
             if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
                 activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-            } else {
-                if (confluence >= CONFLUENCE) {
-                    BuySell.open(Currency.this, "Trade opened due to: " + getExplanations());
-                }
+            } else if (confluence >= CONFLUENCE_TARGET && BuySell.enoughFunds()) {
+                BuySell.open(Currency.this, "Trade opened due to: " + getExplanations());
             }
             currentlyCalculating.set(false);
         }

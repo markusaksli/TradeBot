@@ -166,7 +166,6 @@ public final class Collection {
 
                             System.out.println("\n---Collection completed, result in "
                                     + new File(filename).getAbsolutePath());
-                            System.out.println("---Files may only appear after quitting");
 
                             describe(filename);
                         } catch (Exception e) {
@@ -308,7 +307,6 @@ public final class Collection {
         System.out.println("\n---Collection completed in "
                 + Formatter.formatDuration(System.currentTimeMillis() - initTime) + ", result in "
                 + new File(filename).getAbsolutePath());
-        System.out.println("---Files may only appear after quitting");
 
         describe(filename);
 
