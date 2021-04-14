@@ -5,10 +5,8 @@ import com.binance.api.client.domain.general.RateLimitType;
 import indicators.MACD;
 import indicators.RSI;
 import modes.Simulation;
-import trading.BuySell;
+import trading.*;
 import trading.Currency;
-import trading.CurrentAPI;
-import trading.Trade;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,7 +15,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class ConfigSetup {
-    private static final int REQUEST_LIMIT = CurrentAPI.get().getExchangeInfo().getRateLimits().stream()
+    private static final int REQUEST_LIMIT = BinanceAPI.get().getExchangeInfo().getRateLimits().stream()
             .filter(rateLimit -> rateLimit.getRateLimitType().equals(RateLimitType.REQUEST_WEIGHT))
             .findFirst().map(RateLimit::getLimit).orElse(1200);
 
@@ -89,7 +87,7 @@ public class ConfigSetup {
                         currencies = Collections.unmodifiableList(Arrays.asList(arr[1].toUpperCase().split(", ")));
                         break;
                     case "Percentage of money per trade":
-                        BuySell.MONEY_PER_TRADE = Double.parseDouble(arr[1]);
+                        LocalAccount.MONEY_PER_TRADE = Double.parseDouble(arr[1]);
                         break;
                     case "Trailing SL":
                         Trade.TRAILING_SL = Double.parseDouble(arr[1]);

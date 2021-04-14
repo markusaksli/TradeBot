@@ -86,7 +86,6 @@ public final class Live {
         System.out.println(localAccount.getMakerComission() + " Maker commission.");
         System.out.println(localAccount.getBuyerComission() + " Buyer commission");
         System.out.println(localAccount.getTakerComission() + " Taker comission");
-        BuySell.setAccount(localAccount);
 
         //TODO: Open price for existing currencies
         String current = "";
@@ -96,14 +95,14 @@ public final class Live {
                 if (balance.getFree().matches("0\\.0+")) continue;
                 if (ConfigSetup.getCurrencies().contains(balance.getAsset())) {
                     current = balance.getAsset();
-                    Currency balanceCurrency = new Currency(current);
+                    Currency balanceCurrency = new Currency(current, getAccount());
                     currencies.add(balanceCurrency);
                     addedCurrencies.add(current);
                     double amount = Double.parseDouble(balance.getFree());
                     localAccount.getWallet().put(balanceCurrency, amount);
-                    double price = Double.parseDouble(CurrentAPI.get().getPrice(current + ConfigSetup.getFiat()).getPrice());
-                    Optional<String> lotSize = CurrentAPI.get().getExchangeInfo().getSymbolInfo(current + ConfigSetup.getFiat()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty());
-                    Optional<String> minNotational = CurrentAPI.get().getExchangeInfo().getSymbolInfo(current + ConfigSetup.getFiat()).getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
+                    double price = Double.parseDouble(BinanceAPI.get().getPrice(current + ConfigSetup.getFiat()).getPrice());
+                    Optional<String> lotSize = BinanceAPI.get().getExchangeInfo().getSymbolInfo(current + ConfigSetup.getFiat()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty());
+                    Optional<String> minNotational = BinanceAPI.get().getExchangeInfo().getSymbolInfo(current + ConfigSetup.getFiat()).getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
                     if (lotSize.isPresent()) {
                         if (amount < Double.parseDouble(lotSize.get())) {
                             System.out.println(balance.getFree() + " " + current + " is less than LOT_SIZE " + lotSize.get());
@@ -128,7 +127,7 @@ public final class Live {
             for (String arg : ConfigSetup.getCurrencies()) {
                 if (!addedCurrencies.contains(arg)) {
                     current = arg;
-                    currencies.add(new Currency(current));
+                    currencies.add(new Currency(current, getAccount()));
                 }
             }
         } catch (Exception e) {

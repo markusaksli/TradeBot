@@ -30,7 +30,6 @@ public final class Backtesting {
             System.exit(0);
         }
         localAccount = new LocalAccount("Investor Toomas", Simulation.STARTING_VALUE);
-        BuySell.setAccount(localAccount);
         Scanner sc = new Scanner(System.in);
         while (true) {
             System.out.println("\nBacktesting data files:\n");
@@ -47,12 +46,12 @@ public final class Backtesting {
             String path = "backtesting/" + backtestingFiles[index - 1];
             try {
                 System.out.println("\n---Setting up...");
-                Currency currency = new Currency(new File(path).getName().split("_")[0], path);
+                Currency currency = new Currency(new File(path).getName().split("_")[0], path, getAccount());
                 currencies.add(currency);
 
                 for (Trade trade : localAccount.getActiveTrades()) {
                     trade.setExplanation(trade.getExplanation() + "Manually closed");
-                    BuySell.close(trade);
+                    getAccount().close(trade);
                 }
 
 

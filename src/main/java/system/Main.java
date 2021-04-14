@@ -17,9 +17,11 @@ public class Main {
             ConfigSetup.readConfig();
         } catch (ExceptionInInitializerError cause) {
             if (cause.getCause() != null) {
-                if (cause.getCause().getMessage().toLowerCase().contains("banned")) {
+                if (cause.getCause().getMessage() != null && cause.getCause().getMessage().toLowerCase().contains("banned")) {
                     long bannedTime = Long.parseLong(cause.getCause().getMessage().split("until ")[1].split("\\.")[0]);
                     System.out.println("\nIP Banned by Binance API until " + Formatter.formatDate(bannedTime) + " (" + Formatter.formatDuration(bannedTime - System.currentTimeMillis()) + ")");
+                } else {
+                    cause.printStackTrace();
                 }
             }
             new Scanner(System.in).next();
@@ -177,7 +179,7 @@ public class Main {
                                 System.out.println("\nID out of range, use \"currencies\" to see valid IDs!");
                                 continue;
                             }
-                            BuySell.open(currencies.get(openIndex - 1), "Trade opened due to: Manually opened\t");
+                            localAccount.open(currencies.get(openIndex - 1), "Trade opened due to: Manually opened\t");
                             break;
                         case "close":
                             System.out.println("Enter ID of active trade");
@@ -191,10 +193,10 @@ public class Main {
                                 System.out.println("\nID out of range, use \"active\" to see valid IDs!");
                                 continue;
                             }
-                            BuySell.close(localAccount.getActiveTrades().get(closeIndex - 1));
+                            localAccount.close(localAccount.getActiveTrades().get(closeIndex - 1));
                             break;
                         case "close all":
-                            localAccount.getActiveTrades().forEach(BuySell::close);
+                            localAccount.getActiveTrades().forEach(localAccount::close);
                             break;
                         case "refresh":
                             if (Mode.get().equals(Mode.LIVE)) {

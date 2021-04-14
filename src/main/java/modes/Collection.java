@@ -11,7 +11,7 @@ import data.PriceReader;
 import data.PriceWriter;
 import org.apache.commons.io.FileUtils;
 import system.ConfigSetup;
-import trading.CurrentAPI;
+import trading.BinanceAPI;
 import system.Formatter;
 
 import java.io.*;
@@ -40,7 +40,7 @@ public final class Collection {
     public static final String INTERRUPT_MESSAGE = "Thread interrupted while waiting for request permission";
     private static final Semaphore downloadCompletionBlocker = new Semaphore(0);
     private static final Semaphore requestTracker = new Semaphore(0);
-    private static final BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
+    private static final BinanceApiAsyncRestClient client = BinanceAPI.getFactory().newAsyncRestClient();
 
     private Collection() {
         throw new IllegalStateException("Utility class");
@@ -192,7 +192,7 @@ public final class Collection {
         while (true) {
             try {
                 symbol = sc.nextLine().toUpperCase() + ConfigSetup.getFiat();
-                CurrentAPI.get().getPrice(symbol);
+                BinanceAPI.get().getPrice(symbol);
                 break;
             } catch (BinanceApiException e) {
                 System.out.println(e.getMessage());
@@ -340,7 +340,7 @@ public final class Collection {
         }
         symbol = filename.split("[/\\\\]")[1].split("_")[0];
         try (PriceWriter writer = new PriceWriter(filename)) {
-            List<Candlestick> candlesticks = CurrentAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
+            List<Candlestick> candlesticks = BinanceAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
             for (int i = 0; i < candlesticks.size() - 1; i++) {
                 Candlestick candlestick = candlesticks.get(i);
                 writer.writeBean(new PriceBean(candlestick.getCloseTime(), Double.parseDouble(candlestick.getClose()), true));

@@ -99,25 +99,25 @@ public class Trade {
 
         if (getProfit() > TAKE_PROFIT) {
             explanation += "Closed due to: Take profit";
-            BuySell.close(this);
+            currency.getAccount().close(this);
             return;
         }
 
         if (newPrice < high * (1 - TRAILING_SL)) {
             explanation += "Closed due to: Trailing SL";
-            BuySell.close(this);
+            currency.getAccount().close(this);
             return;
         }
 
         if (CLOSE_USE_CONFLUENCE && confluence <= -CLOSE_CONFLUENCE) {
             explanation += "Closed due to: Indicator confluence of " + confluence;
-            BuySell.close(this);
+            currency.getAccount().close(this);
         }
     }
 
     @Override
     public String toString() {
-        return (isClosed() ? (BuySell.getAccount().getTradeHistory().indexOf(this) + 1) : (BuySell.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
+        return (isClosed() ? (currency.getAccount().getTradeHistory().indexOf(this) + 1) : (currency.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
                 + currency.getPair() + " " + Formatter.formatDecimal(amount) + "\n"
                 + "open: " + Formatter.formatDate(openTime) + " at " + entryPrice + "\n"
                 + (isClosed() ? "close: " + Formatter.formatDate(closeTime) + " at " + closePrice : "current price: " + currency.getPrice()) + "\n"
