@@ -1,4 +1,4 @@
-package modes;
+package system;
 
 import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiCallback;
@@ -10,9 +10,6 @@ import data.PriceBean;
 import data.PriceReader;
 import data.PriceWriter;
 import org.apache.commons.io.FileUtils;
-import system.ConfigSetup;
-import trading.BinanceAPI;
-import system.Formatter;
 
 import java.io.*;
 import java.nio.file.Files;

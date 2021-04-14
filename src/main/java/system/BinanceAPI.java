@@ -1,4 +1,4 @@
-package trading;
+package system;
 
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;

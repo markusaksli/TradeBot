@@ -4,7 +4,6 @@ import com.binance.api.client.domain.general.RateLimit;
 import com.binance.api.client.domain.general.RateLimitType;
 import indicators.MACD;
 import indicators.RSI;
-import modes.Simulation;
 import trading.*;
 import trading.Currency;
 
@@ -81,7 +80,7 @@ public class ConfigSetup {
                         RSI.NEGATIVE_MAX = Integer.parseInt(arr[1]);
                         break;
                     case "Simulation mode starting value":
-                        Simulation.STARTING_VALUE = Integer.parseInt(arr[1]);
+                        Instance.STARTING_VALUE = Integer.parseInt(arr[1]);
                         break;
                     case "Currencies to track":
                         currencies = Collections.unmodifiableList(Arrays.asList(arr[1].toUpperCase().split(", ")));

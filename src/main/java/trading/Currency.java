@@ -9,9 +9,9 @@ import indicators.DBB;
 import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
+import system.BinanceAPI;
 import system.ConfigSetup;
 import system.Formatter;
-import system.Mode;
 
 import java.io.Closeable;
 import java.io.File;
@@ -122,7 +122,7 @@ public class Currency implements Closeable {
 
         if (bean.isClosing()) {
             indicators.forEach(indicator -> indicator.update(bean.getPrice()));
-            if (Mode.get().equals(Mode.BACKTESTING)) {
+            if (account.getInstance().getMode().equals(Instance.Mode.BACKTESTING)) {
                 appendLogLine(system.Formatter.formatDate(currentTime) + " " + this);
             }
         }
@@ -272,7 +272,6 @@ public class Currency implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if (Mode.get().equals(Mode.BACKTESTING) || Mode.get().equals(Mode.COLLECTION)) return;
-        apiListener.close();
+        if (apiListener != null) apiListener.close();
     }
 }

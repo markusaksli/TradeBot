@@ -9,9 +9,9 @@ import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.exception.BinanceApiException;
+import system.BinanceAPI;
 import system.ConfigSetup;
 import system.Formatter;
-import system.Mode;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -28,7 +28,7 @@ import static com.binance.api.client.domain.account.NewOrder.marketSell;
 public class LocalAccount {
     public static double MONEY_PER_TRADE;
 
-    private final String username;
+    private final Instance instance;
     private Account realAccount;
     private BinanceApiClientFactory apiFactory;
     private BinanceApiRestClient client;
@@ -47,8 +47,8 @@ public class LocalAccount {
      * Wallet value will most probably be 0 at first, but you could start
      * with an existing wallet value as well.
      */
-    public LocalAccount(String username, double startingValue) {
-        this.username = username;
+    public LocalAccount(Instance instance, double startingValue) {
+        this.instance = instance;
         this.startingValue = startingValue;
         fiatValue = startingValue;
         wallet = new ConcurrentHashMap<>();
@@ -56,11 +56,11 @@ public class LocalAccount {
         activeTrades = new CopyOnWriteArrayList<>();
     }
 
-    public LocalAccount(String apiKey, String secretApiKey) {
+    public LocalAccount(Instance instance, String apiKey, String secretApiKey) {
+        this.instance = instance;
         apiFactory = BinanceAPI.login(apiKey, secretApiKey);
         client = apiFactory.newRestClient();
 
-        username = "";
         wallet = new ConcurrentHashMap<>();
         tradeHistory = new ArrayList<>();
         activeTrades = new CopyOnWriteArrayList<>();
@@ -110,13 +110,12 @@ public class LocalAccount {
         tradeHistory.add(trade);
     }
 
-    //All the get methods.
-    public String getUsername() {
-        return username;
-    }
-
     public double getFiat() {
         return fiatValue;
+    }
+
+    public Instance getInstance() {
+        return instance;
     }
 
     public void setFiat(double fiatValue) {
@@ -213,7 +212,7 @@ public class LocalAccount {
         double amount = fiatCost / currency.getPrice();
 
         Trade trade;
-        if (Mode.get().equals(Mode.LIVE)) {
+        if (instance.getMode().equals(Instance.Mode.LIVE)) {
             NewOrderResponse order = placeOrder(currency, amount, true);
             if (order == null) {
                 return;
@@ -251,12 +250,12 @@ public class LocalAccount {
                 + currency.getPair() + "), at " + Formatter.formatDecimal(trade.getEntryPrice())
                 + ", " + trade.getExplanation();
         System.out.println(message);
-        if (Mode.get().equals(Mode.BACKTESTING)) currency.appendLogLine(message);
+        if (instance.getMode().equals(Instance.Mode.BACKTESTING)) currency.appendLogLine(message);
     }
 
     //Used by trade
     public void close(Trade trade) {
-        if (Mode.get().equals(Mode.LIVE)) {
+        if (instance.getMode().equals(Instance.Mode.LIVE)) {
             NewOrderResponse order = placeOrder(trade.getCurrency(), trade.getAmount(), false);
             if (order == null) {
                 return;
@@ -295,11 +294,11 @@ public class LocalAccount {
                 + ", with " + Formatter.formatPercent(trade.getProfit()) + " profit"
                 + "\n------" + trade.getExplanation();
         System.out.println(message);
-        if (Mode.get().equals(Mode.BACKTESTING)) trade.getCurrency().appendLogLine(message);
+        if (instance.getMode().equals(Instance.Mode.BACKTESTING)) trade.getCurrency().appendLogLine(message);
     }
 
     private double nextAmount() {
-        if (Mode.get().equals(Mode.BACKTESTING)) return getFiat();
+        if (instance.getMode().equals(Instance.Mode.BACKTESTING)) return getFiat();
         return Math.min(getFiat(), getTotalValue() * MONEY_PER_TRADE);
     }
 
