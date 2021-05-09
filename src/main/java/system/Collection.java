@@ -6,9 +6,9 @@ import com.binance.api.client.domain.market.AggTrade;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import com.binance.api.client.exception.BinanceApiException;
-import data.PriceBean;
-import data.PriceReader;
-import data.PriceWriter;
+import data.price.PriceBean;
+import data.price.PriceReader;
+import data.price.PriceWriter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
@@ -185,10 +185,10 @@ public final class Collection {
         if (!returnToModes) {
             return;
         }
-        System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
+        System.out.println("Enter collectable currency pair (BTCUSDT, LINKBTC...)");
         while (true) {
             try {
-                symbol = sc.nextLine().toUpperCase() + ConfigSetup.getFiat();
+                symbol = sc.nextLine().toUpperCase();
                 BinanceAPI.get().getPrice(symbol);
                 break;
             } catch (BinanceApiException e) {
@@ -243,9 +243,9 @@ public final class Collection {
             e.printStackTrace();
         }
 
-        int requestDelay = 60000 / ConfigSetup.getRequestLimit();
-        System.out.println("---Request delay: " + requestDelay + " ms (" + ConfigSetup.getRequestLimit() + " per minute)");
-        System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
+        int requestDelay = 60000 / Config.getRequestLimit();
+        System.out.println("---Request delay: " + requestDelay + " ms (" + Config.getRequestLimit() + " per minute)");
+        System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) Config.getRequestLimit() * 60000L)) + ")..."));
         initTime = System.currentTimeMillis();
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -417,7 +417,7 @@ public final class Collection {
                 }
                 if (bean.getTimestamp() - last > 1800000L && !bean.isClosing()) {
                     if (firstGap) {
-                        System.out.println("-Gaps (checking for 30min+) usually point to exchange maintenance times, check https://www.binance.com/en/trade/pro/" + symbol.replace(ConfigSetup.getFiat(), "_" + ConfigSetup.getFiat()) + " if suspicious");
+                        System.out.println("-Gaps (checking for 30min+) usually point to exchange maintenance times, check https://www.binance.com/ if suspicious");
                         firstGap = false;
                     }
                     System.out.println("Gap from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));

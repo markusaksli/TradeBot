@@ -1,4 +1,4 @@
-package data;
+package data.price;
 
 import java.io.*;
 

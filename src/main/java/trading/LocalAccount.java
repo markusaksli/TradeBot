@@ -1,6 +1,5 @@
 package trading;
 
-import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.Account;
@@ -10,7 +9,6 @@ import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.exception.BinanceApiException;
 import system.BinanceAPI;
-import system.ConfigSetup;
 import system.Formatter;
 
 import java.math.BigDecimal;
@@ -26,11 +24,8 @@ import static com.binance.api.client.domain.account.NewOrder.marketBuy;
 import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
 public class LocalAccount {
-    public static double MONEY_PER_TRADE;
-
     private final Instance instance;
     private Account realAccount;
-    private BinanceApiClientFactory apiFactory;
     private BinanceApiRestClient client;
 
     //To give the account a specific final amount of money.
@@ -39,9 +34,9 @@ public class LocalAccount {
     private final ConcurrentHashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
     private final List<Trade> activeTrades;
-    private double makerComission;
-    private double takerComission;
-    private double buyerComission;
+    private double makerCommission;
+    private double takerCommission;
+    private double buyerCommission;
 
     /**
      * Wallet value will most probably be 0 at first, but you could start
@@ -58,8 +53,7 @@ public class LocalAccount {
 
     public LocalAccount(Instance instance, String apiKey, String secretApiKey) {
         this.instance = instance;
-        apiFactory = BinanceAPI.login(apiKey, secretApiKey);
-        client = apiFactory.newRestClient();
+        client = BinanceAPI.login(apiKey, secretApiKey).newRestClient();
 
         wallet = new ConcurrentHashMap<>();
         tradeHistory = new ArrayList<>();
@@ -68,20 +62,20 @@ public class LocalAccount {
         if (!realAccount.isCanTrade()) {
             System.out.println("Can't trade!");
         }
-        makerComission = realAccount.getMakerCommission(); //Maker fees are
+        makerCommission = realAccount.getMakerCommission(); //Maker fees are
         // paid when you add liquidity to our order book
         // by placing a limit order below the ticker price for buy, and above the ticker price for sell.
-        takerComission = realAccount.getTakerCommission();//Taker fees are paid when you remove
+        takerCommission = realAccount.getTakerCommission();//Taker fees are paid when you remove
         // liquidity from our order book by placing any order that is executed against an order on the order book.
-        buyerComission = realAccount.getBuyerCommission();
+        buyerCommission = realAccount.getBuyerCommission();
 
         //Example: If the current market/ticker price is $2000 for 1 BTC and you market buy bitcoins starting at the market price of $2000, then you will pay the taker fee. In this instance, you have taken liquidity/coins from the order book.
         //
         //If the current market/ticker price is $2000 for 1 BTC and you
         //place a limit buy for bitcoins at $1995, then
         //you will pay the maker fee IF the market/ticker price moves into your limit order at $1995.
-        fiatValue = Double.parseDouble(realAccount.getAssetBalance(ConfigSetup.getFiat()).getFree());
-        System.out.println("---Starting FIAT: " + Formatter.formatDecimal(fiatValue) + " " + ConfigSetup.getFiat());
+        fiatValue = Double.parseDouble(realAccount.getAssetBalance(instance.getFiat()).getFree());
+        System.out.println("---Starting FIAT: " + Formatter.formatDecimal(fiatValue) + " " + instance.getFiat());
     }
 
     public Account getRealAccount() {
@@ -180,16 +174,16 @@ public class LocalAccount {
         wallet.put(key, wallet.get(key) - value);
     }
 
-    public double getMakerComission() {
-        return makerComission;
+    public double getMakerCommission() {
+        return makerCommission;
     }
 
-    public double getTakerComission() {
-        return takerComission;
+    public double getTakerCommission() {
+        return takerCommission;
     }
 
-    public double getBuyerComission() {
-        return buyerComission;
+    public double getBuyerCommission() {
+        return buyerCommission;
     }
 
     public boolean enoughFunds() {
@@ -227,7 +221,7 @@ public class LocalAccount {
             }
             System.out.println("Got filled for " + BigDecimal.valueOf(fillsQty).toString()
                     + " at " + Formatter.formatDate(order.getTransactTime())
-                    + ", at a price of " + Formatter.formatDecimal(fillsPrice) + " " + ConfigSetup.getFiat());
+                    + ", at a price of " + Formatter.formatDecimal(fillsPrice) + " " + instance.getFiat());
             fiatCost = fillsPrice;
             amount = fillsQty;
             trade = new Trade(currency, fillsPrice / fillsQty, amount, explanation);
@@ -269,7 +263,7 @@ public class LocalAccount {
             }
             System.out.println("Got filled for " + BigDecimal.valueOf(fillsQty).toString()
                     + " at " + Formatter.formatDate(order.getTransactTime())
-                    + ", at a price of " + Formatter.formatDecimal(fillsPrice) + " " + ConfigSetup.getFiat());
+                    + ", at a price of " + Formatter.formatDecimal(fillsPrice) + " " + instance.getFiat());
             trade.setClosePrice(fillsPrice / fillsQty);
             trade.setCloseTime(order.getTransactTime());
             removeFromWallet(trade.getCurrency(), fillsQty);
@@ -299,7 +293,7 @@ public class LocalAccount {
 
     private double nextAmount() {
         if (instance.getMode().equals(Instance.Mode.BACKTESTING)) return getFiat();
-        return Math.min(getFiat(), getTotalValue() * MONEY_PER_TRADE);
+        return Math.min(getFiat(), getTotalValue() * instance.getConfig().getMoneyPerTrade());
     }
 
 

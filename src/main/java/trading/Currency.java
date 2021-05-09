@@ -3,14 +3,13 @@ package trading;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
-import data.PriceBean;
-import data.PriceReader;
+import data.price.PriceBean;
+import data.price.PriceReader;
 import indicators.DBB;
 import indicators.Indicator;
 import indicators.MACD;
 import indicators.RSI;
 import system.BinanceAPI;
-import system.ConfigSetup;
 import system.Formatter;
 
 import java.io.Closeable;
@@ -47,7 +46,7 @@ public class Currency implements Closeable {
 
     //Used for SIMULATION and LIVE
     public Currency(String coin, LocalAccount account) {
-        this.pair = coin + ConfigSetup.getFiat();
+        this.pair = coin + account.getInstance().getFiat();
         this.account = account;
 
         //Every currency needs to contain and update our indicators
@@ -194,7 +193,7 @@ public class Currency implements Closeable {
         try (FileWriter writer = new FileWriter(path)) {
             writer.write("Test ended " + system.Formatter.formatDate(LocalDateTime.now()) + " \n");
             writer.write("\n\nCONFIG:\n");
-            writer.write(ConfigSetup.getSetup());
+            writer.write(account.getInstance().getConfig().toString());
             writer.write("\n\nMarket performance: " + system.Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
             if (!tradeHistory.isEmpty()) {
                 tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));

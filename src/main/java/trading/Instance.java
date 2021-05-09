@@ -4,8 +4,9 @@ import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.exception.BinanceApiException;
+import data.config.ConfigData;
 import system.BinanceAPI;
-import system.ConfigSetup;
+import system.Config;
 import system.Formatter;
 
 import java.io.Closeable;
@@ -20,6 +21,8 @@ public class Instance implements Closeable {
     private final String ID;
     private final LocalAccount account;
     private final Mode mode;
+    private String fiat;
+    private Config config;
 
     public String getID() {
         return ID;
@@ -56,7 +59,7 @@ public class Instance implements Closeable {
             try {
                 currencies.add(new Currency(arg, account));
             } catch (BinanceApiException e) {
-                System.out.println("---Could not add " + arg + ConfigSetup.getFiat());
+                System.out.println("---Could not add " + arg + fiat);
                 System.out.println(e.getMessage());
             }
         }
@@ -103,9 +106,9 @@ public class Instance implements Closeable {
         }*/
         account = new LocalAccount(this, apiKey, secretKey);
         System.out.println("Can trade: " + account.getRealAccount().isCanTrade());
-        System.out.println(account.getMakerComission() + " Maker commission.");
-        System.out.println(account.getBuyerComission() + " Buyer commission");
-        System.out.println(account.getTakerComission() + " Taker comission");
+        System.out.println(account.getMakerCommission() + " Maker commission.");
+        System.out.println(account.getBuyerCommission() + " Buyer commission");
+        System.out.println(account.getTakerCommission() + " Taker comission");
 
         //TODO: Open price for existing currencies
         String current = "";
@@ -120,9 +123,9 @@ public class Instance implements Closeable {
                     addedCurrencies.add(current);
                     double amount = Double.parseDouble(balance.getFree());
                     account.getWallet().put(balanceCurrency, amount);
-                    double price = Double.parseDouble(BinanceAPI.get().getPrice(current + ConfigSetup.getFiat()).getPrice());
-                    Optional<String> lotSize = BinanceAPI.get().getExchangeInfo().getSymbolInfo(current + ConfigSetup.getFiat()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty());
-                    Optional<String> minNotational = BinanceAPI.get().getExchangeInfo().getSymbolInfo(current + ConfigSetup.getFiat()).getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
+                    double price = Double.parseDouble(BinanceAPI.get().getPrice(current + fiat).getPrice());
+                    Optional<String> lotSize = BinanceAPI.get().getExchangeInfo().getSymbolInfo(current + fiat).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty());
+                    Optional<String> minNotational = BinanceAPI.get().getExchangeInfo().getSymbolInfo(current + fiat).getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
                     if (lotSize.isPresent()) {
                         if (amount < Double.parseDouble(lotSize.get())) {
                             System.out.println(balance.getFree() + " " + current + " is less than LOT_SIZE " + lotSize.get());
@@ -151,7 +154,7 @@ public class Instance implements Closeable {
                 }
             }
         } catch (Exception e) {
-            System.out.println("---Could not add " + current + ConfigSetup.getFiat());
+            System.out.println("---Could not add " + current + fiat);
             System.out.println(e.getMessage());
         }
     }
@@ -209,7 +212,7 @@ public class Instance implements Closeable {
         if (mode != Mode.LIVE) return;
         for (AssetBalance balance : account.getRealAccount().getBalances()) {
             if (balance.getFree().matches("0\\.0+")) continue;
-            if (balance.getAsset().equals(ConfigSetup.getFiat())) {
+            if (balance.getAsset().equals(fiat)) {
                 final double amount = Double.parseDouble(balance.getFree());
                 if (account.getFiat() != amount) {
                     System.out.println("---Refreshed " + balance.getAsset() + " from " + Formatter.formatDecimal(account.getFiat()) + " to " + amount);
@@ -219,7 +222,7 @@ public class Instance implements Closeable {
                 continue;
             }
             for (Currency currency : currencies) {
-                if ((balance.getAsset() + ConfigSetup.getFiat()).equals(currency.getPair())) {
+                if ((balance.getAsset() + fiat).equals(currency.getPair())) {
                     final double amount = Double.parseDouble(balance.getFree());
                     if (!account.getWallet().containsKey(currency)) {
                         System.out.println("---Refreshed " + currency.getPair() + " from 0 to " + balance.getFree());
@@ -287,12 +290,12 @@ public class Instance implements Closeable {
                     }
                     break;
                 case "wallet":
-                    System.out.println("\nTotal wallet value: " + Formatter.formatDecimal(instance.account.getTotalValue()) + " " + ConfigSetup.getFiat());
-                    System.out.println(Formatter.formatDecimal(instance.account.getFiat()) + " " + ConfigSetup.getFiat());
+                    System.out.println("\nTotal wallet value: " + Formatter.formatDecimal(instance.account.getTotalValue()) + " " + instance.getFiat());
+                    System.out.println(Formatter.formatDecimal(instance.account.getFiat()) + " " + instance.getFiat());
                     for (Map.Entry<Currency, Double> entry : instance.account.getWallet().entrySet()) {
                         if (entry.getValue() != 0) {
-                            System.out.println(Formatter.formatDecimal(entry.getValue()) + " " + entry.getKey().getPair().replace(ConfigSetup.getFiat(), "")
-                                    + " (" + Formatter.formatDecimal(entry.getKey().getPrice() * entry.getValue()) + " " + ConfigSetup.getFiat() + ")");
+                            System.out.println(Formatter.formatDecimal(entry.getValue()) + " " + entry.getKey().getPair().replace(instance.getFiat(), "")
+                                    + " (" + Formatter.formatDecimal(entry.getKey().getPrice() * entry.getValue()) + " " + instance.getFiat() + ")");
                         }
                     }
                     break;
@@ -358,6 +361,14 @@ public class Instance implements Closeable {
         if (timer != null) {
             timer.cancel();
         }
+    }
+
+    public ConfigData getConfig() {
+        return config.getData();
+    }
+
+    public String getFiat() {
+        return fiat;
     }
 
     public enum Mode {
