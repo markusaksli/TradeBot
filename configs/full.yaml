@@ -1,9 +1,10 @@
+#TODO: Everything should be documented in here
 moneyPerTrade: 0.1
 trailingSl: 0.1
 takeProfit: 0.15
 
 confluenceToOpen: 2
-#confluenceToClose: 2
+confluenceToClose: 2
 indicators:
   - !<RSI>
     weight: 1

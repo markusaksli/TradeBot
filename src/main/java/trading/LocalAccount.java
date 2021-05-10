@@ -38,10 +38,6 @@ public class LocalAccount {
     private double takerCommission;
     private double buyerCommission;
 
-    /**
-     * Wallet value will most probably be 0 at first, but you could start
-     * with an existing wallet value as well.
-     */
     public LocalAccount(Instance instance, double startingValue) {
         this.instance = instance;
         this.startingValue = startingValue;

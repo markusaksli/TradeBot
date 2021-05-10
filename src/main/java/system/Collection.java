@@ -6,6 +6,7 @@ import com.binance.api.client.domain.market.AggTrade;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import com.binance.api.client.exception.BinanceApiException;
+import data.config.Config;
 import data.price.PriceBean;
 import data.price.PriceReader;
 import data.price.PriceWriter;

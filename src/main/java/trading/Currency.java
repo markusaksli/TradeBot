@@ -3,13 +3,12 @@ package trading;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
+import data.config.IndicatorConfig;
 import data.price.PriceBean;
 import data.price.PriceReader;
-import indicators.DBB;
 import indicators.Indicator;
-import indicators.MACD;
-import indicators.RSI;
 import system.BinanceAPI;
+import data.config.Config;
 import system.Formatter;
 
 import java.io.Closeable;
@@ -26,8 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class Currency implements Closeable {
-    public static int CONFLUENCE_TARGET;
-
     private final String pair;
     private LocalAccount account;
     private Trade activeTrade;
@@ -51,10 +48,10 @@ public class Currency implements Closeable {
 
         //Every currency needs to contain and update our indicators
         List<Candlestick> history = BinanceAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES);
-        List<Double> closingPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
-        indicators.add(new RSI(closingPrices, 14));
-        indicators.add(new MACD(closingPrices, 12, 26, 9));
-        indicators.add(new DBB(closingPrices, 20));
+        List<Double> indicatorWarmupPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
+        for (IndicatorConfig indicatorConfig : Config.get(this).getIndicators()) {
+            indicators.add(indicatorConfig.toIndicator(indicatorWarmupPrices));
+        }
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         currentTime = System.currentTimeMillis();
@@ -91,15 +88,14 @@ public class Currency implements Closeable {
             PriceBean bean = reader.readPrice();
 
             firstBean = bean;
-            List<Double> closingPrices = new ArrayList<>();
+            List<Double> indicatorWarmupPrices = new ArrayList<>();
             while (bean.isClosing()) {
-                closingPrices.add(bean.getPrice());
+                indicatorWarmupPrices.add(bean.getPrice());
                 bean = reader.readPrice();
             }
-            //TODO: Fix slight mismatch between MACD backtesting and server values.
-            indicators.add(new RSI(closingPrices, 14));
-            indicators.add(new MACD(closingPrices, 12, 26, 9));
-            indicators.add(new DBB(closingPrices, 20));
+            for (IndicatorConfig indicatorConfig : Config.get(this).getIndicators()) {
+                indicators.add(indicatorConfig.toIndicator(indicatorWarmupPrices));
+            }
             while (bean != null) {
                 accept(bean);
                 bean = reader.readPrice();
@@ -130,12 +126,12 @@ public class Currency implements Closeable {
             int confluence = 0; //0 Confluence should be reserved in the config for doing nothing
             currentlyCalculating.set(true);
             //We can disable the strategy and trading logic to only check indicator and price accuracy
-            if ((Trade.CLOSE_USE_CONFLUENCE && hasActiveTrade()) || account.enoughFunds()) {
+            if ((Config.get(this).useConfluenceToClose() && hasActiveTrade()) || account.enoughFunds()) {
                 confluence = check();
             }
             if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
                 activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-            } else if (confluence >= CONFLUENCE_TARGET && account.enoughFunds()) {
+            } else if (confluence >= Config.get(this).getConfluenceToOpen() && account.enoughFunds()) {
                 account.open(Currency.this, "Trade opened due to: " + getExplanations());
             }
             currentlyCalculating.set(false);
@@ -193,7 +189,7 @@ public class Currency implements Closeable {
         try (FileWriter writer = new FileWriter(path)) {
             writer.write("Test ended " + system.Formatter.formatDate(LocalDateTime.now()) + " \n");
             writer.write("\n\nCONFIG:\n");
-            writer.write(account.getInstance().getConfig().toString());
+            writer.write(Config.get(this).toString());
             writer.write("\n\nMarket performance: " + system.Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
             if (!tradeHistory.isEmpty()) {
                 tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));

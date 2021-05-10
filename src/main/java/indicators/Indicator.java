@@ -11,7 +11,7 @@ public interface Indicator {
     double getTemp(double newPrice);
 
     //Used in constructor to set initial value
-    void init(List<Double> closingPrices);
+    void init(List<Double> warmupData);
 
     //Used to update value with latest closed candle closing price
     void update(double newPrice);

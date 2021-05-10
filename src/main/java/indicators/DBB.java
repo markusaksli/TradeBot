@@ -1,10 +1,14 @@
 package indicators;
+import data.config.DbbConfig;
+
 import java.util.List;
 
+//Common period for BB is 20
 public class DBB implements Indicator {
+    private final DbbConfig config;
+
     private double closingPrice;
     private double standardDeviation;
-    private final int period;
     private double upperBand;
     private double upperMidBand;
     private double middleBand;
@@ -13,10 +17,10 @@ public class DBB implements Indicator {
     private String explanation;
     private SMA sma;
 
-    public DBB(List<Double> closingPrices, int period) {
-        this.period = period;
-        this.sma = new SMA(closingPrices, period);
-        init(closingPrices);
+    public DBB(List<Double> warmupData, DbbConfig config) {
+        this.config = config;
+        this.sma = new SMA(warmupData, config.getPeriod());
+        init(warmupData);
     }
 
     @Override
@@ -50,16 +54,16 @@ public class DBB implements Indicator {
     }
 
     @Override
-    public void init(List<Double> closingPrices) {
-        if (period > closingPrices.size()) return;
+    public void init(List<Double> warmupData) {
+        if (config.getPeriod() > warmupData.size()) return;
 
-        closingPrice = closingPrices.size() - 2;
+        closingPrice = warmupData.size() - 2;
         standardDeviation = sma.standardDeviation();
         middleBand = sma.get();
-        upperBand = middleBand + standardDeviation*2;
+        upperBand = middleBand + standardDeviation * 2;
         upperMidBand = middleBand + standardDeviation;
         lowerMidBand = middleBand - standardDeviation;
-        lowerBand = middleBand - standardDeviation*2;
+        lowerBand = middleBand - standardDeviation * 2;
 
     }
 
@@ -79,11 +83,11 @@ public class DBB implements Indicator {
     public int check(double newPrice) {
         if (getTemp(newPrice) == 1) {
             explanation = "Price in DBB buy zone";
-            return 1;
+            return config.getWeight();
         }
         if (getTemp(newPrice) == -1) {
             explanation = "Price in DBB sell zone";
-            return -1;
+            return -config.getWeight();
         }
         explanation = "";
         return 0;

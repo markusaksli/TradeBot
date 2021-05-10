@@ -1,15 +1,11 @@
 package trading;
 
+import data.config.Config;
 import system.Formatter;
 
 public class Trade {
 
     private double high; //Set the highest price
-
-    public static double TRAILING_SL; //It's in percentages, but using double for comfort.
-    public static double TAKE_PROFIT; //It's in percentages, but using double for comfort.
-    public static boolean CLOSE_USE_CONFLUENCE;
-    public static int CLOSE_CONFLUENCE;
 
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
@@ -30,8 +26,6 @@ public class Trade {
     }
 
     //Getters and setters
-
-
     public String getExplanation() {
         return explanation;
     }
@@ -97,19 +91,22 @@ public class Trade {
     public void update(double newPrice, int confluence) {
         if (newPrice > high) high = newPrice;
 
-        if (getProfit() > TAKE_PROFIT) {
+        //TP
+        if (getProfit() > Config.get(this).getTakeProfit()) {
             explanation += "Closed due to: Take profit";
             currency.getAccount().close(this);
             return;
         }
 
-        if (newPrice < high * (1 - TRAILING_SL)) {
+        //Trailing SL
+        if (newPrice < high * (1 - Config.get(this).getTrailingSl())) {
             explanation += "Closed due to: Trailing SL";
             currency.getAccount().close(this);
             return;
         }
 
-        if (CLOSE_USE_CONFLUENCE && confluence <= -CLOSE_CONFLUENCE) {
+        //Confluence to close
+        if (Config.get(this).useConfluenceToClose() && confluence <= -Config.get(this).getConfluenceToClose()) {
             explanation += "Closed due to: Indicator confluence of " + confluence;
             currency.getAccount().close(this);
         }

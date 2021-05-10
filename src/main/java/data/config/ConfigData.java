@@ -7,11 +7,11 @@ public class ConfigData {
     private double trailingSl;
     private double takeProfit;
     private int confluenceToOpen;
-    private Integer confluenceToClose;
+    private Integer confluenceToClose; //Number of indicators can't be changed
 
-    private List<IndicatorData> indicators;
+    private List<IndicatorConfig> indicators;
 
-    public ConfigData(double moneyPerTrade, double trailingSl, double takeProfit, int confluenceToOpen, Integer confluenceToClose, List<IndicatorData> indicators) {
+    public ConfigData(double moneyPerTrade, double trailingSl, double takeProfit, int confluenceToOpen, Integer confluenceToClose, List<IndicatorConfig> indicators) {
         this.moneyPerTrade = moneyPerTrade;
         this.trailingSl = trailingSl;
         this.takeProfit = takeProfit;
@@ -23,6 +23,18 @@ public class ConfigData {
     public ConfigData() {
     }
 
+    public void update(ConfigData newConfig) throws ConfigUpdateException {
+        if (newConfig.getIndicators().size() != indicators.size())
+            throw new ConfigUpdateException("Number of indicators has changed");
+        for (int i = 0; i < indicators.size(); i++) {
+            indicators.get(i).update(newConfig.getIndicators().get(i));
+        }
+        moneyPerTrade = newConfig.moneyPerTrade;
+        trailingSl = newConfig.trailingSl;
+        takeProfit = newConfig.takeProfit;
+        confluenceToOpen = newConfig.confluenceToOpen;
+        confluenceToClose = newConfig.confluenceToClose;
+    }
 
     public double getMoneyPerTrade() {
         return moneyPerTrade;
@@ -64,11 +76,11 @@ public class ConfigData {
         this.confluenceToClose = confluenceToClose;
     }
 
-    public List<IndicatorData> getIndicators() {
+    public List<IndicatorConfig> getIndicators() {
         return indicators;
     }
 
-    public void setIndicators(List<IndicatorData> indicators) {
+    public void setIndicators(List<IndicatorConfig> indicators) {
         this.indicators = indicators;
     }
 

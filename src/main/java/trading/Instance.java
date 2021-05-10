@@ -6,7 +6,7 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.exception.BinanceApiException;
 import data.config.ConfigData;
 import system.BinanceAPI;
-import system.Config;
+import data.config.Config;
 import system.Formatter;
 
 import java.io.Closeable;

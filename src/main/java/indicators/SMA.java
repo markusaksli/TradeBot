@@ -4,15 +4,15 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class SMA implements Indicator {
-
-    private double currentSum;
     private final int period;
     private final LinkedList<Double> prices;
 
-    public SMA(List<Double> closingPrices, int period) {
+    private double currentSum;
+
+    public SMA(List<Double> warmupData, int period) {
         this.period = period;
         prices = new LinkedList<>();
-        init(closingPrices);
+        init(warmupData);
     }
 
     @Override
@@ -26,13 +26,13 @@ public class SMA implements Indicator {
     }
 
     @Override
-    public void init(List<Double> closingPrices) {
-        if (period > closingPrices.size()) return;
+    public void init(List<Double> warmupData) {
+        if (period > warmupData.size()) return;
 
         //Initial sum
-        for (int i = closingPrices.size() - period - 1; i < closingPrices.size() - 1; i++) {
-            prices.add(closingPrices.get(i));
-            currentSum += (closingPrices.get(i));
+        for (int i = warmupData.size() - period - 1; i < warmupData.size() - 1; i++) {
+            prices.add(warmupData.get(i));
+            currentSum += (warmupData.get(i));
         }
     }
 

@@ -1,34 +1,34 @@
 package indicators;
 
+import data.config.RsiConfig;
 import system.Formatter;
 
 import java.util.List;
 
+//Common period for RSI is 14
 public class RSI implements Indicator {
+    private final RsiConfig config;
+    private final int period;
 
     private double avgUp;
     private double avgDwn;
     private double prevClose;
-    private final int period;
     private String explanation;
-    public static int POSITIVE_MIN;
-    public static int POSITIVE_MAX;
-    public static int NEGATIVE_MIN;
-    public static int NEGATIVE_MAX;
 
-    public RSI(List<Double> closingPrice, int period) {
+    public RSI(List<Double> warmupData, RsiConfig config) {
         avgUp = 0;
         avgDwn = 0;
-        this.period = period;
         explanation = "";
-        init(closingPrice);
+        this.config = config;
+        this.period = config.getPeriod();
+        init(warmupData);
     }
 
     @Override
-    public void init(List<Double> closingPrices) {
-        prevClose = closingPrices.get(0);
+    public void init(List<Double> warmupData) {
+        prevClose = warmupData.get(0);
         for (int i = 1; i < period + 1; i++) {
-            double change = closingPrices.get(i) - prevClose;
+            double change = warmupData.get(i) - prevClose;
             if (change > 0) {
                 avgUp += change;
             } else {
@@ -41,8 +41,8 @@ public class RSI implements Indicator {
         avgDwn = avgDwn / (double) period;
 
         //Dont use latest unclosed value
-        for (int i = period + 1; i < closingPrices.size() - 1; i++) {
-            update(closingPrices.get(i));
+        for (int i = period + 1; i < warmupData.size() - 1; i++) {
+            update(warmupData.get(i));
         }
     }
 
@@ -82,21 +82,21 @@ public class RSI implements Indicator {
     @Override
     public int check(double newPrice) {
         double temp = getTemp(newPrice);
-        if (temp < POSITIVE_MIN) {
+        if (temp < config.getPositiveMin()) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
-            return 2;
+            return 2 * config.getWeight();
         }
-        if (temp < POSITIVE_MAX) {
+        if (temp < config.getPositiveMax()) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
-            return 1;
+            return config.getWeight();
         }
-        if (temp > NEGATIVE_MIN) {
+        if (temp > config.getNegativeMin()) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
-            return -1;
+            return -config.getWeight();
         }
-        if (temp > NEGATIVE_MAX) {
+        if (temp > config.getNegativeMax()) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
-            return -2;
+            return -2 * config.getWeight();
         }
         explanation = "";
         return 0;

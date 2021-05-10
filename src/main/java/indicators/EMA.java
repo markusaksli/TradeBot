@@ -7,21 +7,20 @@ import java.util.List;
  * EXPONENTIAL MOVING AVERAGE
  */
 public class EMA implements Indicator {
-
-    private double currentEMA;
     private final int period;
     private final double multiplier;
-    private final List<Double> EMAhistory;
+    private final List<Double> history;
     private final boolean historyNeeded;
-    private String fileName;
 
-    public EMA(List<Double> closingPrices, int period, boolean historyNeeded) {
+    private double currentEMA;
+
+    public EMA(List<Double> warmupData, int period, boolean historyNeeded) {
         currentEMA = 0;
         this.period = period;
         this.historyNeeded = historyNeeded;
         this.multiplier = 2.0 / (double) (period + 1);
-        this.EMAhistory = new ArrayList<>();
-        init(closingPrices);
+        this.history = new ArrayList<>();
+        init(warmupData);
     }
 
     @Override
@@ -35,28 +34,27 @@ public class EMA implements Indicator {
     }
 
     @Override
-    public void init(List<Double> closingPrices) {
-        if (period > closingPrices.size()) return;
+    public void init(List<Double> warmupData) {
+        if (period > warmupData.size()) return;
 
         //Initial SMA
         for (int i = 0; i < period; i++) {
-            currentEMA += closingPrices.get(i);
+            currentEMA += warmupData.get(i);
         }
 
         currentEMA = currentEMA / (double) period;
-        if (historyNeeded) EMAhistory.add(currentEMA);
+        if (historyNeeded) history.add(currentEMA);
         //Dont use latest unclosed candle;
-        for (int i = period; i < closingPrices.size() - 1; i++) {
-            update(closingPrices.get(i));
+        for (int i = period; i < warmupData.size() - 1; i++) {
+            update(warmupData.get(i));
         }
     }
 
     @Override
     public void update(double newPrice) {
-        // EMA = (Close - EMA(previousBar)) * multiplier + EMA(previousBar)
         currentEMA = (newPrice - currentEMA) * multiplier + currentEMA;
 
-        if (historyNeeded) EMAhistory.add(currentEMA);
+        if (historyNeeded) history.add(currentEMA);
     }
 
     @Override
@@ -69,8 +67,8 @@ public class EMA implements Indicator {
         return null;
     }
 
-    public List<Double> getEMAhistory() {
-        return EMAhistory;
+    public List<Double> getHistory() {
+        return history;
     }
 
     public int getPeriod() {

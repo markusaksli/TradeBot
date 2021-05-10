@@ -1,13 +1,18 @@
 package data.config;
 
-public class RsiData extends IndicatorData {
+import indicators.Indicator;
+import indicators.RSI;
+
+import java.util.List;
+
+public class RsiConfig extends IndicatorConfig {
     private int period;
     private int positiveMax;
     private int positiveMin;
     private int negativeMax;
     private int negativeMin;
 
-    public RsiData(int weight, int period, int positiveMax, int positiveMin, int negativeMax, int negativeMin) {
+    public RsiConfig(int weight, int period, int positiveMax, int positiveMin, int negativeMax, int negativeMin) {
         this.setWeight(weight);
         this.period = period;
         this.positiveMax = positiveMax;
@@ -16,7 +21,7 @@ public class RsiData extends IndicatorData {
         this.negativeMin = negativeMin;
     }
 
-    public RsiData() {
+    public RsiConfig() {
     }
 
     public int getPeriod() {
@@ -60,9 +65,29 @@ public class RsiData extends IndicatorData {
     }
 
     @Override
+    public Indicator toIndicator(List<Double> warmupData) {
+        return new RSI(warmupData, this);
+    }
+
+    @Override
+    public void update(IndicatorConfig newConfig) throws ConfigUpdateException {
+        super.update(newConfig);
+        RsiConfig newRsiConfig = (RsiConfig) newConfig;
+        if (newRsiConfig.period != period) {
+            throw new ConfigUpdateException("RSI period has changed from " + period + " to " + newRsiConfig.period
+                    + ". Period cannot be changed because exponential indicators are affeced by history.");
+        }
+        positiveMax = newRsiConfig.positiveMax;
+        positiveMin = newRsiConfig.positiveMin;
+        negativeMax = newRsiConfig.negativeMax;
+        negativeMin = newRsiConfig.negativeMin;
+    }
+
+    @Override
     public String toString() {
         return "RSIData{" +
                 "weight=" + getWeight() +
+                ", period=" + period +
                 ", positiveMax=" + positiveMax +
                 ", positiveMin=" + positiveMin +
                 ", negativeMax=" + negativeMax +
