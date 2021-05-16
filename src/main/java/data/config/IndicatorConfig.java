@@ -30,8 +30,6 @@ public abstract class IndicatorConfig {
     }
 
     public void setWeight(int weight) {
-
-        System.out.println(getClass());
         this.weight = weight;
     }
 }

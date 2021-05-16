@@ -2,6 +2,7 @@ package data.config;
 
 import com.binance.api.client.domain.general.RateLimit;
 import com.binance.api.client.domain.general.RateLimitType;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -12,6 +13,7 @@ import trading.Trade;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class Config {
     private static final int REQUEST_LIMIT = BinanceAPI.get().getExchangeInfo().getRateLimits().stream()
@@ -57,6 +59,15 @@ public class Config {
 
     public void update() throws ConfigException {
         data.update(readValues());
+    }
+
+    public String toJson() {
+        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
+        try {
+            return objectMapper.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            return "Failed to serialize config: " + e.getMessage();
+        }
     }
 
     @Override
