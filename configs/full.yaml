@@ -1,0 +1,24 @@
+#TODO: Everything should be documented in here
+moneyPerTrade: 0.1
+trailingSl: 0.1
+takeProfit: 0.15
+
+confluenceToOpen: 2
+# confluenceToClose: 2
+indicators:
+  - !<RSI>
+    weight: 1
+    period: 14
+    positiveMax: 15
+    positiveMin: 30
+    negativeMax: 70
+    negativeMin: 80
+  - !<MACD>
+    weight: 1
+    shortPeriod: 12
+    longPeriod: 26
+    signalPeriod: 9
+    requiredChange: 0.15
+  - !<DBB>
+    weight: 1
+    period: 20

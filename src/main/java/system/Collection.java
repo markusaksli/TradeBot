@@ -1,4 +1,4 @@
-package modes;
+package system;
 
 import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiCallback;
@@ -6,13 +6,11 @@ import com.binance.api.client.domain.market.AggTrade;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import com.binance.api.client.exception.BinanceApiException;
-import data.PriceBean;
-import data.PriceReader;
-import data.PriceWriter;
+import data.config.Config;
+import data.price.PriceBean;
+import data.price.PriceReader;
+import data.price.PriceWriter;
 import org.apache.commons.io.FileUtils;
-import system.ConfigSetup;
-import trading.CurrentAPI;
-import system.Formatter;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -40,7 +38,7 @@ public final class Collection {
     public static final String INTERRUPT_MESSAGE = "Thread interrupted while waiting for request permission";
     private static final Semaphore downloadCompletionBlocker = new Semaphore(0);
     private static final Semaphore requestTracker = new Semaphore(0);
-    private static final BinanceApiAsyncRestClient client = CurrentAPI.getFactory().newAsyncRestClient();
+    private static final BinanceApiAsyncRestClient client = BinanceAPI.getFactory().newAsyncRestClient();
 
     private Collection() {
         throw new IllegalStateException("Utility class");
@@ -188,11 +186,11 @@ public final class Collection {
         if (!returnToModes) {
             return;
         }
-        System.out.println("Enter collectable currency (BTC, LINK, ETH...)");
+        System.out.println("Enter collectable currency pair (BTCUSDT, LINKBTC...)");
         while (true) {
             try {
-                symbol = sc.nextLine().toUpperCase() + ConfigSetup.getFiat();
-                CurrentAPI.get().getPrice(symbol);
+                symbol = sc.nextLine().toUpperCase();
+                BinanceAPI.get().getPrice(symbol);
                 break;
             } catch (BinanceApiException e) {
                 System.out.println(e.getMessage());
@@ -246,9 +244,9 @@ public final class Collection {
             e.printStackTrace();
         }
 
-        int requestDelay = 60000 / ConfigSetup.getRequestLimit();
-        System.out.println("---Request delay: " + requestDelay + " ms (" + ConfigSetup.getRequestLimit() + " per minute)");
-        System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) ConfigSetup.getRequestLimit() * 60000L)) + ")..."));
+        int requestDelay = 60000 / Config.getRequestLimit();
+        System.out.println("---Request delay: " + requestDelay + " ms (" + Config.getRequestLimit() + " per minute)");
+        System.out.println("---Sending " + chunks + " requests (minimum estimate is " + (Formatter.formatDuration((long) ((double) chunks / (double) Config.getRequestLimit() * 60000L)) + ")..."));
         initTime = System.currentTimeMillis();
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -340,7 +338,7 @@ public final class Collection {
         }
         symbol = filename.split("[/\\\\]")[1].split("_")[0];
         try (PriceWriter writer = new PriceWriter(filename)) {
-            List<Candlestick> candlesticks = CurrentAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
+            List<Candlestick> candlesticks = BinanceAPI.get().getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, null, null, start);
             for (int i = 0; i < candlesticks.size() - 1; i++) {
                 Candlestick candlestick = candlesticks.get(i);
                 writer.writeBean(new PriceBean(candlestick.getCloseTime(), Double.parseDouble(candlestick.getClose()), true));
@@ -420,7 +418,7 @@ public final class Collection {
                 }
                 if (bean.getTimestamp() - last > 1800000L && !bean.isClosing()) {
                     if (firstGap) {
-                        System.out.println("-Gaps (checking for 30min+) usually point to exchange maintenance times, check https://www.binance.com/en/trade/pro/" + symbol.replace(ConfigSetup.getFiat(), "_" + ConfigSetup.getFiat()) + " if suspicious");
+                        System.out.println("-Gaps (checking for 30min+) usually point to exchange maintenance times, check https://www.binance.com/ if suspicious");
                         firstGap = false;
                     }
                     System.out.println("Gap from " + Formatter.formatDate(last) + " to " + Formatter.formatDate(bean.getTimestamp()));

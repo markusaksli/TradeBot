@@ -1,17 +1,15 @@
 package trading;
 
-import data.PriceBean;
-import data.PriceReader;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
-import indicators.DBB;
+import data.config.IndicatorConfig;
+import data.price.PriceBean;
+import data.price.PriceReader;
 import indicators.Indicator;
-import indicators.MACD;
-import indicators.RSI;
-import system.ConfigSetup;
+import system.BinanceAPI;
+import data.config.Config;
 import system.Formatter;
-import system.Mode;
 
 import java.io.Closeable;
 import java.io.File;
@@ -20,14 +18,15 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class Currency implements Closeable {
-    public static int CONFLUENCE_TARGET;
-
     private final String pair;
+    private LocalAccount account;
     private Trade activeTrade;
     private long candleTime;
     private final List<Indicator> indicators = new ArrayList<>();
@@ -43,26 +42,25 @@ public class Currency implements Closeable {
     private Closeable apiListener;
 
     //Used for SIMULATION and LIVE
-    public Currency(String coin) {
-        this.pair = coin + ConfigSetup.getFiat();
+    public Currency(String coin, LocalAccount account) {
+        this.pair = coin + account.getInstance().getFiat();
+        this.account = account;
 
         //Every currency needs to contain and update our indicators
-        List<Candlestick> history = CurrentAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES);
-        List<Double> closingPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
-        indicators.add(new RSI(closingPrices, 14));
-        indicators.add(new MACD(closingPrices, 12, 26, 9));
-        indicators.add(new DBB(closingPrices, 20));
+        List<Candlestick> history = BinanceAPI.get().getCandlestickBars(pair, CandlestickInterval.FIVE_MINUTES);
+        List<Double> indicatorWarmupPrices = history.stream().map(candle -> Double.parseDouble(candle.getClose())).collect(Collectors.toList());
+        for (IndicatorConfig indicatorConfig : Config.get(this).getIndicators()) {
+            indicators.add(indicatorConfig.toIndicator(indicatorWarmupPrices));
+        }
 
         //We set the initial values to check against in onMessage based on the latest candle in history
         currentTime = System.currentTimeMillis();
         candleTime = history.get(history.size() - 1).getCloseTime();
         currentPrice = Double.parseDouble(history.get(history.size() - 1).getClose());
 
-        BinanceApiWebSocketClient client = CurrentAPI.getFactory().newWebSocketClient();
+        BinanceApiWebSocketClient client = BinanceAPI.getFactory().newWebSocketClient();
         //We add a websocket listener that automatically updates our values and triggers our strategy or trade logic as needed
         apiListener = client.onAggTradeEvent(pair.toLowerCase(), response -> {
-            //Every message and the resulting indicator and strategy calculations is handled concurrently
-            //System.out.println(Thread.currentThread().getId());
             double newPrice = Double.parseDouble(response.getPrice());
             long newTime = response.getEventTime();
 
@@ -82,21 +80,22 @@ public class Currency implements Closeable {
     }
 
     //Used for BACKTESTING
-    public Currency(String pair, String filePath) {
+    public Currency(String pair, String filePath, LocalAccount account) {
         this.pair = pair;
+        this.account = account;
+
         try (PriceReader reader = new PriceReader(filePath)) {
             PriceBean bean = reader.readPrice();
 
             firstBean = bean;
-            List<Double> closingPrices = new ArrayList<>();
+            List<Double> indicatorWarmupPrices = new ArrayList<>();
             while (bean.isClosing()) {
-                closingPrices.add(bean.getPrice());
+                indicatorWarmupPrices.add(bean.getPrice());
                 bean = reader.readPrice();
             }
-            //TODO: Fix slight mismatch between MACD backtesting and server values.
-            indicators.add(new RSI(closingPrices, 14));
-            indicators.add(new MACD(closingPrices, 12, 26, 9));
-            indicators.add(new DBB(closingPrices, 20));
+            for (IndicatorConfig indicatorConfig : Config.get(this).getIndicators()) {
+                indicators.add(indicatorConfig.toIndicator(indicatorWarmupPrices));
+            }
             while (bean != null) {
                 accept(bean);
                 bean = reader.readPrice();
@@ -118,8 +117,8 @@ public class Currency implements Closeable {
 
         if (bean.isClosing()) {
             indicators.forEach(indicator -> indicator.update(bean.getPrice()));
-            if (Mode.get().equals(Mode.BACKTESTING)) {
-                appendLogLine(system.Formatter.formatDate(currentTime) + "  ");
+            if (account.getInstance().getMode().equals(Instance.Mode.BACKTESTING)) {
+                appendLogLine(system.Formatter.formatDate(currentTime) + " " + this);
             }
         }
 
@@ -127,13 +126,13 @@ public class Currency implements Closeable {
             int confluence = 0; //0 Confluence should be reserved in the config for doing nothing
             currentlyCalculating.set(true);
             //We can disable the strategy and trading logic to only check indicator and price accuracy
-            if ((Trade.CLOSE_USE_CONFLUENCE && hasActiveTrade()) || BuySell.enoughFunds()) {
+            if ((Config.get(this).useConfluenceToClose() && hasActiveTrade()) || account.enoughFunds()) {
                 confluence = check();
             }
             if (hasActiveTrade()) { //We only allow one active trade per currency, this means we only need to do one of the following:
                 activeTrade.update(currentPrice, confluence);//Update the active trade stop-loss and high values
-            } else if (confluence >= CONFLUENCE_TARGET && BuySell.enoughFunds()) {
-                BuySell.open(Currency.this, "Trade opened due to: " + getExplanations());
+            } else if (confluence >= Config.get(this).getConfluenceToOpen() && account.enoughFunds()) {
+                account.open(Currency.this, "Trade opened due to: " + getExplanations());
             }
             currentlyCalculating.set(false);
         }
@@ -181,12 +180,16 @@ public class Currency implements Closeable {
         log.append(s).append("\n");
     }
 
+    public LocalAccount getAccount() {
+        return account;
+    }
+
     public void log(String path) {
-        List<Trade> tradeHistory = new ArrayList<>(BuySell.getAccount().getTradeHistory());
+        List<Trade> tradeHistory = new ArrayList<>(account.getTradeHistory());
         try (FileWriter writer = new FileWriter(path)) {
             writer.write("Test ended " + system.Formatter.formatDate(LocalDateTime.now()) + " \n");
             writer.write("\n\nCONFIG:\n");
-            writer.write(ConfigSetup.getSetup());
+            writer.write(Config.get(this).toString());
             writer.write("\n\nMarket performance: " + system.Formatter.formatPercent((currentPrice - firstBean.getPrice()) / firstBean.getPrice()));
             if (!tradeHistory.isEmpty()) {
                 tradeHistory.sort(Comparator.comparingDouble(Trade::getProfit));
@@ -211,8 +214,8 @@ public class Currency implements Closeable {
 
                 double tradePerWeek = 604800000.0 / (((double) currentTime - firstBean.getTimestamp()) / tradeHistory.size());
 
-                writer.write("\nBot performance: " + system.Formatter.formatPercent(BuySell.getAccount().getProfit()) + "\n\n");
-                writer.write(BuySell.getAccount().getTradeHistory().size() + " closed trades"
+                writer.write("\nBot performance: " + system.Formatter.formatPercent(account.getProfit()) + "\n\n");
+                writer.write(account.getTradeHistory().size() + " closed trades"
                         + " (" + system.Formatter.formatDecimal(tradePerWeek) + " trades per week) with an average holding length of "
                         + system.Formatter.formatDuration(Duration.of(tradeDurs / tradeHistory.size(), ChronoUnit.MILLIS)) + " hours");
                 if (lossTrades != 0) {
@@ -264,7 +267,6 @@ public class Currency implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if (Mode.get().equals(Mode.BACKTESTING) || Mode.get().equals(Mode.COLLECTION)) return;
-        apiListener.close();
+        if (apiListener != null) apiListener.close();
     }
 }

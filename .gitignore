@@ -82,3 +82,6 @@ fabric.properties
 
 # Executable config
 /exe/
+/ks.jks
+/TradeBot.p12
+/ts.jks

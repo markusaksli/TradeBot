@@ -1,15 +1,11 @@
 package trading;
 
+import data.config.Config;
 import system.Formatter;
 
 public class Trade {
 
     private double high; //Set the highest price
-
-    public static double TRAILING_SL; //It's in percentages, but using double for comfort.
-    public static double TAKE_PROFIT; //It's in percentages, but using double for comfort.
-    public static boolean CLOSE_USE_CONFLUENCE;
-    public static int CLOSE_CONFLUENCE;
 
     private final long openTime;
     private final double entryPrice; //Starting price of a trade (when logic decides to buy)
@@ -30,8 +26,6 @@ public class Trade {
     }
 
     //Getters and setters
-
-
     public String getExplanation() {
         return explanation;
     }
@@ -97,27 +91,30 @@ public class Trade {
     public void update(double newPrice, int confluence) {
         if (newPrice > high) high = newPrice;
 
-        if (getProfit() > TAKE_PROFIT) {
+        //TP
+        if (getProfit() > Config.get(this).getTakeProfit()) {
             explanation += "Closed due to: Take profit";
-            BuySell.close(this);
+            currency.getAccount().close(this);
             return;
         }
 
-        if (newPrice < high * (1 - TRAILING_SL)) {
+        //Trailing SL
+        if (newPrice < high * (1 - Config.get(this).getTrailingSl())) {
             explanation += "Closed due to: Trailing SL";
-            BuySell.close(this);
+            currency.getAccount().close(this);
             return;
         }
 
-        if (CLOSE_USE_CONFLUENCE && confluence <= -CLOSE_CONFLUENCE) {
+        //Confluence to close
+        if (Config.get(this).useConfluenceToClose() && confluence <= -Config.get(this).getConfluenceToClose()) {
             explanation += "Closed due to: Indicator confluence of " + confluence;
-            BuySell.close(this);
+            currency.getAccount().close(this);
         }
     }
 
     @Override
     public String toString() {
-        return (isClosed() ? (BuySell.getAccount().getTradeHistory().indexOf(this) + 1) : (BuySell.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
+        return (isClosed() ? (currency.getAccount().getTradeHistory().indexOf(this) + 1) : (currency.getAccount().getActiveTrades().indexOf(this) + 1)) + " "
                 + currency.getPair() + " " + Formatter.formatDecimal(amount) + "\n"
                 + "open: " + Formatter.formatDate(openTime) + " at " + entryPrice + "\n"
                 + (isClosed() ? "close: " + Formatter.formatDate(closeTime) + " at " + closePrice : "current price: " + currency.getPrice()) + "\n"
