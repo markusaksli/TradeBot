@@ -17,9 +17,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class ConfigSetup {
-    private static final int REQUEST_LIMIT = CurrentAPI.get().getExchangeInfo().getRateLimits().stream()
-            .filter(rateLimit -> rateLimit.getRateLimitType().equals(RateLimitType.REQUEST_WEIGHT))
-            .findFirst().map(RateLimit::getLimit).orElse(1200);
+    private static final int REQUEST_LIMIT_FALLBACK = 1200;
+    private static int REQUEST_LIMIT;
 
     private static final StringBuilder setup = new StringBuilder();
     private static List<String> currencies;
@@ -46,7 +45,23 @@ public class ConfigSetup {
     }
 
     public static void readConfig() {
+        System.out.println("---Getting server rate limit");
+        try {
+            Optional<RateLimit> found = Optional.empty();
+            for (RateLimit rateLimit : CurrentAPI.get().getExchangeInfo().getRateLimits()) {
+                if (rateLimit.getRateLimitType().equals(RateLimitType.REQUEST_WEIGHT)) {
+                    found = Optional.of(rateLimit);
+                    break;
+                }
+            }
+            REQUEST_LIMIT = found.map(RateLimit::getLimit).orElse(REQUEST_LIMIT_FALLBACK);
+        } catch (Exception e) {
+            System.out.println("Could not read value from server, using fallback value");
+            REQUEST_LIMIT = REQUEST_LIMIT_FALLBACK;
+        }
         Formatter.getSimpleFormatter().setTimeZone(TimeZone.getDefault());
+        System.out.println("Rate limit set at " + REQUEST_LIMIT + " request weight per minute");
+        System.out.println("---Reading config...");
         int items = 0;
         File file = new File("config.txt");
         if (!file.exists()) {

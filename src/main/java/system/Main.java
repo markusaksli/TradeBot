@@ -9,9 +9,11 @@ import java.util.*;
 
 
 public class Main {
+    private static final String VERSION = "v0.10.1";
     private static List<Currency> currencies;
 
     public static void main(String[] args) {
+        System.out.println("---Startup...");
         //Program config.
         try {
             ConfigSetup.readConfig();
@@ -21,11 +23,14 @@ public class Main {
                     long bannedTime = Long.parseLong(cause.getCause().getMessage().split("until ")[1].split("\\.")[0]);
                     System.out.println("\nIP Banned by Binance API until " + Formatter.formatDate(bannedTime) + " (" + Formatter.formatDuration(bannedTime - System.currentTimeMillis()) + ")");
                 }
+            } else {
+                System.out.println("---Error during startup: ");
+                cause.printStackTrace();
             }
             new Scanner(System.in).next();
             System.exit(3);
         }
-        System.out.println("Welcome to TradeBot (v0.10.0)\n" +
+        System.out.println("\nWelcome to TradeBot " + VERSION + "\n" +
                 "(made by Markus Aksli, Marten Türk, and Mark Robin Kalder)\n" +
                 "\n" +
                 "This is a cryptocurrency trading bot that uses the Binance API,\n" +
@@ -104,9 +109,6 @@ public class Main {
                     } else if (s.equalsIgnoreCase("modes")) {
                         returnToModes = true;
                         break;
-                    } else {
-                        System.out.println("Type quit to quit");
-                        System.out.println("Type \"modes\" to got back to mode selection.");
                     }
                 }
 
