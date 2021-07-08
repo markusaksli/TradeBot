@@ -28,6 +28,10 @@ public class Config {
         data = readValues();
     }
 
+    public String name() {
+        return configFile.getName();
+    }
+
     public static ConfigData get(Trade trade) {
         return trade.getCurrency().getAccount().getInstance().getConfig();
     }

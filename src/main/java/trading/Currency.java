@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -80,11 +81,13 @@ public class Currency implements Closeable {
     }
 
     //Used for BACKTESTING
-    public Currency(String pair, String filePath, LocalAccount account) {
-        this.pair = pair;
+    public Currency(PriceReader reader, LocalAccount account) {
+        this.pair = reader.getPair();
         this.account = account;
+    }
 
-        try (PriceReader reader = new PriceReader(filePath)) {
+    public CompletableFuture<Void> runBacktest(PriceReader reader) {
+        try (reader) {
             PriceBean bean = reader.readPrice();
 
             firstBean = bean;
@@ -100,10 +103,10 @@ public class Currency implements Closeable {
                 accept(bean);
                 bean = reader.readPrice();
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     private void accept(PriceBean bean) {

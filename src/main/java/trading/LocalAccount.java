@@ -1,8 +1,6 @@
 package trading;
 
-import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
-import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.general.FilterType;
@@ -25,8 +23,6 @@ import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
 public class LocalAccount {
     private final Instance instance;
-    private Account realAccount;
-    private BinanceApiRestClient client;
 
     //To give the account a specific final amount of money.
     private double fiatValue;
@@ -34,48 +30,21 @@ public class LocalAccount {
     private final ConcurrentHashMap<Currency, Double> wallet;
     private final List<Trade> tradeHistory;
     private final List<Trade> activeTrades;
-    private double makerCommission;
-    private double takerCommission;
-    private double buyerCommission;
 
     public LocalAccount(Instance instance, double startingValue) {
         this.instance = instance;
+
         this.startingValue = startingValue;
-        fiatValue = startingValue;
-        wallet = new ConcurrentHashMap<>();
-        tradeHistory = new ArrayList<>();
-        activeTrades = new CopyOnWriteArrayList<>();
-    }
-
-    public LocalAccount(Instance instance, String apiKey, String secretApiKey) {
-        this.instance = instance;
-        client = BinanceAPI.login(apiKey, secretApiKey).newRestClient();
-
-        wallet = new ConcurrentHashMap<>();
-        tradeHistory = new ArrayList<>();
-        activeTrades = new CopyOnWriteArrayList<>();
-        realAccount = client.getAccount();
-        if (!realAccount.isCanTrade()) {
-            System.out.println("Can't trade!");
+        if (instance.getMode().equals(Instance.Mode.LIVE)) {
+            fiatValue = Double.parseDouble(BinanceAPI.getAccount().getAssetBalance(instance.getFiat()).getFree());
+        } else {
+            fiatValue = startingValue;
         }
-        makerCommission = realAccount.getMakerCommission(); //Maker fees are
-        // paid when you add liquidity to our order book
-        // by placing a limit order below the ticker price for buy, and above the ticker price for sell.
-        takerCommission = realAccount.getTakerCommission();//Taker fees are paid when you remove
-        // liquidity from our order book by placing any order that is executed against an order on the order book.
-        buyerCommission = realAccount.getBuyerCommission();
-
-        //Example: If the current market/ticker price is $2000 for 1 BTC and you market buy bitcoins starting at the market price of $2000, then you will pay the taker fee. In this instance, you have taken liquidity/coins from the order book.
-        //
-        //If the current market/ticker price is $2000 for 1 BTC and you
-        //place a limit buy for bitcoins at $1995, then
-        //you will pay the maker fee IF the market/ticker price moves into your limit order at $1995.
-        fiatValue = Double.parseDouble(realAccount.getAssetBalance(instance.getFiat()).getFree());
         System.out.println("---Starting FIAT: " + Formatter.formatDecimal(fiatValue) + " " + instance.getFiat());
-    }
 
-    public Account getRealAccount() {
-        return realAccount;
+        wallet = new ConcurrentHashMap<>();
+        tradeHistory = new ArrayList<>();
+        activeTrades = new CopyOnWriteArrayList<>();
     }
 
     //All backend.Trade methods
@@ -168,18 +137,6 @@ public class LocalAccount {
      **/
     public void removeFromWallet(Currency key, double value) {
         wallet.put(key, wallet.get(key) - value);
-    }
-
-    public double getMakerCommission() {
-        return makerCommission;
-    }
-
-    public double getTakerCommission() {
-        return takerCommission;
-    }
-
-    public double getBuyerCommission() {
-        return buyerCommission;
     }
 
     public boolean enoughFunds() {
@@ -298,10 +255,10 @@ public class LocalAccount {
         System.out.println("\n---Placing a " + (buy ? "buy" : "sell") + " market order for " + currency.getPair());
         BigDecimal originalDecimal = BigDecimal.valueOf(amount);
         //Round amount to base precision and LOT_SIZE
-        int precision = client.getExchangeInfo().getSymbolInfo(currency.getPair()).getBaseAssetPrecision();
+        int precision = BinanceAPI.get().getExchangeInfo().getSymbolInfo(currency.getPair()).getBaseAssetPrecision();
         String lotSize;
-        Optional<String> minQtyOptional = client.getExchangeInfo().getSymbolInfo(currency.getPair()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty());
-        Optional<String> minNotational = client.getExchangeInfo().getSymbolInfo(currency.getPair()).getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
+        Optional<String> minQtyOptional = BinanceAPI.get().getExchangeInfo().getSymbolInfo(currency.getPair()).getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(f1 -> f1.getMinQty());
+        Optional<String> minNotational = BinanceAPI.get().getExchangeInfo().getSymbolInfo(currency.getPair()).getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
         if (minQtyOptional.isPresent()) {
             lotSize = minQtyOptional.get();
         } else {
@@ -330,7 +287,7 @@ public class LocalAccount {
 
         NewOrderResponse order;
         try {
-            order = client.newOrder(
+            order = BinanceAPI.get().newOrder(
                     buy ?
                             marketBuy(currency.getPair(), convertedAmount).newOrderRespType(NewOrderResponseType.FULL) :
                             marketSell(currency.getPair(), convertedAmount).newOrderRespType(NewOrderResponseType.FULL));

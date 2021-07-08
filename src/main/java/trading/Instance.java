@@ -5,6 +5,7 @@ import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.exception.BinanceApiException;
 import data.config.ConfigData;
+import data.price.PriceReader;
 import system.BinanceAPI;
 import data.config.Config;
 import system.Formatter;
@@ -13,16 +14,15 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 
 public class Instance implements Closeable {
-    public static double STARTING_VALUE;
-    private static final File credentialsFile = new File("credentials.txt");
-
-    private final String ID;
-    private final LocalAccount account;
-    private final Mode mode;
+    private List<Currency> currencies;
     private String fiat;
     private Config config;
+    private final LocalAccount account;
+    private final Mode mode;
+    private final String ID;
 
     public String getID() {
         return ID;
@@ -36,7 +36,6 @@ public class Instance implements Closeable {
         return mode;
     }
 
-    List<Currency> currencies = new ArrayList<>();
 
     @Override
     public void close() {
@@ -49,11 +48,21 @@ public class Instance implements Closeable {
         }
     }
 
-    public Instance(List<String> coins, String ID) {
-        this.ID = ID;
+    /**
+     * Creates a simulation instance
+     *
+     * @param coins        List of tradeable currencies against the fiat
+     * @param fiat         FIAT currency
+     * @param config       Loaded Config
+     * @param startingFIAT Predefined starting FIAT value
+     */
+    public Instance(List<String> coins, String fiat, Config config, double startingFIAT) {
         this.mode = Mode.SIMULATION;
-        this.account = new LocalAccount(this, STARTING_VALUE);
-
+        this.fiat = fiat;
+        this.config = config;
+        this.ID = "Simulation" + "_" + config.name() + "_" + System.currentTimeMillis();
+        this.account = new LocalAccount(this, startingFIAT);
+        List<Currency> currencies = new ArrayList<>();
         for (String arg : coins) {
             //The currency class contains all of the method calls that drive the activity of our bot
             try {
@@ -65,56 +74,49 @@ public class Instance implements Closeable {
         }
     }
 
+    //BACKTESTING
+    public Instance(PriceReader reader, Config config, double startingFIAT) {
+        this.mode = Mode.BACKTESTING;
+        this.fiat = reader.getFiat();
+        this.config = config;
+        this.ID = "Backtesting" + "_" + config.name() + "_" + System.currentTimeMillis();
+        this.account = new LocalAccount(this, startingFIAT);
+
+        System.out.println("\n---Backtesting...");
+        Currency currency = new Currency(reader, account);
+        currencies.add(currency);
+        currency.runBacktest(reader).thenApply(unused -> {
+            for (Trade trade : account.getActiveTrades()) {
+                trade.setExplanation(trade.getExplanation() + "Manually closed");
+                account.close(trade);
+            }
+            int i = 1;
+            String path = "log/" + reader.getPath().getFileName();
+            String resultPath = path.replace(".dat", "_run_" + i + ".txt");
+            while (new File(resultPath).exists()) {
+                i++;
+                resultPath = path.replace(".dat", "_run_" + i + ".txt");
+            }
+            new File("log").mkdir();
+            currency.log(resultPath);
+
+            return null;
+        });
+    }
+
     //LIVE
-    public Instance(List<String> coins, String ID, String apiKey, String secretKey) {
-        this.ID = ID;
+    public Instance(List<String> coins, String fiat, Config config) {
         this.mode = Mode.LIVE;
-
-        /*boolean fileFailed = true;
-        if (credentialsFile.exists()) {
-            try {
-                final List<String> strings = Files.readAllLines(credentialsFile.toPath());
-                if (!strings.get(0).matches("\\*+")) {
-                    account = new LocalAccount(strings.get(0), strings.get(1));
-                    fileFailed = false;
-                } else {
-                    System.out.println("---credentials.txt has not been set up");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("---Failed to use credentials in credentials.txt");
-            }
-        } else {
-            System.out.println("---credentials.txt file not detected!");
-        }
-
-        if (fileFailed) {
-            Scanner sc = new Scanner(System.in);
-            String apiKey;
-            String apiSecret;
-            while (true) {
-                System.out.println("Enter your API Key: ");
-                apiKey = sc.nextLine();
-                if (apiKey.length() == 64) {
-                    System.out.println("Enter your Secret Key: ");
-                    apiSecret = sc.nextLine();
-                    if (apiSecret.length() == 64) {
-                        break;
-                    } else System.out.println("Secret API is incorrect, enter again.");
-                } else System.out.println("Incorrect API, enter again.");
-            }
-        }*/
-        account = new LocalAccount(this, apiKey, secretKey);
-        System.out.println("Can trade: " + account.getRealAccount().isCanTrade());
-        System.out.println(account.getMakerCommission() + " Maker commission.");
-        System.out.println(account.getBuyerCommission() + " Buyer commission");
-        System.out.println(account.getTakerCommission() + " Taker comission");
+        this.fiat = fiat;
+        this.config = config;
+        this.ID = "Backtesting" + "_" + config.name() + "_" + System.currentTimeMillis();
+        this.account = new LocalAccount(this, 0);
 
         //TODO: Open price for existing currencies
         String current = "";
         try {
             List<String> addedCurrencies = new ArrayList<>();
-            for (AssetBalance balance : account.getRealAccount().getBalances()) {
+            for (AssetBalance balance : BinanceAPI.getAccount().getBalances()) {
                 if (balance.getFree().matches("0\\.0+")) continue;
                 if (coins.contains(balance.getAsset())) {
                     current = balance.getAsset();
@@ -159,58 +161,9 @@ public class Instance implements Closeable {
         }
     }
 
-    //BACKTESTING
-    public Instance(String path) {
-        this.ID = path;
-        this.account = new LocalAccount(this, STARTING_VALUE);
-        this.mode = Mode.BACKTESTING;
-
-        /*
-        final String[] backtestingFiles = Collection.getDataFiles();
-        if (backtestingFiles.length == 0) {
-            System.out.println("No backtesting files detected!");
-            System.exit(0);
-        }
-        Scanner sc = new Scanner(System.in);
-        System.out.println("\nBacktesting data files:\n");
-        for (int i = 0; i < backtestingFiles.length; i++) {
-            System.out.println("[" + (i + 1) + "] " + backtestingFiles[i]);
-        }
-        System.out.println("\nEnter a number to select the backtesting data file");
-        String input = sc.nextLine();
-        if (!input.matches("\\d+")) continue;
-        int index = Integer.parseInt(input);
-        if (index > backtestingFiles.length) {
-
-        }
-        String path = "backtesting/" + backtestingFiles[index - 1];
-        */
-
-        System.out.println("\n---Backtesting...");
-        Currency currency = new Currency(new File(path).getName().split("_")[0], path, account);
-        currencies.add(currency);
-
-        for (Trade trade : account.getActiveTrades()) {
-            trade.setExplanation(trade.getExplanation() + "Manually closed");
-            account.close(trade);
-        }
-
-
-        int i = 1;
-        path = path.replace("backtesting", "log");
-        String resultPath = path.replace(".dat", "_run_" + i + ".txt");
-        while (new File(resultPath).exists()) {
-            i++;
-            resultPath = path.replace(".dat", "_run_" + i + ".txt");
-        }
-        new File("log").mkdir();
-
-        currency.log(resultPath);
-    }
-
     public void refreshWalletAndTrades() {
         if (mode != Mode.LIVE) return;
-        for (AssetBalance balance : account.getRealAccount().getBalances()) {
+        for (AssetBalance balance : BinanceAPI.getAccount().getBalances()) {
             if (balance.getFree().matches("0\\.0+")) continue;
             if (balance.getAsset().equals(fiat)) {
                 final double amount = Double.parseDouble(balance.getFree());

@@ -2,17 +2,23 @@ package system;
 
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
+import com.binance.api.client.domain.account.Account;
 
 public final class BinanceAPI {
-    private static final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance();
+    private static BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance();
     private static BinanceApiRestClient defaultClient;
+    private static Account account;
+    private static boolean loggedIn;
 
     private BinanceAPI() {
         throw new IllegalStateException("Utility class");
     }
 
-    public static BinanceApiClientFactory login(String apiKey, String secretKey) {
-        return BinanceApiClientFactory.newInstance(apiKey, secretKey);
+    public static void login(String apiKey, String secretKey) {
+        factory = BinanceApiClientFactory.newInstance(apiKey, secretKey);
+        defaultClient = factory.newRestClient();
+        account = defaultClient.getAccount();
+        loggedIn = true;
     }
 
     public static BinanceApiClientFactory getFactory() {
@@ -24,5 +30,10 @@ public final class BinanceAPI {
             defaultClient = factory.newRestClient();
         }
         return defaultClient;
+    }
+
+    public static Account getAccount() {
+        if (!loggedIn) return null;
+        return account;
     }
 }
