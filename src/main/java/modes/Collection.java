@@ -195,7 +195,7 @@ public final class Collection {
                 CurrentAPI.get().getPrice(symbol);
                 break;
             } catch (BinanceApiException e) {
-                System.out.println(e.getMessage());
+                System.out.println("Got error for symbol " + symbol + ": " + e.getMessage());
             }
         }
 
