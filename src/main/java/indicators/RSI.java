@@ -90,13 +90,13 @@ public class RSI implements Indicator {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
             return 1;
         }
-        if (temp > NEGATIVE_MIN) {
-            explanation = "RSI of " + Formatter.formatDecimal(temp);
-            return -1;
-        }
         if (temp > NEGATIVE_MAX) {
             explanation = "RSI of " + Formatter.formatDecimal(temp);
             return -2;
+        }
+        if (temp > NEGATIVE_MIN) {
+            explanation = "RSI of " + Formatter.formatDecimal(temp);
+            return -1;
         }
         explanation = "";
         return 0;
