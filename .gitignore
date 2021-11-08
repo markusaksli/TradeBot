@@ -74,11 +74,13 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 # Bot files
-/backtesting/
-/csv/
-/log/
-/temp/
-/credentials.txt
+**/backtesting/
+**/csv/
+**/log/
+**/temp/
+**/credentials.txt
+!/exe-config/credentials.txt
 
-# Executable config
-/exe/
+# Executable artefacts
+/build/
+**/java-runtime

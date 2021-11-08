@@ -9,7 +9,7 @@ import java.util.*;
 
 
 public class Main {
-    private static final String VERSION = "v0.10.1";
+    private static final String VERSION = "v0.10.2";
     private static List<Currency> currencies;
 
     public static void main(String[] args) {
