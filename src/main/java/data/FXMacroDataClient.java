@@ -18,7 +18,11 @@ public class FXMacroDataClient {
     }
 
     public FXMacroDataClient(String apiKey, String baseUrl) {
-        this.apiKey = apiKey == null ? "" : apiKey;
+        String key = apiKey == null ? "" : apiKey.trim();
+        for (char c : key.toCharArray()) {
+            if (Character.isISOControl(c)) throw new IllegalArgumentException("FXMacroData API key contains invalid characters");
+        }
+        this.apiKey = key;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 
@@ -51,6 +55,8 @@ public class FXMacroDataClient {
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(10000);
         connection.setReadTimeout(20000);
+        // Do not follow redirects, so the API key is never re-sent to another host.
+        connection.setInstanceFollowRedirects(false);
         if (!apiKey.isEmpty()) connection.setRequestProperty("X-API-Key", apiKey);
         int status = connection.getResponseCode();
         if (status < 200 || status >= 300) throw new IOException("FXMacroData returned HTTP " + status);
