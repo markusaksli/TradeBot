@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
@@ -23,17 +24,17 @@ public class FXMacroDataClient {
             if (Character.isISOControl(c)) throw new IllegalArgumentException("FXMacroData API key contains invalid characters");
         }
         this.apiKey = key;
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        this.baseUrl = normalizeBaseUrl(baseUrl);
     }
 
     public String dataCatalogue(String currency) throws IOException { return get("/data_catalogue/" + norm(currency)); }
-    public String announcements(String currency, String indicator) throws IOException { return get("/announcements/" + norm(currency) + "/" + indicator); }
+    public String announcements(String currency, String indicator) throws IOException { return get("/announcements/" + norm(currency) + "/" + pathSegment(indicator)); }
     public String calendar(String currency) throws IOException { return get("/calendar/" + norm(currency)); }
-    public String predictions(String currency, String indicator) throws IOException { return get("/predictions/" + norm(currency) + "/" + indicator); }
+    public String predictions(String currency, String indicator) throws IOException { return get("/predictions/" + norm(currency) + "/" + pathSegment(indicator)); }
     public String forex(String base, String quote) throws IOException { return get("/forex/" + norm(base) + "/" + norm(quote)); }
     public String cot(String currency) throws IOException { return get("/cot/" + norm(currency)); }
     public String commoditiesLatest() throws IOException { return get("/commodities/latest"); }
-    public String commodity(String indicator) throws IOException { return get("/commodities/" + indicator); }
+    public String commodity(String indicator) throws IOException { return get("/commodities/" + pathSegment(indicator)); }
     public String curves(String currency) throws IOException { return get("/curves/" + norm(currency)); }
     public String curveProxies(String currency) throws IOException { return get("/curve_proxies/" + norm(currency)); }
     public String forwardCurves(String currency) throws IOException { return get("/forward_curves/" + norm(currency)); }
@@ -44,11 +45,11 @@ public class FXMacroDataClient {
 
     // List endpoints return 20 rows by default and at most 100 per request, newest first.
     // Pass limit/offset and follow pagination.next_offset while pagination.has_more is true.
-    public String announcements(String currency, String indicator, int limit, int offset) throws IOException { return get("/announcements/" + norm(currency) + "/" + indicator + page(limit, offset)); }
-    public String predictions(String currency, String indicator, int limit, int offset) throws IOException { return get("/predictions/" + norm(currency) + "/" + indicator + page(limit, offset)); }
+    public String announcements(String currency, String indicator, int limit, int offset) throws IOException { return get("/announcements/" + norm(currency) + "/" + pathSegment(indicator) + page(limit, offset)); }
+    public String predictions(String currency, String indicator, int limit, int offset) throws IOException { return get("/predictions/" + norm(currency) + "/" + pathSegment(indicator) + page(limit, offset)); }
     public String forex(String base, String quote, int limit, int offset) throws IOException { return get("/forex/" + norm(base) + "/" + norm(quote) + page(limit, offset)); }
     public String cot(String currency, int limit, int offset) throws IOException { return get("/cot/" + norm(currency) + page(limit, offset)); }
-    public String commodity(String indicator, int limit, int offset) throws IOException { return get("/commodities/" + indicator + page(limit, offset)); }
+    public String commodity(String indicator, int limit, int offset) throws IOException { return get("/commodities/" + pathSegment(indicator) + page(limit, offset)); }
 
     private String get(String path) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) URI.create(buildUrl(path)).toURL().openConnection();
@@ -76,7 +77,29 @@ public class FXMacroDataClient {
         return "?limit=" + Math.max(1, Math.min(limit, 100)) + "&offset=" + Math.max(0, offset);
     }
 
-    private static String norm(String value) {
-        return value.trim().toLowerCase(Locale.ROOT);
+    private static String norm(String value) throws IOException {
+        return pathSegment(value.trim().toLowerCase(Locale.ROOT));
+    }
+
+    private static String pathSegment(String value) throws IOException {
+        return URLEncoder.encode(value.trim(), StandardCharsets.UTF_8.name()).replace("+", "%20");
+    }
+
+    private static String normalizeBaseUrl(String value) {
+        try {
+            URI uri = URI.create(value.trim());
+            String scheme = uri.getScheme();
+            if (!("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
+                    || uri.getHost() == null || uri.getPort() > 65535
+                    || uri.getRawUserInfo() != null || uri.getRawQuery() != null
+                    || uri.getRawFragment() != null) {
+                throw new IllegalArgumentException();
+            }
+            String base = uri.toASCIIString();
+            return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            throw new IllegalArgumentException(
+                    "FXMacroData base URL must be HTTP(S) without credentials, query or fragment");
+        }
     }
 }
